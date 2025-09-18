@@ -4,15 +4,14 @@ import { requireAdmin } from '../_auth';
 
 export async function POST(req) {
   const deny = requireAdmin(req); if (deny) return deny;
-  const { collectionName, participantId, roomId, roomName } = await req.json();
+  const { collectionName, participantId, status } = await req.json();
 
-  if (!collectionName || !participantId) {
-    return new NextResponse('collectionName and participantId are required', { status: 400 });
+  if (!collectionName || !participantId || !status) {
+    return new NextResponse('collectionName, participantId, status are required', { status: 400 });
   }
 
   await adminDb.collection(collectionName).doc(participantId).update({
-    roomId: roomId || null,
-    roomName: roomName || null,
+    paymentStatus: status,
   });
 
   return NextResponse.json({ ok: true });

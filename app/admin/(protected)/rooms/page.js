@@ -1,104 +1,202 @@
-// app/admin/rooms/page.js
 'use client';
+
 import { useEffect, useState } from 'react';
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState([]);
-  const [unassigned, setUnassigned] = useState([]);
-  const [form, setForm] = useState({ name:'', capacity:4, gender:'혼성' });
-  const fetchAll = async () => {
-    const [r, u] = await Promise.all([
-      fetch('/api/admin/rooms').then(r=>r.json()),
-      fetch('/api/admin/unassigned').then(r=>r.json()),
-    ]);
-    setRooms(r.rooms); setUnassigned(u.participants);
+  const [form, setForm] = useState({ start: '', end: '', group: '전부', capacity: 4 });
+  const [selectedRooms, setSelectedRooms] = useState([]);
+
+  const fetchRooms = async () => {
+    const res = await fetch('/api/admin/rooms');
+    const data = await res.json();
+    setRooms(data.rooms || []);
+    setSelectedRooms([]);
   };
-  useEffect(()=>{ fetchAll(); },[]);
-  const createRoom = async (e) => {
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
+
+  const createRooms = async (e) => {
     e.preventDefault();
-    await fetch('/api/admin/rooms', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(form) });
-    setForm({ name:'', capacity:4, gender:'혼성' });
-    fetchAll();
+    await fetch('/api/admin/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+    setForm({ start: '', end: '', group: '전부', capacity: 4 });
+    fetchRooms();
   };
-  const assign = async (pid, rid) => {
-    await fetch('/api/admin/assign', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ participantId: pid, roomId: rid }) });
-    fetchAll();
+
+  const deleteSelected = async () => {
+    if (selectedRooms.length === 0) return;
+    if (!confirm(`선택한 ${selectedRooms.length}개 방을 삭제하시겠습니까?`)) return;
+
+    await fetch('/api/admin/rooms', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roomIds: selectedRooms }),
+    });
+    fetchRooms();
   };
+
+  const toggleSelect = (id) => {
+    setSelectedRooms(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedRooms.length === rooms.length) {
+      setSelectedRooms([]); // 전체 해제
+    } else {
+      setSelectedRooms(rooms.map(r => r.id)); // 전체 선택
+    }
+  };
+
   return (
     <main>
-      <h1>방배정 현황</h1>
+      <h1 className="text-2xl font-bold mb-4">방 관리</h1>
 
-      <section style={{ display:'flex', gap:24 }}>
-        <div>
-          <h3>방 생성</h3>
-          <form onSubmit={createRoom} style={{ display:'grid', gap:8 }}>
-            <input placeholder="방 이름" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} required />
-            <input type="number" min="1" placeholder="정원" value={form.capacity} onChange={e=>setForm({...form, capacity:+e.target.value})} required />
-            <select value={form.gender} onChange={e=>setForm({...form, gender:e.target.value})}>
-              <option>혼성</option><option>남</option><option>여</option>
-            </select>
-            <button>생성</button>
-          </form>
+      {/* 방 생성 */}
+      <form onSubmit={createRooms} className="bg-white shadow p-4 rounded mb-6 space-y-3 max-w-xl">
+        <div className="flex gap-4">
+          <label className="flex flex-col">
+            시작 방번호
+            <input
+              type="number"
+              value={form.start}
+              onChange={(e) => setForm(f => ({ ...f, start: e.target.value }))}
+              required
+              className="border rounded p-1"
+            />
+          </label>
+          <label className="flex flex-col">
+            끝 방번호
+            <input
+              type="number"
+              value={form.end}
+              onChange={(e) => setForm(f => ({ ...f, end: e.target.value }))}
+              required
+              className="border rounded p-1"
+            />
+          </label>
         </div>
 
-        <div>
-          <h3>미배정 인원</h3>
-          <ul>
-            {unassigned.map(p => (
-              <li key={p.id}>
-                {p.name} ({p.gender}) &nbsp;
-                <select onChange={e => assign(p.id, e.target.value)} defaultValue="">
-                  <option value="" disabled>방 배정</option>
-                  {rooms
-                    .filter(r => r.gender === '혼성' || r.gender === p.gender)
-                    .map(r => <option key={r.id} value={r.id}>{r.name} ({r.current}/{r.capacity})</option>)}
-                </select>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <label className="flex flex-col">
+          배정 그룹
+          <select
+            value={form.group}
+            onChange={(e) => setForm(f => ({ ...f, group: e.target.value }))}
+            className="border rounded p-1"
+          >
+            <option>탈북민</option>
+            <option>목회자</option>
+            <option>평신도</option>
+            <option>전부</option>
+          </select>
+        </label>
 
-        <div>
-          <h3>방 목록</h3>
-          <ul>
-            {rooms.map(r => (
-              <li key={r.id}>
-                <b>{r.name}</b> [{r.gender}] {r.current}/{r.capacity}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+        <label className="flex flex-col">
+          가용 인원
+          <input
+            type="number"
+            value={form.capacity}
+            onChange={(e) => setForm(f => ({ ...f, capacity: e.target.value }))}
+            required
+            className="border rounded p-1"
+          />
+        </label>
 
-      <hr style={{ margin:'24px 0' }}/>
-      <section>
-        <h3>관리자 등록/조회</h3>
-        <AdminRegister />
-      </section>
-    </main>
-  );
-}
-
-function AdminRegister() {
-  const [admins, setAdmins] = useState([]);
-  const [name, setName] = useState('');
-  const load = async () => {
-    const data = await fetch('/api/admin/admins').then(r=>r.json());
-    setAdmins(data.admins || []);
-  };
-  useEffect(()=>{ load(); },[]);
-  const add = async (e) => {
-    e.preventDefault();
-    await fetch('/api/admin/admins', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
-    setName(''); load();
-  };
-  return (
-    <>
-      <form onSubmit={add} style={{ display:'flex', gap:8 }}>
-        <input placeholder="관리자 이름" value={name} onChange={e=>setName(e.target.value)} required />
-        <button>등록</button>
+        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          방 생성
+        </button>
       </form>
-      <ul>{admins.map(a => <li key={a.id}>{a.name} ({a.role})</li>)}</ul>
-    </>
+
+      {/* 전체 선택 + 삭제 버튼 */}
+      <div className="flex items-center justify-between mb-4">
+        <label className="inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={selectedRooms.length === rooms.length && rooms.length > 0}
+            onChange={toggleSelectAll}
+            className="hidden peer"
+          />
+          <span className="w-5 h-5 flex items-center justify-center border rounded-md peer-checked:bg-blue-600 peer-checked:border-blue-600">
+            <svg
+              className="w-3 h-3 text-white hidden peer-checked:block"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M16.707 5.293a1 1 0 010 1.414L8.414 15 5.293 11.879a1 1 0 111.414-1.414L8.414 12.172l7.293-7.293a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </span>
+          <span className="ml-2 text-sm text-gray-700">전체 선택</span>
+        </label>
+
+        {selectedRooms.length > 0 && (
+          <button
+            onClick={deleteSelected}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            선택한 {selectedRooms.length}개 방 삭제
+          </button>
+        )}
+      </div>
+
+      {/* 방 목록 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {rooms.map(r => (
+          <div
+            key={r.id}
+            className={`bg-white shadow rounded p-4 border ${
+              selectedRooms.includes(r.id) ? 'border-blue-500' : 'border-transparent'
+            }`}
+          >
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="font-semibold">{r.name} ({r.group})</h2>
+              <label className="inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedRooms.includes(r.id)}
+                  onChange={() => toggleSelect(r.id)}
+                  className="hidden peer"
+                />
+                <span className="w-5 h-5 flex items-center justify-center border rounded-md peer-checked:bg-blue-600 peer-checked:border-blue-600">
+                  <svg
+                    className="w-3 h-3 text-white hidden peer-checked:block"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414L8.414 15 5.293 11.879a1 1 0 111.414-1.414L8.414 12.172l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </span>
+              </label>
+            </div>
+            <p className="text-sm text-gray-600 mb-2">
+              정원 {r.capacity}명 / 현재 {r.currentPeople || 0}명
+            </p>
+            <ul className="text-sm list-disc pl-4">
+              {(r.participants || []).map(p => (
+                <li key={p.id}>
+                  {p.name} ({p.totalPeople}명) — {p.extraAnswers?.identity?.join(', ')}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </main>
   );
 }

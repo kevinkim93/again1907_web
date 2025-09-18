@@ -20,7 +20,6 @@ export default function RegistrationForm({ settings, disabled }) {
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
-  // 공통 입력 처리
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name.startsWith('extraAnswers.')) {
@@ -47,7 +46,6 @@ export default function RegistrationForm({ settings, disabled }) {
     });
   };
 
-  // 제출 처리
   const submit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -127,11 +125,12 @@ export default function RegistrationForm({ settings, disabled }) {
 
       {/* 소속 */}
       <div>
-        <label className="block text-sm font-medium mb-1">소속 교회/지역</label>
+        <label className="block text-sm font-medium mb-1">소속 교회/지역*</label>
         <input
           name="churchOrRegion"
           value={form.churchOrRegion}
           onChange={onChange}
+          required
           className="w-full border rounded-md p-2"
         />
       </div>
@@ -157,6 +156,7 @@ export default function RegistrationForm({ settings, disabled }) {
                   checked={form.partialDates.includes(d)}
                   onChange={() => togglePartialDate(d)}
                   className="h-4 w-4"
+                  required
                 />
                 {d}
               </label>
@@ -178,6 +178,7 @@ export default function RegistrationForm({ settings, disabled }) {
                 checked={form.transport === opt}
                 onChange={onChange}
                 className="h-4 w-4"
+                required
               />
               {opt}
             </label>
@@ -187,11 +188,12 @@ export default function RegistrationForm({ settings, disabled }) {
 
       {/* 집회를 알게된 경로 */}
       <div>
-        <label className="block text-sm font-medium mb-1">집회를 알게된 경로</label>
+        <label className="block text-sm font-medium mb-1">집회를 알게된 경로*</label>
         <input
           name="discovery"
           value={form.discovery}
           onChange={onChange}
+          required
           list="discoveryList"
           className="w-full border rounded-md p-2"
         />
@@ -201,53 +203,13 @@ export default function RegistrationForm({ settings, disabled }) {
           ))}
         </datalist>
       </div>
-
-      {/* 추가 인원 */}
-      <fieldset className="border rounded-md p-4">
-        <legend className="font-medium">추가 인원</legend>
-        <div className="grid grid-cols-3 gap-4 mt-2">
-          <label className="flex flex-col text-sm">
-            성인
-            <input
-              type="number"
-              min="0"
-              name="extraCounts.adult"
-              value={form.extraCounts.adult}
-              onChange={onChange}
-              className="border rounded-md p-1"
-            />
-          </label>
-          <label className="flex flex-col text-sm">
-            8세 이상 미성년
-            <input
-              type="number"
-              min="0"
-              name="extraCounts.minor8plus"
-              value={form.extraCounts.minor8plus}
-              onChange={onChange}
-              className="border rounded-md p-1"
-            />
-          </label>
-          <label className="flex flex-col text-sm">
-            8세 미만 미성년
-            <input
-              type="number"
-              min="0"
-              name="extraCounts.minorUnder8"
-              value={form.extraCounts.minorUnder8}
-              onChange={onChange}
-              className="border rounded-md p-1"
-            />
-          </label>
-        </div>
-      </fieldset>
-
-      {/* 관리자 설정 질문 */}
+      {/* 관리자 추가 질문 */}
       {settings.extraQuestions?.map((q, idx) => (
         <div key={q.id || idx}>
           <label className="block text-sm font-medium mb-1">
             {q.label}{q.required ? '*' : ''}
           </label>
+
           {q.type === 'textarea' ? (
             <textarea
               name={`extraAnswers.${q.id || idx}`}
@@ -255,6 +217,48 @@ export default function RegistrationForm({ settings, disabled }) {
               required={!!q.required}
               className="w-full border rounded-md p-2"
             />
+          ) : q.type === 'select' ? (
+            <select
+              name={`extraAnswers.${q.id || idx}`}
+              onChange={onChange}
+              required={!!q.required}
+              className="w-full border rounded-md p-2"
+            >
+              <option value="">선택하세요</option>
+              {q.options?.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          ) : q.type === 'checkbox' ? (
+            <div className="space-y-1">
+              {q.options?.map(opt => (
+                <label key={opt} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    value={opt}
+                    checked={Array.isArray(form.extraAnswers[q.id || idx]) && form.extraAnswers[q.id || idx].includes(opt)}
+                    onChange={(e) => {
+                      const prev = Array.isArray(form.extraAnswers[q.id || idx])
+                        ? [...form.extraAnswers[q.id || idx]]
+                        : [];
+                      if (e.target.checked) {
+                        prev.push(opt);
+                      } else {
+                        const i = prev.indexOf(opt);
+                        if (i > -1) prev.splice(i, 1);
+                      }
+                      setForm(f => ({
+                        ...f,
+                        extraAnswers: { ...f.extraAnswers, [q.id || idx]: prev }
+                      }));
+                    }}
+                    className="h-4 w-4"
+                    required={!!q.required && (!form.extraAnswers[q.id || idx] || form.extraAnswers[q.id || idx].length === 0)}
+                  />
+                  {opt}
+                </label>
+              ))}
+            </div>
           ) : (
             <input
               name={`extraAnswers.${q.id || idx}`}
@@ -266,10 +270,51 @@ export default function RegistrationForm({ settings, disabled }) {
         </div>
       ))}
 
-      {/* 에러 */}
+      {/* 추가 인원 */}
+      <fieldset className="border rounded-md p-4">
+        <legend className="font-medium">추가 인원*</legend>
+        <div className="grid grid-cols-3 gap-4 mt-2">
+          <label className="flex flex-col text-sm">
+            성인
+            <input
+              type="number"
+              min="0"
+              name="extraCounts.adult"
+              value={form.extraCounts.adult}
+              onChange={onChange}
+              required
+              className="border rounded-md p-1"
+            />
+          </label>
+          <label className="flex flex-col text-sm">
+            8세 이상 미성년
+            <input
+              type="number"
+              min="0"
+              name="extraCounts.minor8plus"
+              value={form.extraCounts.minor8plus}
+              onChange={onChange}
+              required
+              className="border rounded-md p-1"
+            />
+          </label>
+          <label className="flex flex-col text-sm">
+            8세 미만 미성년
+            <input
+              type="number"
+              min="0"
+              name="extraCounts.minorUnder8"
+              value={form.extraCounts.minorUnder8}
+              onChange={onChange}
+              required
+              className="border rounded-md p-1"
+            />
+          </label>
+        </div>
+      </fieldset>
+
       {error && <p className="text-red-600">{error}</p>}
 
-      {/* 버튼 */}
       <button
         disabled={submitting}
         className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
