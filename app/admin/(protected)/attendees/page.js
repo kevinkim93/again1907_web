@@ -43,7 +43,12 @@ export default async function AttendeesPage() {
       <h1 className="text-2xl font-bold mb-4">
         인원관리 — {settings.eventName}
       </h1>
-      <AttendeesTable rows={rows} rooms={rooms} collectionName={collectionName} />
+      <AttendeesTable
+        rows={rows}
+        rooms={rooms}
+        collectionName={collectionName}
+        settings={settings}   // ✅ 추가
+      />
     </main>
   );
 }

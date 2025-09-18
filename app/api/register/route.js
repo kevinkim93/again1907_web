@@ -1,18 +1,20 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebaseAdmin';
+import { Timestamp } from 'firebase-admin/firestore';
 
-// 🔹 출생년도 기준 나이 계산
+// 출생연도 기준 나이 계산
 function calcKRAgeByYear(dobStr) {
+  if (!dobStr) return null;
   const birthYear = new Date(dobStr).getFullYear();
   const thisYear = new Date().getFullYear();
   return thisYear - birthYear;
 }
 
-// 🔹 연령대 판별
+// 연령대 판별
 function getAgeGroupByYear(age) {
   if (age >= 19) return 'adult';       // 성인
-  if (age >= 8) return 'minor8plus';   // 8세 이상 미성년
-  return 'minorUnder8';                // 8세 미만
+  if (age >= 8) return 'minor8plus';  // 8세 이상 미성년
+  return 'minorUnder8';               // 8세 미만
 }
 
 export async function POST(req) {
@@ -26,41 +28,43 @@ export async function POST(req) {
     }
     const settings = settingsSnap.data();
 
-    // 2. 등록 기간 판별
+    // 2. 등록 당시 날짜 (YYYY-MM-DD)
     const now = new Date();
+    const registeredAt = now.toISOString().split('T')[0]; 
+
+    // 3. 등록 기간 판별 (가격표 적용)
     let period = settings.registrationPeriods?.find(p => {
       const start = new Date(p.startDate);
       const end = new Date(p.endDate);
       return now >= start && now <= end;
     });
     if (!period && settings.registrationPeriods?.length > 0) {
-      period = settings.registrationPeriods.at(-1); // fallback (마지막 기간 적용)
+      period = settings.registrationPeriods.at(-1);
     }
 
-    // 3. 본인 나이 → 연령대 판별
+    // 4. 본인 연령대 판별
     const age = calcKRAgeByYear(data.dob);
     const ageGroup = getAgeGroupByYear(age);
 
-    // 4. extraCounts 기본값
+    // 5. extraCounts 초기화
     const extraCounts = {
       adult: data.extraCounts?.adult || 0,
       minor8plus: data.extraCounts?.minor8plus || 0,
       minorUnder8: data.extraCounts?.minorUnder8 || 0,
     };
 
-    // 5. 본인 카운트 반영
+    // 6. 본인 카운트 반영
     extraCounts[ageGroup] += 1;
 
-    // 6. 총 인원
+    // 7. 총 인원
     const totalPeople =
       extraCounts.adult + extraCounts.minor8plus + extraCounts.minorUnder8;
 
-    // 7. 금액 계산
+    // 8. 금액 계산
     let totalAmount = 0;
     let unitPrice = {};
 
     if (data.isPartial && data.partialDates?.length > 0) {
-      // 부분참석 요금 (날짜 수 × 단가)
       const days = data.partialDates.length;
       unitPrice = period?.partialPrice || { adult: 0, minor8plus: 0, minorUnder8: 0 };
       totalAmount =
@@ -68,7 +72,6 @@ export async function POST(req) {
         unitPrice.minor8plus * extraCounts.minor8plus * days +
         unitPrice.minorUnder8 * extraCounts.minorUnder8 * days;
     } else {
-      // 전체참석 요금 (정액제)
       unitPrice = period?.fullPrice || { adult: 0, minor8plus: 0, minorUnder8: 0 };
       totalAmount =
         unitPrice.adult * extraCounts.adult +
@@ -76,25 +79,26 @@ export async function POST(req) {
         unitPrice.minorUnder8 * extraCounts.minorUnder8;
     }
 
-    // 8. 참가자 문서
+    // 9. 참가자 문서 생성
     const participant = {
       ...data,
-      ageGroup,         // 본인 연령대
-      extraCounts,      // 본인 포함된 인원수
+      ageGroup,
+      extraCounts,
       totalPeople,
-      registrationPeriod: period?.label || null,
+      registeredAt,   // "YYYY-MM-DD"
       amount: {
-        type: data.isPartial ? 'partial' : 'full',
-        unitPrice,
+        adult: unitPrice.adult,
+        minor8plus: unitPrice.minor8plus,
+        minorUnder8: unitPrice.minorUnder8,
         total: totalAmount,
       },
       paymentStatus: 'unpaid',
       roomId: null,
       roomName: null,
-      createdAt: new Date(),
+      createdAt: Timestamp.now(), // ✅ Firestore Timestamp 저장
     };
 
-    // 9. 저장
+    // 10. 저장
     await adminDb.collection(settings.dbName || 'participants_default').add(participant);
 
     return NextResponse.json({ ok: true, participant });
