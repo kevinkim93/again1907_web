@@ -1,0 +1,193 @@
+[debug] [2025-09-21T07:29:35.069Z] ----------------------------------------------------------------------
+[debug] [2025-09-21T07:29:35.071Z] Command:       C:\nvm4w\nodejs\node.exe C:\Users\CMES_PC\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js emulators:start
+[debug] [2025-09-21T07:29:35.071Z] CLI Version:   14.15.2
+[debug] [2025-09-21T07:29:35.072Z] Platform:      win32
+[debug] [2025-09-21T07:29:35.072Z] Node Version:  v20.19.5
+[debug] [2025-09-21T07:29:35.072Z] Time:          Sun Sep 21 2025 16:29:35 GMT+0900 (대한민국 표준시)
+[debug] [2025-09-21T07:29:35.072Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-09-21T07:29:35.255Z] Object "/hosting" in "firebase.json" has unknown property: {"additionalProperty":"env"}
+[debug] [2025-09-21T07:29:35.255Z] Field "/hosting" in "firebase.json" is possibly invalid: must be array
+[debug] [2025-09-21T07:29:35.255Z] Field "/hosting" in "firebase.json" is possibly invalid: must match a schema in anyOf
+[debug] [2025-09-21T07:29:35.259Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-09-21T07:29:35.259Z] > authorizing via signed-in user (hyungsuk0315@gmail.com)
+[info] i  emulators: Starting emulators: hosting {"metadata":{"emulator":{"name":"hub"},"message":"Starting emulators: hosting"}}
+[debug] [2025-09-21T07:29:35.267Z] [logging] Logging Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-21T07:29:35.267Z] [hosting] Hosting Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-21T07:29:35.267Z] assigned listening specs for emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"hosting":[{"address":"127.0.0.1","family":"IPv4","port":5000}]},"metadata":{"message":"assigned listening specs for emulators"}}
+[debug] [2025-09-21T07:29:35.270Z] [hub] writing locator at C:\Users\CMES_PC\AppData\Local\Temp\hub-again1907-web.json
+[debug] [2025-09-21T07:29:35.284Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:35.284Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:35.285Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/again1907-web [none]
+[debug] [2025-09-21T07:29:35.702Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/again1907-web 200
+[debug] [2025-09-21T07:29:35.702Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/again1907-web {"projectId":"again1907-web","projectNumber":"727193599873","displayName":"again1907-web","name":"projects/again1907-web","resources":{"hostingSite":"again1907-web"},"state":"ACTIVE","etag":"1_fcc0ee81-a076-4b62-8c4b-55986d4a1e4c"}
+[debug] [2025-09-21T07:29:37.420Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:37.420Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:37.421Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/again1907-web/sites pageToken=&pageSize=10
+[debug] [2025-09-21T07:29:38.253Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/again1907-web/sites 200
+[debug] [2025-09-21T07:29:38.253Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/again1907-web/sites {"sites":[{"name":"projects/again1907-web/sites/again1907-web","defaultUrl":"https://again1907-web.web.app","appId":"1:727193599873:web:cafe49a6fec99f1d0fb280","type":"DEFAULT_SITE"}]}
+[debug] [2025-09-21T07:29:38.253Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:38.253Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:38.253Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:727193599873:web:cafe49a6fec99f1d0fb280/config [none]
+[debug] [2025-09-21T07:29:39.137Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:727193599873:web:cafe49a6fec99f1d0fb280/config 200
+[debug] [2025-09-21T07:29:39.137Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/webApps/1:727193599873:web:cafe49a6fec99f1d0fb280/config {"projectId":"again1907-web","appId":"1:727193599873:web:cafe49a6fec99f1d0fb280","storageBucket":"again1907-web.firebasestorage.app","apiKey":"AIzaSyASM2SsVFkHJ3rL0hUyjLtXbuGRtFmQi8Y","authDomain":"again1907-web.firebaseapp.com","messagingSenderId":"727193599873"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 15.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2025-09-21T07:29:59.454Z] [web frameworks] effective firebase.json:  {
+  "hosting": [
+    {
+      "source": ".",
+      "frameworksBackend": {},
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "env": {
+        "ADMIN_PASSWORD": "1907"
+      },
+      "site": "again1907-web",
+      "rewrites": [
+        {
+          "source": "**",
+          "function": {
+            "functionId": "ssragain1907web",
+            "region": "us-central1",
+            "pinTag": true
+          }
+        }
+      ],
+      "redirects": [],
+      "headers": [
+        {
+          "source": "**/*.[jt]s",
+          "headers": [
+            {
+              "key": "Set-Cookie",
+              "value": "__FIREBASE_DEFAULTS__=eyJjb25maWciOnsicHJvamVjdElkIjoiYWdhaW4xOTA3LXdlYiIsImFwcElkIjoiMTo3MjcxOTM1OTk4NzM6d2ViOmNhZmU0OWE2ZmVjOTlmMWQwZmIyODAiLCJzdG9yYWdlQnVja2V0IjoiYWdhaW4xOTA3LXdlYi5maXJlYmFzZXN0b3JhZ2UuYXBwIiwiYXBpS2V5IjoiQUl6YVN5QVNNMlNzVkZrSEozckwwaFV5akx0WGJ1R1J0Rm1RaThZIiwiYXV0aERvbWFpbiI6ImFnYWluMTkwNy13ZWIuZmlyZWJhc2VhcHAuY29tIiwibWVzc2FnaW5nU2VuZGVySWQiOiI3MjcxOTM1OTk4NzMifSwiX2F1dGhUb2tlblN5bmNVUkwiOiIvX19zZXNzaW9uIn0; SameSite=Strict; Expires=2027-08-16T18:09:59.454Z; Path=/;"
+            }
+          ]
+        }
+      ],
+      "cleanUrls": true,
+      "public": ".firebase\\again1907-web\\hosting",
+      "webFramework": "next_ssr"
+    }
+  ],
+  "functions": [
+    {
+      "source": ".firebase\\again1907-web\\functions",
+      "codebase": "firebase-frameworks-again1907-web"
+    }
+  ]
+}
+[debug] [2025-09-21T07:29:59.459Z] [functions] Functions Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-21T07:29:59.460Z] [eventarc] Eventarc Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-21T07:29:59.460Z] [tasks] Cloud Tasks Emulator only supports listening on one address (127.0.0.1). Not listening on ::1
+[debug] [2025-09-21T07:29:59.460Z] late-assigned ports for functions and eventarc emulators {"user":{"hub":[{"address":"127.0.0.1","family":"IPv4","port":4400},{"address":"::1","family":"IPv6","port":4400}],"logging":[{"address":"127.0.0.1","family":"IPv4","port":4500}],"hosting":[{"address":"127.0.0.1","family":"IPv4","port":5000}],"functions":[{"address":"127.0.0.1","family":"IPv4","port":5001}],"eventarc":[{"address":"127.0.0.1","family":"IPv4","port":9299}],"tasks":[{"address":"127.0.0.1","family":"IPv4","port":9499}]},"metadata":{"message":"late-assigned ports for functions and eventarc emulators"}}
+[warn] !  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, firestore, database, pubsub, storage, dataconnect {"metadata":{"emulator":{"name":"functions"},"message":"The following emulators are not running, calls to these services from the Functions emulator will affect production: \u001b[1mapphosting, auth, firestore, database, pubsub, storage, dataconnect\u001b[22m"}}
+[warn] !  functions: Application Default Credentials detected. Non-emulated services will access production using these credentials. Be careful! {"metadata":{"emulator":{"name":"functions"},"message":"Application Default Credentials detected. Non-emulated services will access production using these credentials. Be careful!"}}
+[debug] [2025-09-21T07:29:59.492Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:59.492Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:59.492Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/again1907-web/adminSdkConfig [none]
+[debug] [2025-09-21T07:29:59.866Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/again1907-web/adminSdkConfig 200
+[debug] [2025-09-21T07:29:59.866Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/again1907-web/adminSdkConfig {"projectId":"again1907-web","storageBucket":"again1907-web.firebasestorage.app"}
+[debug] [2025-09-21T07:29:59.957Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:59.957Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:29:59.957Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/again1907-web/sites 
+[debug] [2025-09-21T07:30:00.696Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/again1907-web/sites 200
+[debug] [2025-09-21T07:30:00.696Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/again1907-web/sites {"sites":[{"name":"projects/again1907-web/sites/again1907-web","defaultUrl":"https://again1907-web.web.app","appId":"1:727193599873:web:cafe49a6fec99f1d0fb280","type":"DEFAULT_SITE"}]}
+[debug] [2025-09-21T07:30:00.697Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:30:00.697Z] Checked if tokens are valid: true, expires at: 1758441502353
+[debug] [2025-09-21T07:30:00.697Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/again1907-web/webApps/1:727193599873:web:cafe49a6fec99f1d0fb280/config [none]
+[debug] [2025-09-21T07:30:01.338Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/again1907-web/webApps/1:727193599873:web:cafe49a6fec99f1d0fb280/config 200
+[debug] [2025-09-21T07:30:01.338Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/again1907-web/webApps/1:727193599873:web:cafe49a6fec99f1d0fb280/config {"projectId":"again1907-web","appId":"1:727193599873:web:cafe49a6fec99f1d0fb280","storageBucket":"again1907-web.firebasestorage.app","apiKey":"AIzaSyASM2SsVFkHJ3rL0hUyjLtXbuGRtFmQi8Y","authDomain":"again1907-web.firebaseapp.com","messagingSenderId":"727193599873"}
+[info] i  hosting[again1907-web]: Serving hosting files from: .firebase\again1907-web\hosting {"metadata":{"emulator":{"name":"hosting"},"message":"Serving hosting files from: \u001b[1m.firebase\\again1907-web\\hosting\u001b[22m"}}
+[info] +  hosting[again1907-web]: Local server: http://127.0.0.1:5000 {"metadata":{"emulator":{"name":"hosting"},"message":"Local server: \u001b[4m\u001b[1mhttp://127.0.0.1:5000\u001b[22m\u001b[24m"}}
+[info] i  functions: Watching "C:\workspace\lalab\again1907_web\.firebase\again1907-web\functions" for Cloud Functions... {"metadata":{"emulator":{"name":"functions"},"message":"Watching \"C:\\workspace\\lalab\\again1907_web\\.firebase\\again1907-web\\functions\" for Cloud Functions..."}}
+[debug] [2025-09-21T07:30:01.880Z] Validating nodejs source
+[debug] [2025-09-21T07:30:02.529Z] > [functions] package.json contents: {
+  "main": "server.js",
+  "dependencies": {
+    "firebase-frameworks": "^0.11.0",
+    "firebase-functions": "^6.0.1",
+    "firebase-admin": "^11.11.1"
+  },
+  "engines": {
+    "node": "20"
+  }
+}
+[debug] [2025-09-21T07:30:02.529Z] Building nodejs source
+[debug] [2025-09-21T07:30:02.530Z] Failed to find version of module node: reached end of search path C:\workspace\lalab\again1907_web\.firebase\again1907-web\functions\node_modules
+[info] +  functions: Using node@20 from host. 
+[info] i  functions: Loaded environment variables from .env, .env.local. 
+[debug] [2025-09-21T07:30:02.538Z] Could not find functions.yaml. Must use http discovery
+[debug] [2025-09-21T07:30:02.543Z] Found firebase-functions binary at 'C:\workspace\lalab\again1907_web\.firebase\again1907-web\functions\node_modules\.bin\firebase-functions'
+[info] Serving at port 8052
+
+[debug] [2025-09-21T07:30:03.302Z] Got response from /__/functions.yaml {"endpoints":{"ssragain1907web":{"availableMemoryMb":null,"timeoutSeconds":null,"minInstances":null,"maxInstances":null,"ingressSettings":null,"concurrency":null,"serviceAccountEmail":null,"vpc":null,"platform":"gcfv2","labels":{},"httpsTrigger":{},"entryPoint":"ssragain1907web"}},"specVersion":"v1alpha1","requiredAPIs":[],"extensions":{}}
+[info] +  functions: Loaded functions definitions from source: ssragain1907web. {"metadata":{"emulator":{"name":"functions"},"message":"Loaded functions definitions from source: ssragain1907web."}}
+[info] +  functions[us-central1-ssragain1907web]: http function initialized (http://127.0.0.1:5001/again1907-web/us-central1/ssragain1907web). {"metadata":{"emulator":{"name":"functions"},"message":"\u001b[1mhttp\u001b[22m function initialized (http://127.0.0.1:5001/again1907-web/us-central1/ssragain1907web)."}}
+[debug] [2025-09-21T07:30:07.329Z] Could not find VSCode notification endpoint: FetchError: request to http://localhost:40001/vscode/notify failed, reason: . If you are not running the Firebase Data Connect VSCode extension, this is expected and not an issue.
+[info] 
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+└─────────────────────────────────────────────────────────────┘
+
+┌────────────┬──────────────────────────────────┐
+│ Emulator   │ Host:Port                        │
+├────────────┼──────────────────────────────────┤
+│ Functions  │ 127.0.0.1:5001                   │
+├────────────┼──────────────────────────────────┤
+│ Hosting    │ 127.0.0.1:5000                   │
+├────────────┼──────────────────────────────────┤
+│ Extensions │ Failed to initialize (see above) │
+└────────────┴──────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+ 
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET / HTTP/1.1" 200 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET / HTTP/1.1\" 200 - \"-\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /images/logo.png HTTP/1.1" 200 30333 "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /images/logo.png HTTP/1.1\" 200 30333 \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /_next/static/css/faa38b77b005a4d4.css HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /_next/static/css/faa38b77b005a4d4.css HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /images/history.png HTTP/1.1" 200 220601 "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /images/history.png HTTP/1.1\" 200 220601 \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /images/cross.png HTTP/1.1" 200 198016 "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /images/cross.png HTTP/1.1\" 200 198016 \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /images/hero.png HTTP/1.1" 200 3137002 "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /images/hero.png HTTP/1.1\" 200 3137002 \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /_next/static/chunks/main-app-ca87128bd5d87dcc.js HTTP/1.1" 200 557 "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /_next/static/chunks/main-app-ca87128bd5d87dcc.js HTTP/1.1\" 200 557 \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /_next/static/chunks/webpack-6e6044fed1cbdaef.js HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /_next/static/chunks/webpack-6e6044fed1cbdaef.js HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /_next/static/chunks/app/layout-6fc10043479c7d6f.js HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /_next/static/chunks/app/layout-6fc10043479c7d6f.js HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /_next/static/chunks/493-ea66a77c9737e8d4.js HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /_next/static/chunks/493-ea66a77c9737e8d4.js HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /_next/static/chunks/4bd1b696-c023c6e3521b1417.js HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /_next/static/chunks/4bd1b696-c023c6e3521b1417.js HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] "GET /images/poster.png HTTP/1.1" 200 102185 "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:15 +0000] \"GET /images/poster.png HTTP/1.1\" 200 102185 \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] "GET /lookup?_rsc=3lb4g HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] \"GET /lookup?_rsc=3lb4g HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] "GET /faq?_rsc=3lb4g HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] \"GET /faq?_rsc=3lb4g HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] "GET /register?_rsc=3lb4g HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] \"GET /register?_rsc=3lb4g HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] "GET /schedule?_rsc=3lb4g HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] \"GET /schedule?_rsc=3lb4g HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] "GET /favicon.ico HTTP/1.1" 200 - "http://127.0.0.1:5000/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:16 +0000] \"GET /favicon.ico HTTP/1.1\" 200 - \"http://127.0.0.1:5000/\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] "GET /admin HTTP/1.1" 307 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] \"GET /admin HTTP/1.1\" 307 - \"-\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] "GET /admin/login HTTP/1.1" 200 - "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] \"GET /admin/login HTTP/1.1\" 200 - \"-\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] "GET /_next/static/chunks/app/admin/login/page-752626e0d72e72ad.js HTTP/1.1" 200 - "http://127.0.0.1:5000/admin/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] \"GET /_next/static/chunks/app/admin/login/page-752626e0d72e72ad.js HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin/login\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] "GET /?_rsc=1ewwj HTTP/1.1" 200 - "http://127.0.0.1:5000/admin/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] \"GET /?_rsc=1ewwj HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin/login\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] "GET /register?_rsc=1ewwj HTTP/1.1" 200 - "http://127.0.0.1:5000/admin/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] \"GET /register?_rsc=1ewwj HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin/login\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] "GET /lookup?_rsc=1ewwj HTTP/1.1" 200 - "http://127.0.0.1:5000/admin/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] \"GET /lookup?_rsc=1ewwj HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin/login\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] "GET /faq?_rsc=1ewwj HTTP/1.1" 200 - "http://127.0.0.1:5000/admin/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] \"GET /faq?_rsc=1ewwj HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin/login\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] "GET /schedule?_rsc=1ewwj HTTP/1.1" 200 - "http://127.0.0.1:5000/admin/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:29 +0000] \"GET /schedule?_rsc=1ewwj HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin/login\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:32 +0000] "POST /api/admin/login HTTP/1.1" 307 - "http://127.0.0.1:5000/admin/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:32 +0000] \"POST /api/admin/login HTTP/1.1\" 307 - \"http://127.0.0.1:5000/admin/login\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] "POST /admin HTTP/1.1" 200 - "http://127.0.0.1:5000/admin/login" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] \"POST /admin HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin/login\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] "GET /_next/static/css/app/layout.css?v=1758439832940 HTTP/1.1" 200 - "http://127.0.0.1:5000/admin" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] \"GET /_next/static/css/app/layout.css?v=1758439832940 HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] "GET /_next/static/chunks/webpack.js?v=1758439832940 HTTP/1.1" 200 - "http://127.0.0.1:5000/admin" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] \"GET /_next/static/chunks/webpack.js?v=1758439832940 HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] "GET /_next/static/chunks/app/layout.js HTTP/1.1" 200 - "http://127.0.0.1:5000/admin" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] \"GET /_next/static/chunks/app/layout.js HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] "GET /_next/static/chunks/app-pages-internals.js HTTP/1.1" 200 - "http://127.0.0.1:5000/admin" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] \"GET /_next/static/chunks/app-pages-internals.js HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] "GET /_next/static/chunks/main-app.js?v=1758439832940 HTTP/1.1" 200 - "http://127.0.0.1:5000/admin" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] \"GET /_next/static/chunks/main-app.js?v=1758439832940 HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[info] i  hosting: 127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] "GET /_next/static/chunks/_app-pages-browser_node_modules_next_dist_client_dev_noop-turbopack-hmr_js.js HTTP/1.1" 200 - "http://127.0.0.1:5000/admin" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" {"metadata":{"emulator":{"name":"hosting"},"message":"127.0.0.1 - - [21/Sep/2025:07:30:34 +0000] \"GET /_next/static/chunks/_app-pages-browser_node_modules_next_dist_client_dev_noop-turbopack-hmr_js.js HTTP/1.1\" 200 - \"http://127.0.0.1:5000/admin\" \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36\""}}
+[debug] [2025-09-22T01:06:00.651Z] Received signal SIGHUP 1

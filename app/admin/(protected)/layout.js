@@ -11,6 +11,9 @@ export default async function ProtectedAdminLayout({ children }) {
   const cookieStore = await cookies(); // ✅ 이제 반드시 await
   const token = cookieStore.get('admin_token')?.value;
 
+  const pwd = process.env.ADMIN_PASSWORD || '1907';
+  const expected = crypto.createHash('sha256').update(pwd).digest('hex');
+  
   if (token !== expectedToken()) {
     redirect('/admin/login');
   }

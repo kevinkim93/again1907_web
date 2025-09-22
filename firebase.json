@@ -6,12 +6,9 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
+    ],    
+    "env": {
+      "ADMIN_PASSWORD": "1907"
+    }
   }
 }
