@@ -13,16 +13,20 @@ export default async function AttendeesPage() {
   const settingsSnap = await adminDb.collection('settings').doc('current').get();
   const settings = settingsSnap.exists ? settingsSnap.data() : { dbName: 'participants_default', eventName: '집회' };
   const collectionName = settings.dbName || 'participants_default';
-
   // 참가자
   const snap = await adminDb.collection(collectionName).orderBy('createdAt', 'desc').get();
   const rows = snap.docs.map(d => {
     const data = d.data();
+    console.log('createdAt type:', typeof data.createdAt);
+    console.log('createdAt value:', data.createdAt);
+    console.log('has toDate method:', typeof data.createdAt?.toDate === 'function');
     return {
       id: d.id,
       ...data,
       dob: data.dob || '',
-      createdAt: data.createdAt ? data.createdAt.toDate().toISOString() : null,
+      createdAt: typeof data.createdAt === 'string' 
+        ? data.createdAt 
+        : data.createdAt?.toDate()?.toISOString() || null,
       age: calcKRAgeByYear(data.dob),
     };
   });
