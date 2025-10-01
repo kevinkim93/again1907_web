@@ -1,14 +1,8 @@
 {
-  "hosting": {
-    "source": ".next",
-    "frameworksBackend": {},
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],    
-    "env": {
-      "ADMIN_PASSWORD": "1907"
-    }
+  "hosting": { 
+    "source": ".", 
+    "frameworksBackend": {}, 
+    "ignore": [ "firebase.json", "**/.*", "**/node_modules/**" ], 
+    "env": { "ADMIN_PASSWORD": "1907" }
   }
 }
