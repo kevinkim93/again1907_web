@@ -30,15 +30,15 @@ export async function POST(req) {
     const proto = req.headers.get("x-forwarded-proto") || "https";
     const redirectUrl = `${proto}://${host}/admin`;
 
-    const res = NextResponse.redirect(redirectUrl);
-    res.cookies.set("admin_token", expectedToken(), {
+    const res = NextResponse.redirect(new URL('/admin/dashboard', req.url));
+    res.cookies.set('admin_token', expectedToken(), {
       httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 8, 
+      path: '/',
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 8,
     });
-    return res;
+return res;
   } catch (err) {
     console.error("🔥 로그인 라우트 에러:", err);
     return new NextResponse("서버 에러", { status: 500 });
