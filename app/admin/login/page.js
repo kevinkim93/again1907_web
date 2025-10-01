@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 // app/admin/login/page.js
 import { Suspense } from 'react';
 import LoginForm from '@/components/LoginForm';
