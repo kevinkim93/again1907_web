@@ -26,11 +26,7 @@ export async function POST(req) {
       return new NextResponse("비밀번호가 올바르지 않습니다.", { status: 401 });
     }
 
-    const host = req.headers.get("host");
-    const proto = req.headers.get("x-forwarded-proto") || "https";
-    const redirectUrl = `${proto}://${host}/admin`;
-
-    const res = NextResponse.redirect(new URL('/admin/dashboard', req.url));
+    const res = NextResponse.redirect(new URL('/admin', req.url));
     res.cookies.set('admin_token', expectedToken(), {
       httpOnly: true,
       path: '/',
