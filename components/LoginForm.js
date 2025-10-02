@@ -22,8 +22,12 @@ export default function LoginForm() {
       headers: { 'Content-Type':'application/json' },
       body: JSON.stringify({ password }),
     });
-    if (res.ok) location.href = '/admin';
-    else setMsg(await res.text());
+    if (res.ok) {
+      location.href = '/admin';
+    } else {
+      const data = await res.json();
+      setMsg(data.error || '로그인에 실패했습니다.');
+    }
   };
 
   return (

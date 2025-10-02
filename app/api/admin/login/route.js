@@ -14,14 +14,13 @@ export async function POST(req) {
     const password = body.password || "";
 
     if (password !== (process.env.ADMIN_PASSWORD || "1907")) {
-      return new NextResponse("비밀번호가 올바르지 않습니다.", { status: 401 });
+      return NextResponse.json(
+        { error: "비밀번호가 올바르지 않습니다." },
+        { status: 401 }
+      );
     }
 
-    const protocol = req.headers.get('x-forwarded-proto') || 'http';
-    const host = req.headers.get('host');
-    const redirectUrl = `${protocol}://${host}/admin`;
-
-    const res = NextResponse.redirect(redirectUrl);
+    const res = NextResponse.json({ success: true });
     res.cookies.set('admin_token', expectedToken(), {
       httpOnly: true,
       path: '/',
@@ -29,9 +28,12 @@ export async function POST(req) {
       secure: process.env.NODE_ENV === 'production',
       maxAge: 60 * 60 * 8,
     });
-return res;
+    return res;
   } catch (err) {
     console.error("🔥 로그인 라우트 에러:", err);
-    return new NextResponse("서버 에러", { status: 500 });
+    return NextResponse.json(
+      { error: "서버 에러" },
+      { status: 500 }
+    );
   }
 }
