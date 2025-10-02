@@ -10,17 +10,8 @@ function expectedToken() {
 
 export async function POST(req) {
   try {
-    let password = "";
-
-    // formData 시도
-    try {
-      const formData = await req.formData();
-      password = formData.get("password") || "";
-    } catch (err) {
-      console.error("⚠️ formData 파싱 실패, JSON 시도:", err);
-      const body = await req.json().catch(() => ({}));
-      password = body.password || "";
-    }
+    const body = await req.json();
+    const password = body.password || "";
 
     if (password !== (process.env.ADMIN_PASSWORD || "1907")) {
       return new NextResponse("비밀번호가 올바르지 않습니다.", { status: 401 });
