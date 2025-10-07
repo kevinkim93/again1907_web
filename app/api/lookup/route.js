@@ -27,7 +27,7 @@ export async function POST(req) {
 
     const participant = { id: snap.docs[0].id, ...snap.docs[0].data() };
 
-    return NextResponse.json({ participant });
+    return NextResponse.json({ participant, settings });
   } catch (err) {
     console.error("조회 에러:", err);
     return new NextResponse("조회 실패", { status: 500 });

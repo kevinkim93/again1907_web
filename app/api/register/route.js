@@ -75,26 +75,49 @@ export async function POST(req) {
     const totalPeople =
       extraCounts.adult + extraCounts.minor7to18 + extraCounts.minorUnder7;
 
-    // 9. 금액 계산 (고정 가격)
-    const fullPrice = { adult: 150000, minor7to18: 120000, minorUnder7: 0 };
-    const partialPrice = { adult: 40000, minor7to18: 25000, minorUnder7: 0 };
-
+    // 9. 금액 계산 (등록 기간별 가격 적용)
     let totalAmount = 0;
     let unitPrice = {};
 
-    if (data.isPartial && data.partialDates?.length > 0) {
-      const days = data.partialDates.length;
-      unitPrice = partialPrice;
-      totalAmount =
-        unitPrice.adult * extraCounts.adult * days +
-        unitPrice.minor7to18 * extraCounts.minor7to18 * days +
-        unitPrice.minorUnder7 * extraCounts.minorUnder7 * days;
+    if (period) {
+      const price = data.isPartial ? period.partialPrice : period.fullPrice;
+      unitPrice = {
+        adult: price?.adult || 0,
+        minor7to18: price?.minor7to18 || price?.minor8plus || 0,
+        minorUnder7: price?.minorUnder7 || price?.minorUnder8 || 0,
+      };
+
+      if (data.isPartial && data.partialDates?.length > 0) {
+        const days = data.partialDates.length;
+        totalAmount =
+          unitPrice.adult * extraCounts.adult * days +
+          unitPrice.minor7to18 * extraCounts.minor7to18 * days +
+          unitPrice.minorUnder7 * extraCounts.minorUnder7 * days;
+      } else {
+        totalAmount =
+          unitPrice.adult * extraCounts.adult +
+          unitPrice.minor7to18 * extraCounts.minor7to18 +
+          unitPrice.minorUnder7 * extraCounts.minorUnder7;
+      }
     } else {
-      unitPrice = fullPrice;
-      totalAmount =
-        unitPrice.adult * extraCounts.adult +
-        unitPrice.minor7to18 * extraCounts.minor7to18 +
-        unitPrice.minorUnder7 * extraCounts.minorUnder7;
+      // fallback: 기간 설정이 없는 경우 고정 가격
+      const fullPrice = { adult: 150000, minor7to18: 120000, minorUnder7: 0 };
+      const partialPrice = { adult: 40000, minor7to18: 25000, minorUnder7: 0 };
+
+      if (data.isPartial && data.partialDates?.length > 0) {
+        const days = data.partialDates.length;
+        unitPrice = partialPrice;
+        totalAmount =
+          unitPrice.adult * extraCounts.adult * days +
+          unitPrice.minor7to18 * extraCounts.minor7to18 * days +
+          unitPrice.minorUnder7 * extraCounts.minorUnder7 * days;
+      } else {
+        unitPrice = fullPrice;
+        totalAmount =
+          unitPrice.adult * extraCounts.adult +
+          unitPrice.minor7to18 * extraCounts.minor7to18 +
+          unitPrice.minorUnder7 * extraCounts.minorUnder7;
+      }
     }
 
     // 10. 참가자 문서 생성

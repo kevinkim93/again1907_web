@@ -140,21 +140,63 @@ export default function RegistrationForm({ settings, disabled }) {
   if (disabled) return <p className="text-red-600 text-center">신청이 비활성화되었습니다.</p>;
 
   if (done) {
-    // 금액 계산
+    // 금액 계산 (settings의 registrationPeriods 사용)
     const isPartial = !isFullAttendance;
-    const fullPrice = { adult: 150000, minor7to18: 120000, minorUnder7: 0 };
-    const partialPrice = { adult: 40000, minor7to18: 25000, minorUnder7: 0 };
-
-    const unitPrice = isPartial ? partialPrice : fullPrice;
     const days = isPartial ? form.attendDates.length : 1;
 
-    const totalAmount = isPartial
-      ? (unitPrice.adult * form.extraCounts.adult * days +
-         unitPrice.minor7to18 * form.extraCounts.minor7to18 * days +
-         unitPrice.minorUnder7 * form.extraCounts.minorUnder7 * days)
-      : (unitPrice.adult * form.extraCounts.adult +
-         unitPrice.minor7to18 * form.extraCounts.minor7to18 +
-         unitPrice.minorUnder7 * form.extraCounts.minorUnder7);
+    // 본인 연령대 계산 (API와 동일)
+    const dob = `${form.dobYear}-${String(form.dobMonth).padStart(2, '0')}-${String(form.dobDay).padStart(2, '0')}`;
+    const birthYear = new Date(dob).getFullYear();
+    const thisYear = new Date().getFullYear();
+    const age = thisYear - birthYear;
+
+    let ageGroup = 'adult';
+    if (age < 19) {
+      ageGroup = age >= 7 ? 'minor7to18' : 'minorUnder7';
+    }
+
+    // 본인 포함한 인원 계산
+    const finalCounts = {
+      adult: form.extraCounts.adult + (ageGroup === 'adult' ? 1 : 0),
+      minor7to18: form.extraCounts.minor7to18 + (ageGroup === 'minor7to18' ? 1 : 0),
+      minorUnder7: form.extraCounts.minorUnder7 + (ageGroup === 'minorUnder7' ? 1 : 0),
+    };
+
+    const now = new Date();
+    const periods = settings?.registrationPeriods || [];
+    let period = periods.find(p => {
+      const start = new Date(p.startDate);
+      const end = new Date(p.endDate);
+      return now >= start && now <= end;
+    });
+    if (!period && periods.length > 0) {
+      period = periods[periods.length - 1];
+    }
+
+    let unitPrice = {};
+    let totalAmount = 0;
+
+    if (period) {
+      const price = isPartial ? period.partialPrice : period.fullPrice;
+      unitPrice = {
+        adult: price?.adult || 0,
+        minor7to18: price?.minor7to18 || price?.minor8plus || 0,
+        minorUnder7: price?.minorUnder7 || price?.minorUnder8 || 0,
+      };
+    } else {
+      // fallback
+      const fullPrice = { adult: 150000, minor7to18: 120000, minorUnder7: 0 };
+      const partialPrice = { adult: 40000, minor7to18: 25000, minorUnder7: 0 };
+      unitPrice = isPartial ? partialPrice : fullPrice;
+    }
+
+    totalAmount = isPartial
+      ? (unitPrice.adult * finalCounts.adult * days +
+         unitPrice.minor7to18 * finalCounts.minor7to18 * days +
+         unitPrice.minorUnder7 * finalCounts.minorUnder7 * days)
+      : (unitPrice.adult * finalCounts.adult +
+         unitPrice.minor7to18 * finalCounts.minor7to18 +
+         unitPrice.minorUnder7 * finalCounts.minorUnder7);
 
     return (
       <div className="text-center space-y-4">

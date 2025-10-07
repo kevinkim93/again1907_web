@@ -2,10 +2,29 @@
 
 import { useState } from "react";
 
+// ✨ 금액 계산 함수 (AttendeesTable과 동일)
+function calcPeriodTotal(period, extraCounts, isPartial, days) {
+  if (!period) return 0;
+  const price = isPartial ? period.partialPrice : period.fullPrice;
+  if (!price) return 0;
+
+  const a = Math.max(0, extraCounts?.adult ?? 0);
+  const m7to18 = Math.max(0, extraCounts?.minor7to18 ?? extraCounts?.minor8plus ?? 0);
+  const mu7 = Math.max(0, extraCounts?.minorUnder7 ?? extraCounts?.minorUnder8 ?? 0);
+
+  const multiplier = isPartial ? Math.max(0, days) : 1;
+  return (
+    (price.adult || 0) * a +
+    ((price.minor7to18 || price.minor8plus || 0) * m7to18) +
+    ((price.minorUnder7 || price.minorUnder8 || 0) * mu7)
+  ) * multiplier;
+}
+
 export default function LookupPage() {
   const [form, setForm] = useState({ name: "", phone: "" });
   const [loading, setLoading] = useState(false);
   const [participant, setParticipant] = useState(null);
+  const [settings, setSettings] = useState(null);
   const [error, setError] = useState("");
 
   const onChange = (e) => {
@@ -26,7 +45,10 @@ export default function LookupPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      if (data.participant) setParticipant(data.participant);
+      if (data.participant) {
+        setParticipant(data.participant);
+        setSettings(data.settings);
+      }
       else setError("해당 정보와 일치하는 등록 내역이 없습니다.");
     } catch (err) {
       setError(err.message || "조회 중 오류가 발생했습니다.");
@@ -164,56 +186,86 @@ export default function LookupPage() {
               <div className="sm:col-span-2">
                 <p className="font-semibold text-gray-700 mb-2">금액 안내</p>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 text-sm text-gray-900">
-                  {/* 성인 */}
-                  {participant.extraCounts?.adult > 0 && (
-                    <div>
-                      성인: {participant.amount?.adult?.toLocaleString() || 0}원 × {participant.extraCounts.adult}명
-                      {participant.isPartial && participant.partialDates?.length > 0 && ` × ${participant.partialDates.length}일`}
-                      {" = "}
-                      {participant.isPartial
-                        ? ((participant.amount?.adult || 0) * participant.extraCounts.adult * (participant.partialDates?.length || 1)).toLocaleString()
-                        : ((participant.amount?.adult || 0) * participant.extraCounts.adult).toLocaleString()}원
-                    </div>
-                  )}
+                  {(() => {
+                    // 등록일 기준으로 기간 판별
+                    const registeredAt = participant.registeredAt;
+                    const periods = settings?.registrationPeriods || [];
 
-                  {/* 만 7~18세 */}
-                  {(participant.extraCounts?.minor7to18 > 0 || participant.extraCounts?.minor8plus > 0) && (
-                    <div>
-                      만 7~18세: {(participant.amount?.minor7to18 || participant.amount?.minor8plus || 0).toLocaleString()}원 × {participant.extraCounts?.minor7to18 || participant.extraCounts?.minor8plus || 0}명
-                      {participant.isPartial && participant.partialDates?.length > 0 && ` × ${participant.partialDates.length}일`}
-                      {" = "}
-                      {participant.isPartial
-                        ? ((participant.amount?.minor7to18 || participant.amount?.minor8plus || 0) * (participant.extraCounts?.minor7to18 || participant.extraCounts?.minor8plus || 0) * (participant.partialDates?.length || 1)).toLocaleString()
-                        : ((participant.amount?.minor7to18 || participant.amount?.minor8plus || 0) * (participant.extraCounts?.minor7to18 || participant.extraCounts?.minor8plus || 0)).toLocaleString()}원
-                    </div>
-                  )}
+                    let period = periods.find(p => {
+                      if (!registeredAt) return false;
+                      const regDate = new Date(registeredAt);
+                      const start = new Date(p.startDate);
+                      const end = new Date(p.endDate);
+                      return regDate >= start && regDate <= end;
+                    });
 
-                  {/* 만 7세 미만 */}
-                  {(participant.extraCounts?.minorUnder7 > 0 || participant.extraCounts?.minorUnder8 > 0) && (
-                    <div>
-                      만 7세 미만: {(participant.amount?.minorUnder7 || participant.amount?.minorUnder8 || 0).toLocaleString()}원 × {participant.extraCounts?.minorUnder7 || participant.extraCounts?.minorUnder8 || 0}명
-                      {participant.isPartial && participant.partialDates?.length > 0 && ` × ${participant.partialDates.length}일`}
-                      {" = "}
-                      {participant.isPartial
-                        ? ((participant.amount?.minorUnder7 || participant.amount?.minorUnder8 || 0) * (participant.extraCounts?.minorUnder7 || participant.extraCounts?.minorUnder8 || 0) * (participant.partialDates?.length || 1)).toLocaleString()
-                        : ((participant.amount?.minorUnder7 || participant.amount?.minorUnder8 || 0) * (participant.extraCounts?.minorUnder7 || participant.extraCounts?.minorUnder8 || 0)).toLocaleString()}원
-                    </div>
-                  )}
+                    if (!period && periods.length > 0) {
+                      period = periods[periods.length - 1];
+                    }
 
-                  <hr className="border-gray-300" />
+                    const isPartial = !!participant.isPartial;
+                    const days = isPartial ? (participant.partialDates?.length || 0) : 1;
+                    const price = period ? (isPartial ? period.partialPrice : period.fullPrice) : null;
 
-                  <div className="font-bold text-blue-600 text-base">
-                    합계: {participant.amount?.total?.toLocaleString() || 0}원
-                  </div>
+                    const adultCount = participant.extraCounts?.adult || 0;
+                    const minor7to18Count = participant.extraCounts?.minor7to18 || participant.extraCounts?.minor8plus || 0;
+                    const minorUnder7Count = participant.extraCounts?.minorUnder7 || participant.extraCounts?.minorUnder8 || 0;
 
-                  <div className="mt-4 pt-3 border-t border-gray-300">
-                    <p className="font-semibold text-gray-700 mb-1">입금 계좌</p>
-                    <p>752601-04-331363 (국민은행)</p>
-                    <p className="text-xs text-gray-600">예금주: 황금종교회(어게인1907평양대부흥)</p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      * 입금자명은 신청하신 성함과 동일하게 해주세요.
-                    </p>
-                  </div>
+                    const adultPrice = price?.adult || participant.amount?.adult || 0;
+                    const minor7to18Price = price?.minor7to18 || price?.minor8plus || participant.amount?.minor7to18 || participant.amount?.minor8plus || 0;
+                    const minorUnder7Price = price?.minorUnder7 || price?.minorUnder8 || participant.amount?.minorUnder7 || participant.amount?.minorUnder8 || 0;
+
+                    const adultTotal = adultPrice * adultCount * (isPartial ? days : 1);
+                    const minor7to18Total = minor7to18Price * minor7to18Count * (isPartial ? days : 1);
+                    const minorUnder7Total = minorUnder7Price * minorUnder7Count * (isPartial ? days : 1);
+                    const grandTotal = adultTotal + minor7to18Total + minorUnder7Total;
+
+                    return (
+                      <>
+                        {adultCount > 0 && (
+                          <div>
+                            성인: {adultPrice.toLocaleString()}원 × {adultCount}명
+                            {isPartial && days > 0 && ` × ${days}일`}
+                            {" = "}
+                            {adultTotal.toLocaleString()}원
+                          </div>
+                        )}
+
+                        {minor7to18Count > 0 && (
+                          <div>
+                            만 7~18세: {minor7to18Price.toLocaleString()}원 × {minor7to18Count}명
+                            {isPartial && days > 0 && ` × ${days}일`}
+                            {" = "}
+                            {minor7to18Total.toLocaleString()}원
+                          </div>
+                        )}
+
+                        {minorUnder7Count > 0 && (
+                          <div>
+                            만 7세 미만: {minorUnder7Price.toLocaleString()}원 × {minorUnder7Count}명
+                            {isPartial && days > 0 && ` × ${days}일`}
+                            {" = "}
+                            {minorUnder7Total.toLocaleString()}원
+                          </div>
+                        )}
+
+                        <hr className="border-gray-300" />
+
+                        <div className="font-bold text-blue-600 text-base">
+                          합계: {grandTotal.toLocaleString()}원
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-gray-300">
+                          <p className="font-semibold text-gray-700 mb-1">입금 계좌</p>
+                          <p>752601-04-331363 (국민은행)</p>
+                          <p className="text-xs text-gray-600">예금주: 황금종교회(어게인1907평양대부흥)</p>
+                          <p className="text-xs text-gray-500 mt-2">
+                            * 입금자명은 신청하신 성함과 동일하게 해주세요.
+                          </p>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               {participant.remark && (
