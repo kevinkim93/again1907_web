@@ -23,7 +23,7 @@ export default async function RegisterPage() {
       <div className="w-full max-w-2xl">
         {/* 상단 안내 */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-800">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
             {settings.eventName} 참가 신청
           </h1>
           <p className="mt-2 text-sm sm:text-base text-gray-600">

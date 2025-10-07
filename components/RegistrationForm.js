@@ -1,32 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 export default function RegistrationForm({ settings, disabled }) {
   const [form, setForm] = useState({
     name: '',
     gender: '',
-    dob: '',
+    dobYear: '',
+    dobMonth: '',
+    dobDay: '',
     phone: '',
     churchOrRegion: '',
-    isPartial: false,
-    partialDates: [],
+    attendDates: [], // 참석 날짜
+    accommodationDates: [], // 숙박 날짜
+    roomType: '', // 단체실 또는 2인실
+    skipBreakfast: false, // 아침 식사 안함
     transport: '',
     discovery: '',
-    extraCounts: { adult: 0, minor8plus: 0, minorUnder8: 0 },
+    extraCounts: { adult: 0, minor7to18: 0, minorUnder7: 0 },
     extraAnswers: {},
   });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
 
+  // 생년월일 드롭다운 옵션
+  const years = Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i);
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  // 전체 참석 여부 확인
+  const isFullAttendance = useMemo(() => {
+    if (!settings.dates || settings.dates.length === 0) return false;
+    return settings.dates.every(d => form.attendDates.includes(d));
+  }, [form.attendDates, settings.dates]);
+
+  // 숙박 가능 날짜 (마지막 날 제외)
+  const accommodationAvailableDates = useMemo(() => {
+    if (!settings.dates || settings.dates.length === 0) return [];
+    return settings.dates.slice(0, -1);
+  }, [settings.dates]);
+
   const onChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name.startsWith('extraAnswers.')) {
       const key = name.split('.')[1];
       setForm(f => ({ ...f, extraAnswers: { ...f.extraAnswers, [key]: value } }));
-    } else if (name === 'isPartial') {
-      setForm(f => ({ ...f, isPartial: checked, partialDates: checked ? f.partialDates : [] }));
     } else if (name === 'transport') {
       setForm(f => ({ ...f, transport: value }));
     } else if (name.startsWith('extraCounts.')) {
@@ -34,18 +53,38 @@ export default function RegistrationForm({ settings, disabled }) {
       const num = Math.max(0, parseInt(value || '0', 10));
       setForm(f => ({ ...f, extraCounts: { ...f.extraCounts, [key]: num } }));
     } else if (name === 'phone') {
-      // 전화번호는 그대로 입력 허용 (하이픈 있어도 되고 없어도 됨)
       setForm(f => ({ ...f, phone: value }));
     } else {
       setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
     }
   };
 
-  const togglePartialDate = (date) => {
+  // 전체 참석 토글
+  const toggleFullAttendance = () => {
+    if (isFullAttendance) {
+      // 전체 해제
+      setForm(f => ({ ...f, attendDates: [] }));
+    } else {
+      // 전체 선택
+      setForm(f => ({ ...f, attendDates: [...(settings.dates || [])] }));
+    }
+  };
+
+  // 참석 날짜 토글
+  const toggleAttendDate = (date) => {
     setForm(f => {
-      const has = f.partialDates.includes(date);
-      const next = has ? f.partialDates.filter(d => d !== date) : [...f.partialDates, date];
-      return { ...f, partialDates: next };
+      const has = f.attendDates.includes(date);
+      const next = has ? f.attendDates.filter(d => d !== date) : [...f.attendDates, date];
+      return { ...f, attendDates: next };
+    });
+  };
+
+  // 숙박 날짜 토글
+  const toggleAccommodationDate = (date) => {
+    setForm(f => {
+      const has = f.accommodationDates.includes(date);
+      const next = has ? f.accommodationDates.filter(d => d !== date) : [...f.accommodationDates, date];
+      return { ...f, accommodationDates: next };
     });
   };
 
@@ -54,19 +93,16 @@ export default function RegistrationForm({ settings, disabled }) {
     setSubmitting(true);
     setError('');
 
-    // ✅ 부분참석 검증
-    if (form.isPartial && form.partialDates.length === 0) {
-      setError('부분참석을 선택하셨다면 최소 1일 이상 날짜를 선택해야 합니다.');
+    // 날짜 검증
+    if (form.attendDates.length === 0) {
+      setError('최소 1일 이상 참석 날짜를 선택해야 합니다.');
       setSubmitting(false);
       return;
     }
 
-    // ✅ 전화번호 형식 검증
-    const phoneDigits = form.phone.replace(/[^\d+]/g, ''); // 숫자와 + 기호만 추출
-
-    // 한국 번호: 010으로 시작하고 총 11자리 (하이픈 제외)
+    // 전화번호 형식 검증
+    const phoneDigits = form.phone.replace(/[^\d+]/g, '');
     const isKoreanPhone = /^010/.test(phoneDigits) && phoneDigits.length === 11;
-    // 국제 번호: +로 시작 (+ 없이 숫자만으로는 한국번호 11자리만 허용)
     const isInternationalPhone = phoneDigits.startsWith('+') && phoneDigits.length >= 10;
 
     if (!isKoreanPhone && !isInternationalPhone) {
@@ -75,11 +111,22 @@ export default function RegistrationForm({ settings, disabled }) {
       return;
     }
 
+    // 생년월일 조합
+    const dob = `${form.dobYear}-${String(form.dobMonth).padStart(2, '0')}-${String(form.dobDay).padStart(2, '0')}`;
+
+    // 부분참석 여부 계산
+    const isPartial = !isFullAttendance;
+
     try {
       const res = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          dob,
+          isPartial,
+          partialDates: form.attendDates,
+        }),
       });
       if (!res.ok) throw new Error(await res.text());
       setDone(true);
@@ -90,9 +137,64 @@ export default function RegistrationForm({ settings, disabled }) {
     }
   };
 
-
   if (disabled) return <p className="text-red-600 text-center">신청이 비활성화되었습니다.</p>;
-  if (done) return <p className="text-green-600 text-center">신청이 완료되었습니다. 감사합니다!</p>;
+
+  if (done) {
+    // 금액 계산
+    const isPartial = !isFullAttendance;
+    const fullPrice = { adult: 150000, minor7to18: 120000, minorUnder7: 0 };
+    const partialPrice = { adult: 40000, minor7to18: 25000, minorUnder7: 0 };
+
+    const unitPrice = isPartial ? partialPrice : fullPrice;
+    const days = isPartial ? form.attendDates.length : 1;
+
+    const totalAmount = isPartial
+      ? (unitPrice.adult * form.extraCounts.adult * days +
+         unitPrice.minor7to18 * form.extraCounts.minor7to18 * days +
+         unitPrice.minorUnder7 * form.extraCounts.minorUnder7 * days)
+      : (unitPrice.adult * form.extraCounts.adult +
+         unitPrice.minor7to18 * form.extraCounts.minor7to18 +
+         unitPrice.minorUnder7 * form.extraCounts.minorUnder7);
+
+    return (
+      <div className="text-center space-y-4">
+        <h2 className="text-2xl font-bold text-green-600">신청이 완료되었습니다!</h2>
+        <p className="text-gray-700">참가 신청이 정상적으로 접수되었습니다.</p>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">등록비 안내</h3>
+          <p className="text-2xl font-bold text-blue-600 mb-4">
+            {totalAmount.toLocaleString()}원
+          </p>
+
+          <div className="text-left space-y-2 text-sm text-gray-700">
+            <p className="font-semibold">입금 계좌</p>
+            <p>752601-04-331363 (국민은행)</p>
+            <p className="text-xs text-gray-600">예금주: 황금종교회(어게인1907평양대부흥)</p>
+          </div>
+
+          <p className="text-xs text-gray-500 mt-4">
+            * 등록비 입금 후 참가 확정됩니다.<br />
+            * 입금자명은 신청하신 성함과 동일하게 해주세요.
+          </p>
+        </div>
+
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
+          <p className="text-sm text-gray-700 mb-3">
+            등록 조회 및 수정은 마이페이지에서 가능합니다.
+          </p>
+          <a
+            href="/lookup"
+            className="inline-block w-full bg-blue-600 text-white font-semibold py-3 rounded-md hover:bg-blue-700 transition"
+          >
+            마이페이지로 이동
+          </a>
+        </div>
+
+        <p className="text-sm text-gray-600">감사합니다!</p>
+      </div>
+    );
+  }
 
   return (
     <form
@@ -108,7 +210,7 @@ export default function RegistrationForm({ settings, disabled }) {
           onChange={onChange}
           required
           placeholder="이름을 입력하세요"
-          className="w-full border border-gray-300 rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
       </div>
 
@@ -120,7 +222,7 @@ export default function RegistrationForm({ settings, disabled }) {
           value={form.gender}
           onChange={onChange}
           required
-          className="w-full border border-gray-300 rounded-md p-2 sm:p-3 bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
         >
           <option value="">선택</option>
           <option value="남">남</option>
@@ -128,17 +230,41 @@ export default function RegistrationForm({ settings, disabled }) {
         </select>
       </div>
 
-      {/* 생년월일 */}
+      {/* 생년월일 (드롭다운) */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">생년월일*</label>
-        <input
-          type="date"
-          name="dob"
-          value={form.dob}
-          onChange={onChange}
-          required
-          className="w-full border border-gray-300 rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-        />
+        <div className="grid grid-cols-3 gap-2">
+          <select
+            name="dobYear"
+            value={form.dobYear}
+            onChange={onChange}
+            required
+            className="border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          >
+            <option value="">년도</option>
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <select
+            name="dobMonth"
+            value={form.dobMonth}
+            onChange={onChange}
+            required
+            className="border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          >
+            <option value="">월</option>
+            {months.map(m => <option key={m} value={m}>{m}월</option>)}
+          </select>
+          <select
+            name="dobDay"
+            value={form.dobDay}
+            onChange={onChange}
+            required
+            className="border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          >
+            <option value="">일</option>
+            {days.map(d => <option key={d} value={d}>{d}일</option>)}
+          </select>
+        </div>
       </div>
 
       {/* 연락처 */}
@@ -150,7 +276,7 @@ export default function RegistrationForm({ settings, disabled }) {
           onChange={onChange}
           required
           placeholder="010-1234-5678"
-          className="w-full border border-gray-300 rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-500"
         />
         <p className="text-xs text-gray-500 mt-1">한국 번호: 010-1234-5678 또는 01012345678 / 국제 번호도 가능</p>
       </div>
@@ -164,47 +290,102 @@ export default function RegistrationForm({ settings, disabled }) {
           onChange={onChange}
           required
           placeholder="예: 서울 ○○교회 / ○○지역"
-          className="w-full border border-gray-300 rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-500"
         />
       </div>
 
-      {/* 부분참석 */}
+      {/* 집회 참석 날짜 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">집회 참석 날짜*</label>
+        <div className="mb-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <input
+              type="checkbox"
+              checked={isFullAttendance}
+              onChange={toggleFullAttendance}
+              className="h-4 w-4"
+            />
+            전체 참석
+          </label>
+        </div>
+        <div className="space-y-1 ml-4">
+          {settings.dates?.map(d => (
+            <label key={d} className="flex items-center gap-2 text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.attendDates.includes(d)}
+                onChange={() => toggleAttendDate(d)}
+                className="h-4 w-4"
+              />
+              {d}
+            </label>
+          ))}
+        </div>
+        <p className="text-xs text-gray-500 mt-2">* 등록비는 집회참석비용과 식비가 포함됩니다.</p>
+      </div>
+
+      {/* 숙박 신청 */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">숙박 신청</label>
+        <div className="space-y-1 ml-4 mb-3">
+          {accommodationAvailableDates.map(d => (
+            <label key={d} className="flex items-center gap-2 text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.accommodationDates.includes(d)}
+                onChange={() => toggleAccommodationDate(d)}
+                className="h-4 w-4"
+              />
+              {d}
+            </label>
+          ))}
+        </div>
+        {form.accommodationDates.length > 0 && (
+          <div className="space-y-2 ml-4">
+            <label className="flex items-center gap-2 text-gray-700">
+              <input
+                type="radio"
+                name="roomType"
+                value="단체실"
+                checked={form.roomType === '단체실'}
+                onChange={onChange}
+                className="h-4 w-4"
+              />
+              단체실
+            </label>
+            <label className="flex items-center gap-2 text-gray-700">
+              <input
+                type="radio"
+                name="roomType"
+                value="2인실"
+                checked={form.roomType === '2인실'}
+                onChange={onChange}
+                className="h-4 w-4"
+              />
+              2인실
+            </label>
+          </div>
+        )}
+        <p className="text-xs text-gray-500 mt-2">
+          오산리 기도원은 남녀 단체실(30인실)과 소수의 2인실이 있습니다. (침구 제공)<br />
+          2인실은 전체 참석하는 만 3세 미만 영유아 동반 가족에게 선착순 배정됩니다.
+        </p>
+      </div>
+
+      {/* 식사 선택 */}
       <div>
         <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
           <input
             type="checkbox"
-            name="isPartial"
-            checked={form.isPartial}
+            name="skipBreakfast"
+            checked={form.skipBreakfast}
             onChange={onChange}
             className="h-4 w-4"
           />
-          부분참석 여부
+          아침은 안 먹을게요
         </label>
-
-        {form.isPartial && (
-          <div className="mt-2 space-y-1">
-            {settings.dates?.map(d => (
-              <label key={d} className="flex items-center gap-2 text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={form.partialDates.includes(d)}
-                  onChange={() => togglePartialDate(d)}
-                  className="h-4 w-4"
-                />
-                {d}
-              </label>
-            ))}
-
-            {/* ✅ 날짜 선택 에러 메시지 (이 영역 바로 아래)
-            {form.isPartial && form.partialDates.length === 0 && error && (
-              <p className="text-red-600 text-sm mt-1">
-                {error}
-              </p>
-            )} */}
-          </div>
-        )}
+        <p className="text-xs text-gray-500 mt-1">잔반을 줄이기 위해 아침식사를 안 하실 분들은 체크해주세요</p>
       </div>
-
 
       {/* 교통편 */}
       <div>
@@ -236,7 +417,7 @@ export default function RegistrationForm({ settings, disabled }) {
           onChange={onChange}
           required
           list="discoveryList"
-          className="w-full border border-gray-300 rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-500"
         />
         <datalist id="discoveryList">
           {(settings.howDidYouHearOptions || []).map(x => (
@@ -257,7 +438,7 @@ export default function RegistrationForm({ settings, disabled }) {
               name={`extraAnswers.${q.id || idx}`}
               onChange={onChange}
               required={!!q.required}
-              className="w-full border border-gray-300 rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-500"
             />
           ) : q.type === 'select' ? (
             <select
@@ -306,15 +487,15 @@ export default function RegistrationForm({ settings, disabled }) {
               name={`extraAnswers.${q.id || idx}`}
               onChange={onChange}
               required={!!q.required}
-              className="w-full border border-gray-300 rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full border border-gray-300 bg-white rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-gray-500"
             />
           )}
         </div>
       ))}
 
       {/* 추가 인원 */}
-      <fieldset className="border rounded-md p-4">
-        <legend className="font-medium text-gray-800">추가 인원*</legend>
+      <fieldset className="border border-gray-300 rounded-md p-4">
+        <legend className="font-medium text-gray-900">추가 인원*</legend>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
           {/* 성인 */}
           <label className="flex items-center flex-col text-sm text-gray-700">
@@ -338,7 +519,7 @@ export default function RegistrationForm({ settings, disabled }) {
                 name="extraCounts.adult"
                 value={form.extraCounts.adult}
                 onChange={onChange}
-                className="w-16 text-center border border-gray-300 rounded-md p-2"
+                className="w-16 text-center border border-gray-300 bg-white rounded-md p-2 text-gray-900"
               />
 
               <button
@@ -355,9 +536,9 @@ export default function RegistrationForm({ settings, disabled }) {
             </div>
           </label>
 
-          {/* 8세 이상 미성년 */}
+          {/* 만 7세 ~ 만 18세 */}
           <label className="flex items-center flex-col text-sm text-gray-700">
-            8세 이상 미성년
+            만 7세 ~ 만 18세
             <div className="flex items-center gap-2 mt-1">
               <button
                 type="button"
@@ -365,7 +546,7 @@ export default function RegistrationForm({ settings, disabled }) {
                   ...f,
                   extraCounts: {
                     ...f.extraCounts,
-                    minor8plus: Math.max(0, f.extraCounts.minor8plus - 1),
+                    minor7to18: Math.max(0, f.extraCounts.minor7to18 - 1),
                   }
                 }))}
                 className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
@@ -374,10 +555,10 @@ export default function RegistrationForm({ settings, disabled }) {
               <input
                 type="number"
                 min="0"
-                name="extraCounts.minor8plus"
-                value={form.extraCounts.minor8plus}
+                name="extraCounts.minor7to18"
+                value={form.extraCounts.minor7to18}
                 onChange={onChange}
-                className="w-16 text-center border border-gray-300 rounded-md p-2"
+                className="w-16 text-center border border-gray-300 bg-white rounded-md p-2 text-gray-900"
               />
 
               <button
@@ -386,7 +567,7 @@ export default function RegistrationForm({ settings, disabled }) {
                   ...f,
                   extraCounts: {
                     ...f.extraCounts,
-                    minor8plus: f.extraCounts.minor8plus + 1,
+                    minor7to18: f.extraCounts.minor7to18 + 1,
                   }
                 }))}
                 className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
@@ -394,9 +575,9 @@ export default function RegistrationForm({ settings, disabled }) {
             </div>
           </label>
 
-          {/* 8세 미만 미성년 */}
+          {/* 만 7세 미만 */}
           <label className="flex items-center flex-col text-sm text-gray-700">
-            8세 미만 미성년
+            만 7세 미만
             <div className="flex items-center gap-2 mt-1">
               <button
                 type="button"
@@ -404,7 +585,7 @@ export default function RegistrationForm({ settings, disabled }) {
                   ...f,
                   extraCounts: {
                     ...f.extraCounts,
-                    minorUnder8: Math.max(0, f.extraCounts.minorUnder8 - 1),
+                    minorUnder7: Math.max(0, f.extraCounts.minorUnder7 - 1),
                   }
                 }))}
                 className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
@@ -413,10 +594,10 @@ export default function RegistrationForm({ settings, disabled }) {
               <input
                 type="number"
                 min="0"
-                name="extraCounts.minorUnder8"
-                value={form.extraCounts.minorUnder8}
+                name="extraCounts.minorUnder7"
+                value={form.extraCounts.minorUnder7}
                 onChange={onChange}
-                className="w-16 text-center border border-gray-300 rounded-md p-2"
+                className="w-16 text-center border border-gray-300 bg-white rounded-md p-2 text-gray-900"
               />
 
               <button
@@ -425,7 +606,7 @@ export default function RegistrationForm({ settings, disabled }) {
                   ...f,
                   extraCounts: {
                     ...f.extraCounts,
-                    minorUnder8: f.extraCounts.minorUnder8 + 1,
+                    minorUnder7: f.extraCounts.minorUnder7 + 1,
                   }
                 }))}
                 className="px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
@@ -433,8 +614,11 @@ export default function RegistrationForm({ settings, disabled }) {
             </div>
           </label>
         </div>
+        <p className="text-xs text-gray-500 mt-3">
+          전체 참석: 성인 150,000원 / 만 7~18세 120,000원 / 만 7세 미만 무료<br />
+          부분 참석 (1일): 성인 40,000원 / 만 7~18세 25,000원 / 만 7세 미만 무료
+        </p>
       </fieldset>
-
 
       {/* 에러 메시지 */}
       {error && <p className="text-red-600 text-sm">{error}</p>}

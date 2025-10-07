@@ -37,7 +37,7 @@ export default function LookupPage() {
 
   return (
     <section className="max-w-3xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold text-center mb-8">등록 조회</h1>
+      <h1 className="text-3xl font-bold text-center mb-8">로그인</h1>
 
       {/* 입력 폼 */}
       <form
@@ -147,6 +147,11 @@ export default function LookupPage() {
                 <p className="text-gray-900">
                   {participant.roomName || "미배정"}
                 </p>
+                {!participant.roomName && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    방 배정은 집회 현장에서 배정됩니다.
+                  </p>
+                )}
               </div>
               <div className="sm:col-span-2">
                 <p className="font-semibold text-gray-700">참가 일정</p>
@@ -157,18 +162,59 @@ export default function LookupPage() {
                 </p>
               </div>
               <div className="sm:col-span-2">
-                <p className="font-semibold text-gray-700">금액</p>
-                <p className="text-gray-900">
-                  성인 {participant.amount?.adult?.toLocaleString() || 0}원,{" "}
-                  8세 이상{" "}
-                  {participant.amount?.minor8plus?.toLocaleString() || 0}원, 8세
-                  미만{" "}
-                  {participant.amount?.minorUnder8?.toLocaleString() || 0}원
-                  <br />
-                  <span className="font-bold text-blue-600">
-                    합계 {participant.amount?.total?.toLocaleString() || 0}원
-                  </span>
-                </p>
+                <p className="font-semibold text-gray-700 mb-2">금액 안내</p>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 text-sm text-gray-900">
+                  {/* 성인 */}
+                  {participant.extraCounts?.adult > 0 && (
+                    <div>
+                      성인: {participant.amount?.adult?.toLocaleString() || 0}원 × {participant.extraCounts.adult}명
+                      {participant.isPartial && participant.partialDates?.length > 0 && ` × ${participant.partialDates.length}일`}
+                      {" = "}
+                      {participant.isPartial
+                        ? ((participant.amount?.adult || 0) * participant.extraCounts.adult * (participant.partialDates?.length || 1)).toLocaleString()
+                        : ((participant.amount?.adult || 0) * participant.extraCounts.adult).toLocaleString()}원
+                    </div>
+                  )}
+
+                  {/* 만 7~18세 */}
+                  {(participant.extraCounts?.minor7to18 > 0 || participant.extraCounts?.minor8plus > 0) && (
+                    <div>
+                      만 7~18세: {(participant.amount?.minor7to18 || participant.amount?.minor8plus || 0).toLocaleString()}원 × {participant.extraCounts?.minor7to18 || participant.extraCounts?.minor8plus || 0}명
+                      {participant.isPartial && participant.partialDates?.length > 0 && ` × ${participant.partialDates.length}일`}
+                      {" = "}
+                      {participant.isPartial
+                        ? ((participant.amount?.minor7to18 || participant.amount?.minor8plus || 0) * (participant.extraCounts?.minor7to18 || participant.extraCounts?.minor8plus || 0) * (participant.partialDates?.length || 1)).toLocaleString()
+                        : ((participant.amount?.minor7to18 || participant.amount?.minor8plus || 0) * (participant.extraCounts?.minor7to18 || participant.extraCounts?.minor8plus || 0)).toLocaleString()}원
+                    </div>
+                  )}
+
+                  {/* 만 7세 미만 */}
+                  {(participant.extraCounts?.minorUnder7 > 0 || participant.extraCounts?.minorUnder8 > 0) && (
+                    <div>
+                      만 7세 미만: {(participant.amount?.minorUnder7 || participant.amount?.minorUnder8 || 0).toLocaleString()}원 × {participant.extraCounts?.minorUnder7 || participant.extraCounts?.minorUnder8 || 0}명
+                      {participant.isPartial && participant.partialDates?.length > 0 && ` × ${participant.partialDates.length}일`}
+                      {" = "}
+                      {participant.isPartial
+                        ? ((participant.amount?.minorUnder7 || participant.amount?.minorUnder8 || 0) * (participant.extraCounts?.minorUnder7 || participant.extraCounts?.minorUnder8 || 0) * (participant.partialDates?.length || 1)).toLocaleString()
+                        : ((participant.amount?.minorUnder7 || participant.amount?.minorUnder8 || 0) * (participant.extraCounts?.minorUnder7 || participant.extraCounts?.minorUnder8 || 0)).toLocaleString()}원
+                    </div>
+                  )}
+
+                  <hr className="border-gray-300" />
+
+                  <div className="font-bold text-blue-600 text-base">
+                    합계: {participant.amount?.total?.toLocaleString() || 0}원
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-gray-300">
+                    <p className="font-semibold text-gray-700 mb-1">입금 계좌</p>
+                    <p>752601-04-331363 (국민은행)</p>
+                    <p className="text-xs text-gray-600">예금주: 황금종교회(어게인1907평양대부흥)</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      * 입금자명은 신청하신 성함과 동일하게 해주세요.
+                    </p>
+                  </div>
+                </div>
               </div>
               {participant.remark && (
                 <div className="sm:col-span-2">

@@ -12,9 +12,9 @@ function calcKRAgeByYear(dobStr) {
 
 // 연령대 판별
 function getAgeGroupByYear(age) {
-  if (age >= 19) return 'adult';       // 성인
-  if (age >= 8) return 'minor8plus';  // 8세 이상 미성년
-  return 'minorUnder8';               // 8세 미만
+  if (age >= 19) return 'adult';         // 성인
+  if (age >= 7) return 'minor7to18';     // 만 7세 ~ 만 18세
+  return 'minorUnder7';                  // 만 7세 미만
 }
 
 export async function POST(req) {
@@ -64,8 +64,8 @@ export async function POST(req) {
     // 6. extraCounts 초기화
     const extraCounts = {
       adult: data.extraCounts?.adult || 0,
-      minor8plus: data.extraCounts?.minor8plus || 0,
-      minorUnder8: data.extraCounts?.minorUnder8 || 0,
+      minor7to18: data.extraCounts?.minor7to18 || 0,
+      minorUnder7: data.extraCounts?.minorUnder7 || 0,
     };
 
     // 7. 본인 카운트 반영
@@ -73,25 +73,28 @@ export async function POST(req) {
 
     // 8. 총 인원
     const totalPeople =
-      extraCounts.adult + extraCounts.minor8plus + extraCounts.minorUnder8;
+      extraCounts.adult + extraCounts.minor7to18 + extraCounts.minorUnder7;
 
-    // 9. 금액 계산
+    // 9. 금액 계산 (고정 가격)
+    const fullPrice = { adult: 150000, minor7to18: 120000, minorUnder7: 0 };
+    const partialPrice = { adult: 40000, minor7to18: 25000, minorUnder7: 0 };
+
     let totalAmount = 0;
     let unitPrice = {};
 
     if (data.isPartial && data.partialDates?.length > 0) {
       const days = data.partialDates.length;
-      unitPrice = period?.partialPrice || { adult: 0, minor8plus: 0, minorUnder8: 0 };
+      unitPrice = partialPrice;
       totalAmount =
         unitPrice.adult * extraCounts.adult * days +
-        unitPrice.minor8plus * extraCounts.minor8plus * days +
-        unitPrice.minorUnder8 * extraCounts.minorUnder8 * days;
+        unitPrice.minor7to18 * extraCounts.minor7to18 * days +
+        unitPrice.minorUnder7 * extraCounts.minorUnder7 * days;
     } else {
-      unitPrice = period?.fullPrice || { adult: 0, minor8plus: 0, minorUnder8: 0 };
+      unitPrice = fullPrice;
       totalAmount =
         unitPrice.adult * extraCounts.adult +
-        unitPrice.minor8plus * extraCounts.minor8plus +
-        unitPrice.minorUnder8 * extraCounts.minorUnder8;
+        unitPrice.minor7to18 * extraCounts.minor7to18 +
+        unitPrice.minorUnder7 * extraCounts.minorUnder7;
     }
 
     // 10. 참가자 문서 생성
@@ -103,8 +106,8 @@ export async function POST(req) {
       registeredAt,   // "YYYY-MM-DD"
       amount: {
         adult: unitPrice.adult,
-        minor8plus: unitPrice.minor8plus,
-        minorUnder8: unitPrice.minorUnder8,
+        minor7to18: unitPrice.minor7to18,
+        minorUnder7: unitPrice.minorUnder7,
         total: totalAmount,
       },
       paymentStatus: 'unpaid',
