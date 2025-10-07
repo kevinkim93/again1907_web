@@ -33,6 +33,9 @@ export default function RegistrationForm({ settings, disabled }) {
       const key = name.split('.')[1];
       const num = Math.max(0, parseInt(value || '0', 10));
       setForm(f => ({ ...f, extraCounts: { ...f.extraCounts, [key]: num } }));
+    } else if (name === 'phone') {
+      // 전화번호는 그대로 입력 허용 (하이픈 있어도 되고 없어도 됨)
+      setForm(f => ({ ...f, phone: value }));
     } else {
       setForm(f => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
     }
@@ -54,6 +57,20 @@ export default function RegistrationForm({ settings, disabled }) {
     // ✅ 부분참석 검증
     if (form.isPartial && form.partialDates.length === 0) {
       setError('부분참석을 선택하셨다면 최소 1일 이상 날짜를 선택해야 합니다.');
+      setSubmitting(false);
+      return;
+    }
+
+    // ✅ 전화번호 형식 검증
+    const phoneDigits = form.phone.replace(/[^\d+]/g, ''); // 숫자와 + 기호만 추출
+
+    // 한국 번호: 010으로 시작하고 총 11자리 (하이픈 제외)
+    const isKoreanPhone = /^010/.test(phoneDigits) && phoneDigits.length === 11;
+    // 국제 번호: +로 시작 (+ 없이 숫자만으로는 한국번호 11자리만 허용)
+    const isInternationalPhone = phoneDigits.startsWith('+') && phoneDigits.length >= 10;
+
+    if (!isKoreanPhone && !isInternationalPhone) {
+      setError('올바른 전화번호 형식을 입력해주세요. 한국 번호는 11자리를 모두 입력해주세요. (예: 010-1234-5678)');
       setSubmitting(false);
       return;
     }
@@ -132,9 +149,10 @@ export default function RegistrationForm({ settings, disabled }) {
           value={form.phone}
           onChange={onChange}
           required
-          placeholder="010-0000-0000"
+          placeholder="010-1234-5678"
           className="w-full border border-gray-300 rounded-md p-2 sm:p-3 text-gray-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
+        <p className="text-xs text-gray-500 mt-1">한국 번호: 010-1234-5678 또는 01012345678 / 국제 번호도 가능</p>
       </div>
 
       {/* 소속 */}

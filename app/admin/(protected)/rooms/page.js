@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState([]);
+  const [allParticipants, setAllParticipants] = useState([]); // 전체 참가자 목록
   const [form, setForm] = useState({ start: '', end: '', group: '전부', capacity: 4 });
   const [selectedRooms, setSelectedRooms] = useState([]);
 
@@ -14,8 +15,15 @@ export default function RoomsPage() {
     setSelectedRooms([]);
   };
 
+  const fetchAllParticipants = async () => {
+    const res = await fetch('/api/admin/unassigned');
+    const data = await res.json();
+    setAllParticipants(data.participants || []);
+  };
+
   useEffect(() => {
     fetchRooms();
+    fetchAllParticipants();
   }, []);
 
   const createRooms = async (e) => {
@@ -53,6 +61,44 @@ export default function RoomsPage() {
     } else {
       setSelectedRooms(rooms.map(r => r.id)); // 전체 선택
     }
+  };
+
+  // 참가자 방 배정 (방 관리 페이지에서)
+  const assignParticipantToRoom = async (roomId, participantId) => {
+    const room = rooms.find(r => r.id === roomId);
+    const roomName = room?.name || null;
+
+    await fetch('/api/admin/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        collectionName: 'participants_default', // 또는 settings에서 가져오기
+        participantId,
+        roomId,
+        roomName,
+      }),
+    });
+
+    // 양쪽 목록 모두 새로고침
+    fetchRooms();
+    fetchAllParticipants();
+  };
+
+  // 참가자 방 해제
+  const removeParticipantFromRoom = async (participantId) => {
+    await fetch('/api/admin/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        collectionName: 'participants_default',
+        participantId,
+        roomId: '',
+        roomName: null,
+      }),
+    });
+
+    fetchRooms();
+    fetchAllParticipants();
   };
 
   return (
@@ -187,13 +233,53 @@ export default function RoomsPage() {
             <p className="text-sm text-gray-600 mb-2">
               정원 {r.capacity}명 / 현재 {r.currentPeople || 0}명
             </p>
-            <ul className="text-sm list-disc pl-4">
-              {(r.participants || []).map(p => (
-                <li key={p.id}>
-                  {p.name} ({p.totalPeople}명) — {p.extraAnswers?.identity?.join(', ')}
-                </li>
-              ))}
-            </ul>
+
+            {/* 배정된 참가자 목록 */}
+            <div className="mb-3">
+              <p className="text-xs font-semibold text-gray-700 mb-1">배정된 참가자:</p>
+              {(r.participants || []).length === 0 ? (
+                <p className="text-xs text-gray-400 italic">없음</p>
+              ) : (
+                <ul className="text-sm space-y-1">
+                  {(r.participants || []).map(p => (
+                    <li key={p.id} className="flex justify-between items-center">
+                      <span>
+                        {p.name} ({p.totalPeople}명) — {p.extraAnswers?.identity?.join(', ')}
+                      </span>
+                      <button
+                        onClick={() => removeParticipantFromRoom(p.id)}
+                        className="text-xs text-red-600 hover:text-red-800"
+                      >
+                        해제
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* 참가자 추가 드롭다운 */}
+            <div>
+              <label className="text-xs font-semibold text-gray-700 block mb-1">참가자 추가:</label>
+              <select
+                onChange={(e) => {
+                  if (e.target.value) {
+                    assignParticipantToRoom(r.id, e.target.value);
+                    e.target.value = ''; // 리셋
+                  }
+                }}
+                className="w-full border rounded p-1 text-xs"
+              >
+                <option value="">선택하세요</option>
+                {allParticipants
+                  .filter(p => !p.roomId) // 미배정 참가자만
+                  .map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.totalPeople}명) - {p.phone}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
         ))}
       </div>

@@ -28,11 +28,26 @@ export async function POST(req) {
     }
     const settings = settingsSnap.data();
 
-    // 2. 등록 당시 날짜 (YYYY-MM-DD)
-    const now = new Date();
-    const registeredAt = now.toISOString().split('T')[0]; 
+    // 2. 전화번호 중복 확인
+    const phoneDigits = data.phone.replace(/[^\d+]/g, '');
+    const existingParticipants = await adminDb
+      .collection(settings.dbName || 'participants_default')
+      .get();
 
-    // 3. 등록 기간 판별 (가격표 적용)
+    const isDuplicate = existingParticipants.docs.some(doc => {
+      const existingPhone = doc.data().phone?.replace(/[^\d+]/g, '');
+      return existingPhone === phoneDigits;
+    });
+
+    if (isDuplicate) {
+      return new NextResponse('이미 등록된 전화번호입니다.', { status: 400 });
+    }
+
+    // 3. 등록 당시 날짜 (YYYY-MM-DD)
+    const now = new Date();
+    const registeredAt = now.toISOString().split('T')[0];
+
+    // 4. 등록 기간 판별 (가격표 적용)
     let period = settings.registrationPeriods?.find(p => {
       const start = new Date(p.startDate);
       const end = new Date(p.endDate);
@@ -42,25 +57,25 @@ export async function POST(req) {
       period = settings.registrationPeriods.at(-1);
     }
 
-    // 4. 본인 연령대 판별
+    // 5. 본인 연령대 판별
     const age = calcKRAgeByYear(data.dob);
     const ageGroup = getAgeGroupByYear(age);
 
-    // 5. extraCounts 초기화
+    // 6. extraCounts 초기화
     const extraCounts = {
       adult: data.extraCounts?.adult || 0,
       minor8plus: data.extraCounts?.minor8plus || 0,
       minorUnder8: data.extraCounts?.minorUnder8 || 0,
     };
 
-    // 6. 본인 카운트 반영
+    // 7. 본인 카운트 반영
     extraCounts[ageGroup] += 1;
 
-    // 7. 총 인원
+    // 8. 총 인원
     const totalPeople =
       extraCounts.adult + extraCounts.minor8plus + extraCounts.minorUnder8;
 
-    // 8. 금액 계산
+    // 9. 금액 계산
     let totalAmount = 0;
     let unitPrice = {};
 
@@ -79,7 +94,7 @@ export async function POST(req) {
         unitPrice.minorUnder8 * extraCounts.minorUnder8;
     }
 
-    // 9. 참가자 문서 생성
+    // 10. 참가자 문서 생성
     const participant = {
       ...data,
       ageGroup,
@@ -98,7 +113,7 @@ export async function POST(req) {
       createdAt: Timestamp.now(), // ✅ Firestore Timestamp 저장
     };
 
-    // 10. 저장
+    // 11. 저장
     await adminDb.collection(settings.dbName || 'participants_default').add(participant);
 
     return NextResponse.json({ ok: true, participant });
