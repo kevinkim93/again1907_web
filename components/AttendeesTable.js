@@ -44,6 +44,54 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
   const [participants, setParticipants] = useState(rows);
   const [editing, setEditing] = useState(null); // 수정 중인 참가자 (state에 복사)
 
+  // 필터 및 검색 상태
+  const [filters, setFilters] = useState({
+    nameSearch: '',
+    phoneSearch: '',
+    paymentStatus: '', // 'paid', 'unpaid', ''
+    roomStatus: '', // 'assigned', 'unassigned', ''
+    attendDate: '', // 특정 날짜
+  });
+
+  // 필터링된 참가자 목록
+  const filteredParticipants = participants.filter(p => {
+    // 이름 검색
+    if (filters.nameSearch && !p.name?.includes(filters.nameSearch)) {
+      return false;
+    }
+
+    // 전화번호 부분 검색
+    if (filters.phoneSearch) {
+      const phoneDigits = p.phone?.replace(/[^\d]/g, '') || '';
+      const searchDigits = filters.phoneSearch.replace(/[^\d]/g, '');
+      if (!phoneDigits.includes(searchDigits)) {
+        return false;
+      }
+    }
+
+    // 결제 상태 필터
+    if (filters.paymentStatus) {
+      if (filters.paymentStatus === 'paid' && p.paymentStatus !== 'paid') return false;
+      if (filters.paymentStatus === 'unpaid' && p.paymentStatus === 'paid') return false;
+    }
+
+    // 방 배정 상태 필터
+    if (filters.roomStatus) {
+      if (filters.roomStatus === 'assigned' && !p.roomId) return false;
+      if (filters.roomStatus === 'unassigned' && p.roomId) return false;
+    }
+
+    // 참가 일정 필터
+    if (filters.attendDate) {
+      if (p.isPartial) {
+        if (!p.partialDates?.includes(filters.attendDate)) return false;
+      }
+      // 전체 참석인 경우는 모든 날짜 포함으로 간주
+    }
+
+    return true;
+  });
+
   // 참가자 삭제
   const deleteParticipant = async (id) => {
     if (!confirm('정말 삭제하시겠습니까?')) return;
@@ -68,17 +116,68 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
     setEditing(null);
   };
 
-  // 방 배정
+  // 특정 참가자가 배정 가능한 방 목록 (경고만, 차단 안 함)
+  const getAvailableRoomsForParticipant = (participant) => {
+    // 모든 방을 표시 (시스템적으로 차단하지 않음)
+    return rooms;
+  };
+
+  // 방 배정 (경고 포함)
   const assignRoom = async (participantId, roomId) => {
-    const roomName = rooms.find(r => r.id === roomId)?.name || null;
+    const participant = participants.find(p => p.id === participantId);
+
+    if (!participant) return;
+
+    // 미배정으로 변경하는 경우
+    if (!roomId || roomId === '') {
+      await fetch('/api/admin/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionName, participantId, roomId: null, roomName: null }),
+      });
+      window.location.reload();
+      return;
+    }
+
+    const room = rooms.find(r => r.id === roomId);
+    const roomName = room?.name || null;
+
+    // 숙박 신청 안 한 경우 경고
+    const accommodationDates = participant.accommodationDates || [];
+    if (accommodationDates.length === 0) {
+      if (!confirm(`${participant.name}님은 숙박 신청을 하지 않았습니다. 그래도 배정하시겠습니까?`)) {
+        return;
+      }
+    }
+
+    // 정원 초과 경고 (각 날짜별로 체크)
+    if (room && accommodationDates.length > 0) {
+      for (const date of accommodationDates) {
+        const participantsInRoomOnDate = participants.filter(p => {
+          if (p.id === participantId) return false;
+          return p.roomAssignments?.[date]?.roomId === roomId;
+        });
+
+        const currentOccupancy = participantsInRoomOnDate.reduce((sum, p) => sum + (p.totalPeople || 0), 0);
+        const afterOccupancy = currentOccupancy + (participant.totalPeople || 0);
+
+        if (afterOccupancy > room.capacity) {
+          if (!confirm(`정원 초과 경고!\n\n방: ${roomName}\n날짜: ${date}\n정원: ${room.capacity}명\n현재: ${currentOccupancy}명\n배정 후: ${afterOccupancy}명\n\n그래도 배정하시겠습니까?`)) {
+            return;
+          }
+          break; // 한 번만 경고
+        }
+      }
+    }
+
     await fetch('/api/admin/assign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ collectionName, participantId, roomId, roomName }),
     });
-    setParticipants(prev =>
-      prev.map(p => (p.id === participantId ? { ...p, roomId, roomName } : p))
-    );
+
+    // 전체 데이터 새로고침
+    window.location.reload();
   };
 
   // 결제 상태 변경 (+ 입금 날짜 기록)
@@ -101,6 +200,100 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
 
   return (
     <>
+      {/* 검색 및 필터 UI */}
+      <div className="mb-6 p-4 bg-gray-50 border border-gray-300 rounded-lg">
+        <h3 className="text-lg font-semibold mb-3">검색 및 필터</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* 이름 검색 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">이름 검색</label>
+            <input
+              type="text"
+              placeholder="이름 입력"
+              value={filters.nameSearch}
+              onChange={(e) => setFilters(f => ({ ...f, nameSearch: e.target.value }))}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+            />
+          </div>
+
+          {/* 전화번호 검색 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">전화번호 검색</label>
+            <input
+              type="text"
+              placeholder="전화번호 일부 입력 (예: 7979)"
+              value={filters.phoneSearch}
+              onChange={(e) => setFilters(f => ({ ...f, phoneSearch: e.target.value }))}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+            />
+          </div>
+
+          {/* 결제 상태 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">결제 상태</label>
+            <select
+              value={filters.paymentStatus}
+              onChange={(e) => setFilters(f => ({ ...f, paymentStatus: e.target.value }))}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+            >
+              <option value="">전체</option>
+              <option value="paid">납부완료</option>
+              <option value="unpaid">미납</option>
+            </select>
+          </div>
+
+          {/* 방 배정 상태 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">방 배정 상태</label>
+            <select
+              value={filters.roomStatus}
+              onChange={(e) => setFilters(f => ({ ...f, roomStatus: e.target.value }))}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+            >
+              <option value="">전체</option>
+              <option value="assigned">배정됨</option>
+              <option value="unassigned">미배정</option>
+            </select>
+          </div>
+
+          {/* 참가 일정 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">참가 일정</label>
+            <select
+              value={filters.attendDate}
+              onChange={(e) => setFilters(f => ({ ...f, attendDate: e.target.value }))}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+            >
+              <option value="">전체</option>
+              {settings?.dates?.map(date => (
+                <option key={date} value={date}>{date}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 초기화 버튼 */}
+          <div className="flex items-end">
+            <button
+              onClick={() => setFilters({
+                nameSearch: '',
+                phoneSearch: '',
+                paymentStatus: '',
+                roomStatus: '',
+                attendDate: '',
+              })}
+              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-4 rounded-md text-sm"
+            >
+              필터 초기화
+            </button>
+          </div>
+        </div>
+
+        {/* 검색 결과 수 */}
+        <div className="mt-3 text-sm text-gray-600">
+          총 {filteredParticipants.length}명 / {participants.length}명
+        </div>
+      </div>
+
       <table className="mt-6 w-full border-collapse border border-gray-300 text-sm">
         <thead className="bg-gray-100">
           <tr>
@@ -120,7 +313,7 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
           </tr>
         </thead>
         <tbody>
-          {participants.map(r => {
+          {filteredParticipants.map(r => {
             const { firstTotal, secondTotal } = calcTwoPhaseAmounts(r, settings);
             const a = r.extraCounts?.adult ?? 0;
             const m8 = r.extraCounts?.minor8plus ?? 0;
@@ -179,7 +372,7 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
                   <select
                     value={r.roomId || ''}
                     onChange={(e) => assignRoom(r.id, e.target.value)}
-                    className="border rounded p-1 text-sm"
+                    className="border rounded p-1 text-sm w-full"
                   >
                     <option value="">미배정</option>
                     {rooms.map(rm => (
@@ -192,7 +385,7 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
                 <td className="border p-2">
                   {r.isPartial
                     ? (r.partialDates || []).map(d => d.slice(5).replace('-', '/')).join(', ')
-                    : '전체 참석'}
+                    : (settings?.dates || []).map(d => d.slice(5).replace('-', '/')).join(', ')}
                 </td>
                 <td className="border p-2">{r.remark || ''}</td>
                 <td className="border p-2 space-x-2">
