@@ -8,16 +8,12 @@ export default function RoomsPage() {
   const [settings, setSettings] = useState(null);
   const [form, setForm] = useState({ start: '', end: '', group: '전부', capacity: 4 });
   const [selectedRooms, setSelectedRooms] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(''); // 선택된 날짜
+  const [selectedRoom, setSelectedRoom] = useState(null); // 모달용
 
   const fetchSettings = async () => {
     const res = await fetch('/api/admin/settings');
     const data = await res.json();
     setSettings(data.settings);
-    // 첫 번째 숙박 가능 날짜를 기본 선택
-    if (data.settings?.dates?.length > 1 && !selectedDate) {
-      setSelectedDate(data.settings.dates[0]);
-    }
   };
 
   const fetchRooms = async () => {
@@ -28,9 +24,49 @@ export default function RoomsPage() {
   };
 
   const fetchAllParticipants = async () => {
-    const res = await fetch('/api/admin/unassigned');
-    const data = await res.json();
-    setAllParticipants(data.participants || []);
+    // 모든 폼의 참가자를 가져옴
+    try {
+      const formsRes = await fetch('/api/admin/forms');
+      const formsData = await formsRes.json();
+      const forms = formsData.forms || [];
+
+      console.log('📋 Forms found:', forms.length);
+
+      let allParts = [];
+      for (const form of forms) {
+        const collectionName = `participants_${form.id}`;
+        console.log(`🔍 Fetching from collection: ${collectionName}`);
+        const res = await fetch(`/api/admin/participants?collectionName=${collectionName}`);
+        const data = await res.json();
+        const participants = data.participants || [];
+
+        // 이름과 전화번호 필드 찾기
+        const nameField = form.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
+        const phoneField = form.fields?.find(f => f.type === 'tel');
+
+        // 참가자 데이터에 name과 phone 속성 추가
+        const enrichedParticipants = participants.map(p => ({
+          ...p,
+          name: nameField ? p[nameField.id] : '이름 없음',
+          phone: phoneField ? p[phoneField.id] : '',
+          totalPeople: p.totalPeople || 1 // totalPeople이 없으면 기본값 1
+        }));
+
+        console.log(`  ✅ Found ${participants.length} participants`);
+        console.log(`  📊 Participants with rooms:`, participants.filter(p => p.roomId).length);
+        console.log(`  👤 Sample enriched participant:`, enrichedParticipants[0]);
+        allParts = [...allParts, ...enrichedParticipants];
+      }
+
+      console.log('👥 Total participants:', allParts.length);
+      console.log('🏠 Participants with room assignments:', allParts.filter(p => p.roomId).length);
+      console.log('🔑 Sample participant with room:', allParts.find(p => p.roomId));
+
+      setAllParticipants(allParts);
+    } catch (err) {
+      console.error('Failed to fetch participants:', err);
+      setAllParticipants([]);
+    }
   };
 
   useEffect(() => {
@@ -76,318 +112,313 @@ export default function RoomsPage() {
     }
   };
 
-  // 특정 날짜에 특정 방을 사용하는 참가자 목록
-  const getParticipantsForRoomAndDate = (roomId, date) => {
-    return allParticipants.filter(p => {
-      const assignment = p.roomAssignments?.[date];
-      return assignment?.roomId === roomId;
-    });
-  };
-
-  // 특정 날짜에 방을 필요로 하지만 배정되지 않은 참가자 목록
-  const getUnassignedParticipantsForDate = (date) => {
-    return allParticipants.filter(p => {
-      const needsRoom = p.accommodationDates?.includes(date);
-      const hasAssignment = p.roomAssignments?.[date];
-      return needsRoom && !hasAssignment;
-    });
-  };
-
-  // 참가자에게 방 배정 (숙박 기간 전체)
-  const assignParticipantToRoom = async (roomId, participantId) => {
-    const room = rooms.find(r => r.id === roomId);
-    const roomName = room?.name || null;
-    const participant = allParticipants.find(p => p.id === participantId);
-
-    if (!participant) return;
-
-    // 숙박 날짜가 없으면 경고 후 계속 진행
-    const accommodationDates = participant.accommodationDates || [];
-    if (accommodationDates.length === 0) {
-      if (!confirm(`${participant.name}님은 숙박 신청을 하지 않았습니다. 그래도 배정하시겠습니까?`)) {
-        return;
-      }
+  // 특정 방에 배정된 참가자들
+  const getParticipantsForRoom = (roomId) => {
+    const filtered = allParticipants.filter(p => p.roomId === roomId);
+    if (filtered.length > 0) {
+      console.log(`🏠 Room ${roomId} has ${filtered.length} participants:`, filtered.map(p => ({ name: p.name, roomId: p.roomId })));
     }
-
-    // 날짜별 정원 체크 (경고만, 차단 안 함)
-    if (selectedDate && accommodationDates.length > 0) {
-      const participantsInRoom = getParticipantsForRoomAndDate(roomId, selectedDate);
-      const currentOccupancy = participantsInRoom.reduce((sum, p) => sum + (p.totalPeople || 0), 0);
-      const afterOccupancy = currentOccupancy + (participant.totalPeople || 0);
-
-      if (afterOccupancy > room.capacity) {
-        if (!confirm(`정원 초과 경고!\n\n방: ${roomName}\n날짜: ${selectedDate}\n정원: ${room.capacity}명\n현재: ${currentOccupancy}명\n배정 후: ${afterOccupancy}명\n\n그래도 배정하시겠습니까?`)) {
-          return;
-        }
-      }
-    }
-
-    await fetch('/api/admin/assign', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        collectionName: 'participants_default',
-        participantId,
-        roomId,
-        roomName,
-      }),
-    });
-
-    fetchRooms();
-    fetchAllParticipants();
-  };
-
-  // 참가자의 방 배정 해제
-  const removeParticipantFromRoom = async (participantId) => {
-    await fetch('/api/admin/assign', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        collectionName: 'participants_default',
-        participantId,
-        roomId: null,
-        roomName: null,
-      }),
-    });
-
-    fetchRooms();
-    fetchAllParticipants();
+    return filtered;
   };
 
   // 숙박 가능 날짜 목록 (마지막 날 제외)
   const accommodationDates = settings?.dates?.slice(0, -1) || [];
 
+  // 방 상세 정보 보기
+  const openRoomDetail = (room) => {
+    setSelectedRoom(room);
+  };
+
+  const closeRoomDetail = () => {
+    setSelectedRoom(null);
+  };
+
   return (
-    <main>
-      <h1 className="text-2xl font-bold mb-4">방 관리 (날짜별)</h1>
+    <main className="p-6">
+      <h1 className="text-2xl font-bold mb-6">방 관리</h1>
 
       {/* 방 생성 */}
-      <form onSubmit={createRooms} className="bg-white shadow p-4 rounded mb-6 space-y-3 max-w-xl">
-        <div className="flex gap-4">
-          <label className="flex flex-col">
-            시작 방번호
+      <form onSubmit={createRooms} className="bg-white shadow rounded-lg p-6 mb-6 max-w-2xl">
+        <h2 className="text-xl font-semibold mb-4">방 생성</h2>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">시작 방번호</label>
             <input
               type="number"
               value={form.start}
               onChange={(e) => setForm(f => ({ ...f, start: e.target.value }))}
               required
-              className="border rounded p-1"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
-          </label>
-          <label className="flex flex-col">
-            끝 방번호
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">끝 방번호</label>
             <input
               type="number"
               value={form.end}
               onChange={(e) => setForm(f => ({ ...f, end: e.target.value }))}
               required
-              className="border rounded p-1"
+              className="w-full border border-gray-300 rounded-md p-2"
             />
-          </label>
+          </div>
         </div>
 
-        <label className="flex flex-col">
-          배정 그룹
-          <select
-            value={form.group}
-            onChange={(e) => setForm(f => ({ ...f, group: e.target.value }))}
-            className="border rounded p-1"
-          >
-            <option>탈북민</option>
-            <option>목회자</option>
-            <option>평신도</option>
-            <option>전부</option>
-          </select>
-        </label>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">배정 그룹</label>
+            <select
+              value={form.group}
+              onChange={(e) => setForm(f => ({ ...f, group: e.target.value }))}
+              className="w-full border border-gray-300 rounded-md p-2"
+            >
+              <option>탈북민</option>
+              <option>목회자</option>
+              <option>평신도</option>
+              <option>전부</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">가용 인원</label>
+            <input
+              type="number"
+              value={form.capacity}
+              onChange={(e) => setForm(f => ({ ...f, capacity: e.target.value }))}
+              required
+              className="w-full border border-gray-300 rounded-md p-2"
+            />
+          </div>
+        </div>
 
-        <label className="flex flex-col">
-          가용 인원
-          <input
-            type="number"
-            value={form.capacity}
-            onChange={(e) => setForm(f => ({ ...f, capacity: e.target.value }))}
-            required
-            className="border rounded p-1"
-          />
-        </label>
-
-        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+        <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
           방 생성
         </button>
       </form>
 
       {/* 전체 선택 + 삭제 버튼 */}
       <div className="flex items-center justify-between mb-4">
-        <label className="inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={selectedRooms.length === rooms.length && rooms.length > 0}
-            onChange={toggleSelectAll}
-            className="mr-2"
-          />
-          <span className="text-sm text-gray-700">전체 선택</span>
-        </label>
+        <div className="flex items-center gap-4">
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selectedRooms.length === rooms.length && rooms.length > 0}
+              onChange={toggleSelectAll}
+              className="mr-2"
+            />
+            <span className="text-sm text-gray-700">전체 선택</span>
+          </label>
+          <span className="text-sm text-gray-600">
+            전체 {rooms.length}개 방
+          </span>
+        </div>
 
         {selectedRooms.length > 0 && (
           <button
             onClick={deleteSelected}
-            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-sm"
           >
             선택한 {selectedRooms.length}개 방 삭제
           </button>
         )}
       </div>
 
-      {/* 날짜 선택 탭 */}
-      <div className="mb-6 bg-white shadow rounded-lg p-4">
-        <h3 className="text-lg font-semibold mb-3">날짜 선택</h3>
-        <div className="flex flex-wrap gap-2">
-          {accommodationDates.map(date => (
-            <button
-              key={date}
-              onClick={() => setSelectedDate(date)}
-              className={`px-4 py-2 rounded-md font-medium transition ${
-                selectedDate === date
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              {date}
-            </button>
-          ))}
+      {/* 방 목록 테이블 */}
+      {rooms.length === 0 ? (
+        <div className="bg-white shadow rounded-lg p-12 text-center text-gray-500">
+          <p className="text-lg">생성된 방이 없습니다.</p>
+          <p className="text-sm mt-2">위 폼에서 방을 생성해주세요.</p>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={selectedRooms.length === rooms.length && rooms.length > 0}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4"
+                  />
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">방 이름</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">그룹</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">정원</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">배정 인원</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">배정된 참가자</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">상세보기</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {[...rooms].sort((a, b) => {
+                // 방 이름에서 숫자 추출
+                const numA = parseInt(a.name.match(/\d+/)?.[0] || '0');
+                const numB = parseInt(b.name.match(/\d+/)?.[0] || '0');
+                return numA - numB;
+              }).map(room => {
+                const participants = getParticipantsForRoom(room.id);
+                const totalPeople = participants.reduce((sum, p) => sum + (p.totalPeople || 0), 0);
+                const isOverCapacity = totalPeople > room.capacity;
 
-      {/* 선택된 날짜의 미배정 참가자 */}
-      {selectedDate && (
-        <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold mb-3 text-yellow-900">
-            {selectedDate} 미배정 참가자 ({getUnassignedParticipantsForDate(selectedDate).length}명)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-            {getUnassignedParticipantsForDate(selectedDate).map(p => (
-              <div key={p.id} className="text-sm text-gray-700 bg-white rounded p-2 border border-yellow-300">
-                <div className="font-semibold">{p.name} ({p.totalPeople}명)</div>
-                <div className="text-xs text-gray-600">{p.phone}</div>
-                <div className="text-xs text-gray-500">
-                  숙박: {p.accommodationDates?.join(', ') || '신청 안함'}
-                </div>
-              </div>
-            ))}
-            {getUnassignedParticipantsForDate(selectedDate).length === 0 && (
-              <div className="text-sm text-gray-500 italic">모두 배정되었습니다</div>
-            )}
-          </div>
+                return (
+                  <tr
+                    key={room.id}
+                    className={`hover:bg-gray-50 transition ${
+                      selectedRooms.includes(room.id) ? 'bg-blue-50' : ''
+                    }`}
+                  >
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedRooms.includes(room.id)}
+                        onChange={() => toggleSelect(room.id)}
+                        className="h-4 w-4"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-medium text-gray-900">{room.name}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-gray-600">{room.group}</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="text-sm font-medium">{room.capacity}명</span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`text-sm font-semibold ${
+                        isOverCapacity ? 'text-red-600' : 'text-green-600'
+                      }`}>
+                        {totalPeople}명
+                        {isOverCapacity && ' (초과)'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {participants.length === 0 ? (
+                        <span className="text-xs text-gray-400 italic">없음</span>
+                      ) : (
+                        <div className="text-xs text-gray-700">
+                          {participants.slice(0, 2).map(p => (
+                            <div key={p.id}>• {p.name} ({p.totalPeople}명)</div>
+                          ))}
+                          {participants.length > 2 && (
+                            <div className="text-blue-600 font-medium mt-1">
+                              +{participants.length - 2}명
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => openRoomDetail(room)}
+                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition"
+                      >
+                        상세보기
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* 디버그 정보 */}
-      <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
-        <p className="text-sm">Settings 로드: {settings ? '✅' : '❌'}</p>
-        <p className="text-sm">전체 날짜: {settings?.dates?.join(', ') || '없음'}</p>
-        <p className="text-sm">숙박 가능 날짜: {accommodationDates.join(', ') || '없음'}</p>
-        <p className="text-sm">참가자 수: {allParticipants.length}명</p>
-        <p className="text-sm">방 수: {rooms.length}개</p>
-      </div>
-
-      {/* 방 목록 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {rooms.map(r => {
-          return (
-            <div
-              key={r.id}
-              className={`bg-white shadow rounded p-4 border ${
-                selectedRooms.includes(r.id) ? 'border-blue-500' : 'border-gray-200'
-              }`}
-            >
-              <div className="flex justify-between items-center mb-3">
-                <h2 className="font-semibold text-lg">{r.name} ({r.group})</h2>
-                <input
-                  type="checkbox"
-                  checked={selectedRooms.includes(r.id)}
-                  onChange={() => toggleSelect(r.id)}
-                  className="h-4 w-4"
-                />
+      {/* 방 상세 정보 모달 */}
+      {selectedRoom && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={closeRoomDetail}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">{selectedRoom.name}</h2>
+                <p className="text-sm text-gray-600">{selectedRoom.group} | 정원 {selectedRoom.capacity}명</p>
               </div>
+              <button
+                onClick={closeRoomDetail}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
 
-              <p className="text-sm text-gray-600 mb-3">정원: {r.capacity}명</p>
-
-              {/* 날짜별 할당 현황 */}
-              {accommodationDates.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">날짜 설정이 없습니다.</p>
+            <div className="p-6">
+              {getParticipantsForRoom(selectedRoom.id).length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p>배정된 참가자가 없습니다.</p>
+                </div>
               ) : (
-                <div className="space-y-3">
-                  {accommodationDates.map(date => {
-                  const participantsForDate = getParticipantsForRoomAndDate(r.id, date);
-                  const currentCount = participantsForDate.reduce((sum, p) => sum + (p.totalPeople || 0), 0);
-                  const availableSpace = r.capacity - currentCount;
-                  const isSelected = selectedDate === date;
-
-                  return (
+                <div className="space-y-4">
+                  {getParticipantsForRoom(selectedRoom.id).map(participant => (
                     <div
-                      key={date}
-                      className={`border rounded-lg p-3 ${
-                        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                      }`}
+                      key={participant.id}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
                     >
-                      <div className="flex justify-between items-center mb-2">
-                        <p className="text-sm font-semibold text-gray-700">{date}</p>
-                        <p className={`text-xs font-semibold ${
-                          currentCount > r.capacity ? 'text-red-600' : 'text-gray-600'
-                        }`}>
-                          {currentCount}/{r.capacity}명
-                          {currentCount > r.capacity && ' (초과!)'}
-                        </p>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-lg">{participant.name}</h3>
+                          <p className="text-sm text-gray-600">{participant.phone}</p>
+                        </div>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                          {participant.totalPeople}명
+                        </span>
                       </div>
 
-                      {participantsForDate.length === 0 ? (
-                        <p className="text-xs text-gray-400 italic">배정 없음</p>
-                      ) : (
-                        <div className="space-y-1">
-                          {participantsForDate.map(p => (
-                            <div key={p.id} className="text-xs bg-white rounded p-2 flex justify-between items-center">
-                              <span className="font-medium">{p.name} ({p.totalPeople}명)</span>
-                              <button
-                                onClick={() => removeParticipantFromRoom(p.id)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                ✕
-                              </button>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-600 mb-1">숙박 날짜</p>
+                          {participant.accommodationDates && participant.accommodationDates.length > 0 ? (
+                            <div className="space-y-1">
+                              {participant.accommodationDates.map((date, idx) => (
+                                <div key={idx} className="bg-gray-50 px-2 py-1 rounded text-xs">
+                                  {date}
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          ) : (
+                            <p className="text-gray-400 italic">신청 안함</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <p className="text-gray-600 mb-1">방 타입</p>
+                          <p className="font-medium">{participant.roomType || '-'}</p>
+
+                          {participant.extraCounts && (
+                            <div className="mt-2">
+                              <p className="text-gray-600 mb-1">인원 구성</p>
+                              <div className="text-xs space-y-1">
+                                <p>성인: {participant.extraCounts.adult || 0}명</p>
+                                <p>8세↑: {participant.extraCounts.minor8plus || 0}명</p>
+                                <p>8세↓: {participant.extraCounts.minorUnder8 || 0}명</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {participant.accommodationAmount && (
+                        <div className="mt-3 pt-3 border-t">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">숙박비</span>
+                            <span className="font-semibold text-lg text-green-700">
+                              {participant.accommodationAmount.total.toLocaleString()}원
+                            </span>
+                          </div>
                         </div>
                       )}
-
-                      {/* 참가자 추가 드롭다운 (항상 표시) */}
-                      <div className="mt-2">
-                        <select
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              assignParticipantToRoom(r.id, e.target.value);
-                              e.target.value = '';
-                            }
-                          }}
-                          className="w-full border rounded p-1 text-xs bg-white"
-                        >
-                          <option value="">+ 참가자 추가</option>
-                          {allParticipants
-                            .filter(p => !p.roomId)
-                            .map(p => (
-                              <option key={p.id} value={p.id}>
-                                {p.name} ({p.totalPeople}명)
-                              </option>
-                            ))}
-                        </select>
-                      </div>
                     </div>
-                  );
-                })}
+                  ))}
                 </div>
               )}
             </div>
-          );
-        })}
-      </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

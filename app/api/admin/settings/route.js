@@ -6,7 +6,11 @@ import { requireAdmin } from '../_auth';
 export async function GET(req) {
   const deny = requireAdmin(req); if (deny) return deny;
   const doc = await adminDb.collection('settings').doc('current').get();
-  const settings = doc.exists ? doc.data() : null;
+  const rawSettings = doc.exists ? doc.data() : null;
+
+  // Timestamp를 문자열로 변환
+  const settings = rawSettings ? JSON.parse(JSON.stringify(rawSettings)) : null;
+
   return NextResponse.json({ settings });
 }
 

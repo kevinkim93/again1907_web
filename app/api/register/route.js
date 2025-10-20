@@ -2,24 +2,13 @@ import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebaseAdmin';
 import { Timestamp } from 'firebase-admin/firestore';
 
-// 출생연도 기준 나이 계산
-function calcKRAgeByYear(dobStr) {
-  if (!dobStr) return null;
-  const birthYear = new Date(dobStr).getFullYear();
-  const thisYear = new Date().getFullYear();
-  return thisYear - birthYear;
-}
-
-// 연령대 판별
-function getAgeGroupByYear(age) {
-  if (age >= 19) return 'adult';         // 성인
-  if (age >= 7) return 'minor7to18';     // 만 7세 ~ 만 18세
-  return 'minorUnder7';                  // 만 7세 미만
-}
-
 export async function POST(req) {
   try {
-    const data = await req.json();
+    const { formId, formName, formData } = await req.json();
+
+    if (!formId || !formData) {
+      return new NextResponse('formId and formData are required', { status: 400 });
+    }
 
     // 1. settings 불러오기
     const settingsSnap = await adminDb.collection('settings').doc('current').get();
@@ -28,121 +17,228 @@ export async function POST(req) {
     }
     const settings = settingsSnap.data();
 
-    // 2. 전화번호 중복 확인
-    const phoneDigits = data.phone.replace(/[^\d+]/g, '');
-    const existingParticipants = await adminDb
-      .collection(settings.dbName || 'participants_default')
-      .get();
-
-    const isDuplicate = existingParticipants.docs.some(doc => {
-      const existingPhone = doc.data().phone?.replace(/[^\d+]/g, '');
-      return existingPhone === phoneDigits;
-    });
-
-    if (isDuplicate) {
-      return new NextResponse('이미 등록된 전화번호입니다.', { status: 400 });
+    // 2. 해당 폼 스키마 찾기
+    const form = settings.forms?.find(f => f.id === formId);
+    if (!form) {
+      return new NextResponse('Form not found', { status: 404 });
     }
 
-    // 3. 등록 당시 날짜 (YYYY-MM-DD)
+    // 3. 전화번호 중복 확인 (phone 필드가 있는 경우)
+    const phoneField = form.fields.find(f => f.type === 'tel' || f.id.includes('phone'));
+    if (phoneField && formData[phoneField.id]) {
+      const phoneDigits = formData[phoneField.id].replace(/[^\d+]/g, '');
+
+      // formId별 컬렉션에서 중복 확인
+      const collectionName = `participants_${formId}`;
+      const existingParticipants = await adminDb.collection(collectionName).get();
+
+      const isDuplicate = existingParticipants.docs.some(doc => {
+        const existingPhone = doc.data()[phoneField.id]?.replace(/[^\d+]/g, '');
+        return existingPhone === phoneDigits;
+      });
+
+      if (isDuplicate) {
+        return NextResponse.json({ error: '이미 등록된 전화번호입니다.' }, { status: 400 });
+      }
+    }
+
+    // 4. 등록 당시 날짜 (YYYY-MM-DD)
     const now = new Date();
     const registeredAt = now.toISOString().split('T')[0];
 
-    // 4. 등록 기간 판별 (가격표 적용)
-    let period = settings.registrationPeriods?.find(p => {
-      const start = new Date(p.startDate);
-      const end = new Date(p.endDate);
-      return now >= start && now <= end;
-    });
-    if (!period && settings.registrationPeriods?.length > 0) {
-      period = settings.registrationPeriods.at(-1);
-    }
-
-    // 5. 본인 연령대 판별
-    const age = calcKRAgeByYear(data.dob);
-    const ageGroup = getAgeGroupByYear(age);
-
-    // 6. extraCounts 초기화
-    const extraCounts = {
-      adult: data.extraCounts?.adult || 0,
-      minor7to18: data.extraCounts?.minor7to18 || 0,
-      minorUnder7: data.extraCounts?.minorUnder7 || 0,
-    };
-
-    // 7. 본인 카운트 반영
-    extraCounts[ageGroup] += 1;
-
-    // 8. 총 인원
-    const totalPeople =
-      extraCounts.adult + extraCounts.minor7to18 + extraCounts.minorUnder7;
-
-    // 9. 금액 계산 (등록 기간별 가격 적용)
-    let totalAmount = 0;
-    let unitPrice = {};
-
-    if (period) {
-      const price = data.isPartial ? period.partialPrice : period.fullPrice;
-      unitPrice = {
-        adult: price?.adult || 0,
-        minor7to18: price?.minor7to18 || price?.minor8plus || 0,
-        minorUnder7: price?.minorUnder7 || price?.minorUnder8 || 0,
-      };
-
-      if (data.isPartial && data.partialDates?.length > 0) {
-        const days = data.partialDates.length;
-        totalAmount =
-          unitPrice.adult * extraCounts.adult * days +
-          unitPrice.minor7to18 * extraCounts.minor7to18 * days +
-          unitPrice.minorUnder7 * extraCounts.minorUnder7 * days;
-      } else {
-        totalAmount =
-          unitPrice.adult * extraCounts.adult +
-          unitPrice.minor7to18 * extraCounts.minor7to18 +
-          unitPrice.minorUnder7 * extraCounts.minorUnder7;
-      }
-    } else {
-      // fallback: 기간 설정이 없는 경우 고정 가격
-      const fullPrice = { adult: 150000, minor7to18: 120000, minorUnder7: 0 };
-      const partialPrice = { adult: 40000, minor7to18: 25000, minorUnder7: 0 };
-
-      if (data.isPartial && data.partialDates?.length > 0) {
-        const days = data.partialDates.length;
-        unitPrice = partialPrice;
-        totalAmount =
-          unitPrice.adult * extraCounts.adult * days +
-          unitPrice.minor7to18 * extraCounts.minor7to18 * days +
-          unitPrice.minorUnder7 * extraCounts.minorUnder7 * days;
-      } else {
-        unitPrice = fullPrice;
-        totalAmount =
-          unitPrice.adult * extraCounts.adult +
-          unitPrice.minor7to18 * extraCounts.minor7to18 +
-          unitPrice.minorUnder7 * extraCounts.minorUnder7;
-      }
-    }
-
-    // 10. 참가자 문서 생성
+    // 5. 참가자 문서 생성
     const participant = {
-      ...data,
-      ageGroup,
-      extraCounts,
-      totalPeople,
-      registeredAt,   // "YYYY-MM-DD"
-      amount: {
-        adult: unitPrice.adult,
-        minor7to18: unitPrice.minor7to18,
-        minorUnder7: unitPrice.minorUnder7,
-        total: totalAmount,
-      },
+      formId,
+      formName,
+      ...formData, // 동적 폼 데이터 모두 저장
+      registeredAt,
       paymentStatus: 'unpaid',
-      roomId: null,
-      roomName: null,
-      createdAt: Timestamp.now(), // ✅ Firestore Timestamp 저장
+      createdAt: Timestamp.now(),
     };
 
-    // 11. 저장
-    await adminDb.collection(settings.dbName || 'participants_default').add(participant);
+    // 6. totalPeople 계산 (people-count 필드가 있는 경우)
+    console.log('📝 Registration Start:', {
+      formId,
+      formName,
+      formDataKeys: Object.keys(formData),
+      formFieldTypes: form.fields.map(f => ({ id: f.id, type: f.type })),
+    });
 
-    return NextResponse.json({ ok: true, participant });
+    const peopleField = form.fields.find(f => f.type === 'people-count');
+    const dobField = form.fields.find(f => f.type === 'date-of-birth');
+
+    const calculateAgeGroup = (dob) => {
+      if (!dob) return null;
+      const birthYear = new Date(dob).getFullYear();
+      const thisYear = new Date().getFullYear();
+      const age = thisYear - birthYear;
+
+      if (age >= 19) return 'adult';
+      if (age >= 8) return 'minor8plus';
+      return 'minorUnder8';
+    };
+
+    if (peopleField && formData[peopleField.id]) {
+      const peopleData = formData[peopleField.id];
+
+      let adult = peopleData.adult || 0;
+      let minor8plus = peopleData.minor8plus || 0;
+      let minorUnder8 = peopleData.minorUnder8 || 0;
+
+      // 대표자 본인 나이 확인하여 해당 그룹에 추가
+      if (dobField && formData[dobField.id]) {
+        const representativeAgeGroup = calculateAgeGroup(formData[dobField.id]);
+        if (representativeAgeGroup === 'adult') adult += 1;
+        else if (representativeAgeGroup === 'minor8plus') minor8plus += 1;
+        else if (representativeAgeGroup === 'minorUnder8') minorUnder8 += 1;
+      }
+
+      participant.extraCounts = {
+        adult,
+        minor8plus,
+        minorUnder8,
+      };
+      participant.totalPeople = adult + minor8plus + minorUnder8;
+    }
+
+    console.log('👥 People Calculation Done:', {
+      peopleField: peopleField?.id,
+      dobField: dobField?.id,
+      extraCounts: participant.extraCounts,
+      totalPeople: participant.totalPeople,
+    });
+
+    // 7. 참가비 계산 (payment-calculator 필드가 있는 경우)
+    const paymentField = form.fields.find(f => f.type === 'payment-calculator');
+    console.log('🎯 Looking for payment field:', {
+      found: !!paymentField,
+      paymentFieldId: paymentField?.id,
+    });
+
+    if (paymentField) {
+      const dateFieldId = `${paymentField.id}_dates`;
+      const selectedDates = formData[dateFieldId] || [];
+      const totalDates = paymentField.dateOptions?.length || 0;
+      const isPartial = selectedDates.length > 0 && selectedDates.length < totalDates;
+
+      console.log('🔍 Payment Calculator Debug:', {
+        paymentField: paymentField.id,
+        dateFieldId,
+        selectedDates,
+        totalDates,
+        isPartial,
+        extraCounts: participant.extraCounts,
+        pricing: paymentField.pricing,
+      });
+
+      // 현재 날짜가 1차 등록 마감일 이전인지 확인
+      const now = new Date();
+      const phase1Deadline = paymentField.phase1Deadline ? new Date(paymentField.phase1Deadline) : null;
+      const isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+
+      const phase = isPhase1 ? paymentField.pricing?.phase1 : paymentField.pricing?.phase2;
+      const price = isPartial ? phase?.daily : phase?.full;
+
+      console.log('💰 Price Info:', {
+        isPhase1,
+        phase,
+        price,
+      });
+
+      if (price && selectedDates.length > 0) {
+        // extraCounts에서 계산 (대표자 포함된 값)
+        const adult = participant.extraCounts?.adult || 0;
+        const minor8plus = participant.extraCounts?.minor8plus || 0;
+        const minorUnder8 = participant.extraCounts?.minorUnder8 || 0;
+
+        let totalAmount = 0;
+        if (isPartial && selectedDates.length > 0) {
+          const days = selectedDates.length;
+          totalAmount = (
+            (price?.adult || 0) * adult * days +
+            (price?.minor8plus || 0) * minor8plus * days +
+            (price?.minorUnder8 || 0) * minorUnder8 * days
+          );
+        } else {
+          totalAmount = (
+            (price?.adult || 0) * adult +
+            (price?.minor8plus || 0) * minor8plus +
+            (price?.minorUnder8 || 0) * minorUnder8
+          );
+        }
+
+        console.log('💵 Calculated Amount:', totalAmount);
+
+        participant.amount = {
+          first: totalAmount,
+          second: 0,
+          total: totalAmount,
+        };
+        participant.isPartial = isPartial;
+        participant.partialDates = isPartial ? selectedDates : [];
+        participant.registrationPhase = isPhase1 ? 'phase1' : 'phase2';
+      }
+    }
+
+    // 8. 숙박비 계산 (accommodation-calculator 필드가 있는 경우)
+    const accommodationField = form.fields.find(f => f.type === 'accommodation-calculator');
+    if (accommodationField) {
+      const accomDateFieldId = `${accommodationField.id}_dates`;
+      const accomRoomTypeFieldId = `${accommodationField.id}_roomType`;
+      const selectedAccomDates = formData[accomDateFieldId] || [];
+      const selectedRoomType = formData[accomRoomTypeFieldId] || '';
+
+      // 숙박 정보 저장
+      participant.accommodationDates = selectedAccomDates;
+      participant.roomType = selectedRoomType;
+
+      // 현재 날짜가 1차 등록 마감일 이전인지 확인
+      const now = new Date();
+      const phase1Deadline = accommodationField.phase1Deadline ? new Date(accommodationField.phase1Deadline) : null;
+      const isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+
+      const phase = isPhase1 ? accommodationField.accommodationPricing?.phase1 : accommodationField.accommodationPricing?.phase2;
+      const pricePerNight = phase?.[selectedRoomType] || 0;
+
+      if (pricePerNight && selectedAccomDates.length > 0) {
+        const totalNights = selectedAccomDates.length;
+        const totalAccommodationAmount = pricePerNight * totalNights;
+
+        participant.accommodationAmount = {
+          pricePerNight,
+          totalNights,
+          total: totalAccommodationAmount,
+          phase: isPhase1 ? 'phase1' : 'phase2',
+        };
+
+        // 기존 amount에 숙박비 추가
+        if (participant.amount) {
+          participant.amount.total += totalAccommodationAmount;
+        } else {
+          participant.amount = {
+            first: totalAccommodationAmount,
+            second: 0,
+            total: totalAccommodationAmount,
+          };
+        }
+      }
+    }
+
+    // 9. 방 배정 관련 초기화
+    participant.roomId = null;
+    participant.roomName = null;
+    participant.roomAssignments = {};
+
+    // 10. formId별 컬렉션에 저장
+    const collectionName = `participants_${formId}`;
+    const docRef = await adminDb.collection(collectionName).add(participant);
+
+    return NextResponse.json({
+      ok: true,
+      participantId: docRef.id,
+      collectionName
+    });
+
   } catch (err) {
     console.error('🔥 등록 에러:', err);
     return new NextResponse('등록 중 오류 발생', { status: 500 });

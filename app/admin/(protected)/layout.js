@@ -29,8 +29,11 @@ export default async function ProtectedAdminLayout({ children }) {
           <a href="/admin" className="block rounded-md px-3 py-2 text-gray-700 hover:bg-blue-100 hover:text-blue-700">
             대시보드
           </a>
+          <a href="/admin/forms" className="block rounded-md px-3 py-2 text-gray-700 hover:bg-blue-100 hover:text-blue-700">
+            폼 관리
+          </a>
           <a href="/admin/attendees" className="block rounded-md px-3 py-2 text-gray-700 hover:bg-blue-100 hover:text-blue-700">
-            인원관리
+            인원 관리
           </a>
           <a href="/admin/rooms" className="block rounded-md px-3 py-2 text-gray-700 hover:bg-blue-100 hover:text-blue-700">
             방 관리
