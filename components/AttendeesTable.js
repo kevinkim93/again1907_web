@@ -116,31 +116,30 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
     setEditing(null);
   };
 
-  // 특정 참가자가 배정 가능한 방 목록 (경고만, 차단 안 함)
-  const getAvailableRoomsForParticipant = (participant) => {
-    // 모든 방을 표시 (시스템적으로 차단하지 않음)
-    return rooms;
-  };
+  // 방 번호로 그룹화
+  const roomNumbersSet = new Set();
+  rooms.forEach(room => {
+    const roomNum = room.roomNumber || room.name?.replace(/[^\d]/g, '');
+    if (roomNum) roomNumbersSet.add(roomNum);
+  });
+  const uniqueRoomNumbers = Array.from(roomNumbersSet).sort((a, b) => parseInt(a) - parseInt(b));
 
-  // 방 배정 (경고 포함)
-  const assignRoom = async (participantId, roomId) => {
+  // 방 배정 (방 번호 기반)
+  const assignRoom = async (participantId, roomNumber) => {
     const participant = participants.find(p => p.id === participantId);
 
     if (!participant) return;
 
     // 미배정으로 변경하는 경우
-    if (!roomId || roomId === '') {
+    if (!roomNumber || roomNumber === '') {
       await fetch('/api/admin/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ collectionName, participantId, roomId: null, roomName: null }),
+        body: JSON.stringify({ collectionName, participantId, roomNumber: null }),
       });
       window.location.reload();
       return;
     }
-
-    const room = rooms.find(r => r.id === roomId);
-    const roomName = room?.name || null;
 
     // 숙박 신청 안 한 경우 경고
     const accommodationDates = participant.accommodationDates || [];
@@ -151,21 +150,30 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
     }
 
     // 정원 초과 경고 (각 날짜별로 체크)
-    if (room && accommodationDates.length > 0) {
+    if (accommodationDates.length > 0) {
       for (const date of accommodationDates) {
-        const participantsInRoomOnDate = participants.filter(p => {
-          if (p.id === participantId) return false;
-          return p.roomAssignments?.[date]?.roomId === roomId;
-        });
+        // 해당 날짜의 방 문서 찾기
+        const roomOnDate = rooms.find(r =>
+          (r.roomNumber === roomNumber || r.name?.replace(/[^\d]/g, '') === roomNumber) &&
+          r.date === date
+        );
 
-        const currentOccupancy = participantsInRoomOnDate.reduce((sum, p) => sum + (p.totalPeople || 0), 0);
-        const afterOccupancy = currentOccupancy + (participant.totalPeople || 0);
+        if (roomOnDate) {
+          // 해당 날짜에 이미 배정된 참가자 찾기
+          const participantsInRoomOnDate = participants.filter(p => {
+            if (p.id === participantId) return false;
+            return p.roomAssignments?.[date]?.roomId === roomOnDate.id;
+          });
 
-        if (afterOccupancy > room.capacity) {
-          if (!confirm(`정원 초과 경고!\n\n방: ${roomName}\n날짜: ${date}\n정원: ${room.capacity}명\n현재: ${currentOccupancy}명\n배정 후: ${afterOccupancy}명\n\n그래도 배정하시겠습니까?`)) {
-            return;
+          const currentOccupancy = participantsInRoomOnDate.reduce((sum, p) => sum + (p.totalPeople || 0), 0);
+          const afterOccupancy = currentOccupancy + (participant.totalPeople || 0);
+
+          if (afterOccupancy > roomOnDate.capacity) {
+            if (!confirm(`정원 초과 경고!\n\n방: ${roomNumber}호\n날짜: ${date}\n정원: ${roomOnDate.capacity}명\n현재: ${currentOccupancy}명\n배정 후: ${afterOccupancy}명\n\n그래도 배정하시겠습니까?`)) {
+              return;
+            }
+            break; // 한 번만 경고
           }
-          break; // 한 번만 경고
         }
       }
     }
@@ -173,7 +181,7 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
     await fetch('/api/admin/assign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ collectionName, participantId, roomId, roomName }),
+      body: JSON.stringify({ collectionName, participantId, roomNumber }),
     });
 
     // 전체 데이터 새로고침
@@ -370,16 +378,21 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
 
                 <td className="border p-2">
                   <select
-                    value={r.roomId || ''}
+                    value={r.roomNumber || ''}
                     onChange={(e) => assignRoom(r.id, e.target.value)}
                     className="border rounded p-1 text-sm w-full"
                   >
                     <option value="">미배정</option>
-                    {rooms.map(rm => (
-                      <option key={rm.id} value={rm.id}>
-                        {rm.name} ({rm.group})
-                      </option>
-                    ))}
+                    {uniqueRoomNumbers.map(roomNum => {
+                      const sampleRoom = rooms.find(rm =>
+                        rm.roomNumber === roomNum || rm.name?.replace(/[^\d]/g, '') === roomNum
+                      );
+                      return (
+                        <option key={roomNum} value={roomNum}>
+                          {roomNum}호 ({sampleRoom?.group || '전부'})
+                        </option>
+                      );
+                    })}
                   </select>
                 </td>
                 <td className="border p-2">

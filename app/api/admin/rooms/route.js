@@ -32,28 +32,45 @@ export async function GET(req) {
   return NextResponse.json({ rooms: result });
 }
 
-// POST: 방 여러 개 생성
+// POST: 방 여러 개 생성 (날짜별로 개별 생성)
 export async function POST(req) {
   const deny = requireAdmin(req); if (deny) return deny;
-  const { start, end, group, capacity } = await req.json();
+  const { start, end, startDate, endDate, group, capacity } = await req.json();
 
   const startNum = parseInt(start, 10);
   const endNum = parseInt(end, 10);
   const cap = parseInt(capacity, 10);
 
+  // 날짜 범위 계산
+  const startD = new Date(startDate);
+  const endD = new Date(endDate);
+  const dates = [];
+
+  for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+    dates.push(d.toISOString().split('T')[0]); // YYYY-MM-DD 형식
+  }
+
+  // 방 번호 × 날짜 조합으로 생성
   const batch = adminDb.batch();
-  for (let i = startNum; i <= endNum; i++) {
-    const roomRef = adminDb.collection('rooms').doc();
-    batch.set(roomRef, {
-      name: `${i}호`,
-      capacity: cap,
-      group,
-      createdAt: new Date()
-    });
+  for (let roomNum = startNum; roomNum <= endNum; roomNum++) {
+    for (const date of dates) {
+      const roomRef = adminDb.collection('rooms').doc();
+      batch.set(roomRef, {
+        roomNumber: roomNum.toString(),
+        date: date,
+        name: `${roomNum}호 (${date})`,
+        capacity: cap,
+        group,
+        createdAt: new Date()
+      });
+    }
   }
   await batch.commit();
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    created: (endNum - startNum + 1) * dates.length
+  });
 }
 
 // DELETE: 여러 방 삭제

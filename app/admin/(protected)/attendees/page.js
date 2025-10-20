@@ -93,13 +93,13 @@ export default function AttendeesPage() {
     fetchParticipants(selectedFormId);
   };
 
-  // 방 배정
-  const assignRoom = async (participantId, roomId) => {
+  // 방 배정 (roomNumber 기반)
+  const assignRoom = async (participantId, roomNumber) => {
     const collectionName = `participants_${selectedFormId}`;
     const participant = participants.find(p => p.id === participantId);
 
     // 배정 해제
-    if (!roomId || roomId === null) {
+    if (!roomNumber || roomNumber === null || roomNumber === '') {
       if (!confirm('방 배정을 해제하시겠습니까?')) return;
 
       await fetch('/api/admin/assign', {
@@ -108,17 +108,14 @@ export default function AttendeesPage() {
         body: JSON.stringify({
           collectionName,
           participantId,
-          roomId: null,
-          roomName: null,
+          roomNumber: null,
         }),
       });
 
       fetchParticipants(selectedFormId);
+      fetchRooms(); // 방 목록도 새로고침
       return;
     }
-
-    // 방 배정
-    const room = rooms.find(r => r.id === roomId);
 
     // 숙박 날짜가 있는지 확인
     const accommodationDates = participant?.accommodationDates || [];
@@ -128,18 +125,45 @@ export default function AttendeesPage() {
       }
     }
 
+    // 정원 초과 경고
+    if (accommodationDates.length > 0) {
+      for (const date of accommodationDates) {
+        const roomOnDate = rooms.find(r =>
+          (r.roomNumber === roomNumber || r.name?.replace(/[^\d]/g, '') === roomNumber) &&
+          r.date === date
+        );
+
+        if (roomOnDate) {
+          const participantsInRoomOnDate = participants.filter(p => {
+            if (p.id === participantId) return false;
+            return p.roomAssignments?.[date]?.roomId === roomOnDate.id;
+          });
+
+          const currentOccupancy = participantsInRoomOnDate.reduce((sum, p) => sum + (p.totalPeople || 0), 0);
+          const afterOccupancy = currentOccupancy + (participant.totalPeople || 0);
+
+          if (afterOccupancy > roomOnDate.capacity) {
+            if (!confirm(`정원 초과 경고!\n\n방: ${roomNumber}호\n날짜: ${date}\n정원: ${roomOnDate.capacity}명\n현재: ${currentOccupancy}명\n배정 후: ${afterOccupancy}명\n\n그래도 배정하시겠습니까?`)) {
+              return;
+            }
+            break;
+          }
+        }
+      }
+    }
+
     await fetch('/api/admin/assign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         collectionName,
         participantId,
-        roomId,
-        roomName: room?.name || null,
+        roomNumber,
       }),
     });
 
     fetchParticipants(selectedFormId);
+    fetchRooms(); // 방 목록도 새로고침
   };
 
   // 방 배정 페이지로 이동
@@ -176,6 +200,14 @@ export default function AttendeesPage() {
 
   // 현재 폼에 accommodation-calculator가 있는지 확인
   const hasAccommodation = currentForm?.fields?.some(f => f.type === 'accommodation-calculator');
+
+  // 방 번호로 그룹화 (중복 제거)
+  const roomNumbersSet = new Set();
+  rooms.forEach(room => {
+    const roomNum = room.roomNumber || room.name?.replace(/[^\d]/g, '');
+    if (roomNum) roomNumbersSet.add(roomNum);
+  });
+  const uniqueRoomNumbers = Array.from(roomNumbersSet).sort((a, b) => parseInt(a) - parseInt(b));
 
   return (
     <main className="p-6">
@@ -254,9 +286,12 @@ export default function AttendeesPage() {
                     </td>
                     {hasAccommodation && (
                       <td className="border p-2">
-                        {participant.roomName ? (
+                        {participant.roomNumber ? (
                           <div className="text-xs">
-                            <div className="font-semibold text-blue-700">{participant.roomName}</div>
+                            <div className="font-semibold text-blue-700">{participant.roomNumber}호</div>
+                            <div className="text-gray-500 text-[10px] mt-0.5">
+                              {participant.accommodationDates?.length || 0}일 배정됨
+                            </div>
                             <button
                               onClick={() => assignRoom(participant.id, null)}
                               className="text-red-600 hover:text-red-800 text-[10px] underline mt-1"
@@ -271,32 +306,34 @@ export default function AttendeesPage() {
                             className="w-full border border-gray-300 rounded p-1 text-xs"
                           >
                             <option value="">방 선택</option>
-                            {rooms
-                              .filter(room => {
+                            {uniqueRoomNumbers
+                              .filter(roomNum => {
                                 // 참가자의 방 타입과 일치하는 방만 표시
                                 const participantRoomType = participant.roomType;
-                                if (!participantRoomType) return true; // 방 타입이 없으면 모든 방 표시
+                                if (!participantRoomType) return true;
 
-                                // roomType 예: "2인실", "30인실"
-                                // capacity 예: 2, 30
-                                // roomType에서 숫자 추출
+                                const sampleRoom = rooms.find(r =>
+                                  (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum)
+                                );
+
+                                if (!sampleRoom) return false;
+
                                 const typeMatch = participantRoomType.match(/(\d+)인실/);
-                                if (!typeMatch) return true; // 패턴이 맞지 않으면 모든 방 표시
+                                if (!typeMatch) return true;
 
                                 const requiredCapacity = parseInt(typeMatch[1]);
-                                return room.capacity === requiredCapacity;
+                                return sampleRoom.capacity === requiredCapacity;
                               })
-                              .sort((a, b) => {
-                                // 방 이름에서 숫자 추출하여 정렬
-                                const numA = parseInt(a.name.match(/\d+/)?.[0] || '0');
-                                const numB = parseInt(b.name.match(/\d+/)?.[0] || '0');
-                                return numA - numB;
-                              })
-                              .map(room => (
-                                <option key={room.id} value={room.id}>
-                                  {room.name} ({room.capacity}명)
-                                </option>
-                              ))}
+                              .map(roomNum => {
+                                const sampleRoom = rooms.find(r =>
+                                  (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum)
+                                );
+                                return (
+                                  <option key={roomNum} value={roomNum}>
+                                    {roomNum}호 ({sampleRoom?.capacity || '?'}명)
+                                  </option>
+                                );
+                              })}
                           </select>
                         )}
                       </td>
