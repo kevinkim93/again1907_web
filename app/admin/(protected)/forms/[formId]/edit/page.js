@@ -710,8 +710,51 @@ export default function FormEditorPage() {
                         }}
                         className="w-full border border-gray-300 rounded-md p-2 font-mono text-sm"
                         rows={3}
-                        placeholder="2인실&#10;4인실"
+                        placeholder="2인실&#10;30인실"
                       />
+                    </div>
+
+                    {/* 방 타입별 추가 옵션 설정 */}
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <h5 className="font-medium text-purple-900 mb-3">방 타입별 추가 옵션 설정</h5>
+                      <p className="text-xs text-purple-700 mb-3">
+                        특정 방 타입 선택 시 추가 정보를 받을 수 있습니다.
+                      </p>
+                      <div className="space-y-3">
+                        {(editingField.roomTypes || []).map((roomType, idx) => (
+                          <div key={idx} className="bg-white border border-purple-300 rounded-lg p-3">
+                            <div className="font-medium text-gray-900 mb-2">{roomType}</div>
+                            <select
+                              value={editingField.roomTypeOptions?.[roomType]?.type || 'none'}
+                              onChange={(e) => {
+                                const optionType = e.target.value;
+                                setEditingField({
+                                  ...editingField,
+                                  roomTypeOptions: {
+                                    ...editingField.roomTypeOptions,
+                                    [roomType]: optionType === 'none' ? null : { type: optionType }
+                                  }
+                                });
+                              }}
+                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                            >
+                              <option value="none">추가 옵션 없음</option>
+                              <option value="gender">남녀 인원 선택</option>
+                              <option value="count">동숙 인원 선택</option>
+                            </select>
+                            {editingField.roomTypeOptions?.[roomType]?.type === 'gender' && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                → 사용자가 남자/여자 인원을 입력하게 됩니다.
+                              </p>
+                            )}
+                            {editingField.roomTypeOptions?.[roomType]?.type === 'count' && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                → 사용자가 함께 숙박할 인원 수를 선택하게 됩니다.
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     {/* 1차 등록 가격 */}

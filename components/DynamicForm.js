@@ -8,9 +8,12 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
   const dateFieldId = `${field.id}_dates`;
   // 방 타입 선택 필드 ID
   const roomTypeFieldId = `${field.id}_roomType`;
+  // 방 옵션 필드 ID
+  const roomOptionsFieldId = `${field.id}_roomOptions`;
 
   const selectedDates = formData[dateFieldId] || [];
   const selectedRoomType = formData[roomTypeFieldId] || '';
+  const roomOptions = formData[roomOptionsFieldId] || {};
 
   if (!field.dateOptions || field.dateOptions.length === 0) {
     return (
@@ -63,7 +66,34 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
   const pricePerNight = phase?.[selectedRoomType] || 0;
 
   const totalNights = selectedDates.length;
-  const totalAmount = pricePerNight * totalNights;
+
+  // 방 타입별 인원 수 계산
+  const roomTypeOption = field.roomTypeOptions?.[selectedRoomType];
+  let peopleCount = 1; // 기본값: 1명
+  let maleCount = 0;
+  let femaleCount = 0;
+
+  if (roomTypeOption?.type === 'gender') {
+    // 30인실 같은 경우: 배열 기반 남자 + 여자 인원
+    const maleList = roomOptions.male || [];
+    const femaleList = roomOptions.female || [];
+    maleCount = maleList.length;
+    femaleCount = femaleList.length;
+    peopleCount = maleCount + femaleCount;
+  } else if (roomTypeOption?.type === 'count') {
+    // 2인실 같은 경우: 선택한 인원 수 (가격 계산에는 영향 없음)
+    peopleCount = parseInt(roomOptions.count) || 1;
+  }
+
+  // 총 금액 계산: 30인실은 인원당 가격, 그 외는 방당 가격
+  let totalAmount = 0;
+  if (roomTypeOption?.type === 'gender') {
+    // 30인실: 인원 수 × 1박 요금 × 박수
+    totalAmount = pricePerNight * peopleCount * totalNights;
+  } else {
+    // 2인실 등: 1박 요금 × 박수 (인원수 무관)
+    totalAmount = pricePerNight * totalNights;
+  }
 
   return (
     <div className="bg-green-50 border border-green-300 rounded-lg p-4">
@@ -74,6 +104,22 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
           <span className="text-gray-700">방 타입:</span>
           <span className="font-medium">{selectedRoomType}</span>
         </div>
+
+        {roomTypeOption?.type === 'gender' && (
+          <div className="flex justify-between">
+            <span className="text-gray-700">인원:</span>
+            <span className="font-medium">
+              {peopleCount}명 (남 {maleCount}, 여 {femaleCount})
+            </span>
+          </div>
+        )}
+
+        {roomTypeOption?.type === 'count' && (
+          <div className="flex justify-between">
+            <span className="text-gray-700">동숙 인원:</span>
+            <span className="font-medium">{peopleCount}명</span>
+          </div>
+        )}
 
         <div className="flex justify-between">
           <span className="text-gray-700">숙박 일수:</span>
@@ -86,7 +132,9 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
         </div>
 
         <div className="flex justify-between">
-          <span className="text-gray-700">1박 요금:</span>
+          <span className="text-gray-700">
+            {roomTypeOption?.type === 'gender' ? '1인 1박 요금:' : '1박 요금:'}
+          </span>
           <span className="font-medium">{pricePerNight.toLocaleString()}원</span>
         </div>
 
@@ -729,8 +777,11 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
         // 숙박비 자동 계산 필드
         const accomDateFieldId = `${field.id}_dates`;
         const accomRoomTypeFieldId = `${field.id}_roomType`;
+        const accomRoomOptionsFieldId = `${field.id}_roomOptions`;
         const accomDateOptions = field.dateOptions || [];
         const accomRoomTypes = field.roomTypes || [];
+        const selectedRoomType = formData[accomRoomTypeFieldId];
+        const roomTypeOption = selectedRoomType ? field.roomTypeOptions?.[selectedRoomType] : null;
 
         return (
           <div className="space-y-4">
@@ -771,6 +822,205 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     </label>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* 방 타입별 추가 옵션 */}
+            {selectedRoomType && roomTypeOption && (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <h4 className="font-semibold text-purple-900 mb-3">{selectedRoomType} 추가 정보</h4>
+
+                {roomTypeOption.type === 'gender' && (
+                  <div className="space-y-4">
+                    {/* 남자 인원 */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium">남자 인원</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                            const maleList = currentData.male || [];
+
+                            // 대표자 정보 가져오기
+                            const nameField = formSchema.fields.find(f => f.type === 'text' && f.label.includes('이름'));
+                            const telField = formSchema.fields.find(f => f.type === 'tel');
+                            const representativeName = formData[nameField?.id] || '대표자';
+                            const representativeTel = formData[telField?.id] || '';
+
+                            const newIndex = maleList.length + 1;
+                            const generatedName = `${representativeName}_남${newIndex}`;
+
+                            handleChange(accomRoomOptionsFieldId, {
+                              ...currentData,
+                              male: [...maleList, { name: generatedName, age: '' }],
+                              representativeName,
+                              representativeTel
+                            });
+                          }}
+                          className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                        >
+                          + 추가
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {((formData[accomRoomOptionsFieldId]?.male) || []).map((person, idx) => (
+                          <div key={idx} className="flex gap-2 items-center bg-white border border-gray-300 rounded p-2">
+                            <span className="text-sm text-gray-600 min-w-[20px]">{idx + 1}.</span>
+                            <input
+                              type="text"
+                              placeholder={person.name}
+                              value={person.name}
+                              onChange={(e) => {
+                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                const maleList = [...(currentData.male || [])];
+                                maleList[idx] = { ...maleList[idx], name: e.target.value };
+                                handleChange(accomRoomOptionsFieldId, {
+                                  ...currentData,
+                                  male: maleList
+                                });
+                              }}
+                              className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
+                            />
+                            <input
+                              type="number"
+                              placeholder="나이"
+                              value={person.age}
+                              onChange={(e) => {
+                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                const maleList = [...(currentData.male || [])];
+                                maleList[idx] = { ...maleList[idx], age: e.target.value };
+                                handleChange(accomRoomOptionsFieldId, {
+                                  ...currentData,
+                                  male: maleList
+                                });
+                              }}
+                              className="w-16 border border-gray-300 rounded px-2 py-1 text-sm"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                const maleList = [...(currentData.male || [])];
+                                maleList.splice(idx, 1);
+                                handleChange(accomRoomOptionsFieldId, {
+                                  ...currentData,
+                                  male: maleList
+                                });
+                              }}
+                              className="text-red-600 hover:text-red-800 text-sm px-2"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 여자 인원 */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium">여자 인원</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                            const femaleList = currentData.female || [];
+
+                            // 대표자 정보 가져오기
+                            const nameField = formSchema.fields.find(f => f.type === 'text' && f.label.includes('이름'));
+                            const telField = formSchema.fields.find(f => f.type === 'tel');
+                            const representativeName = formData[nameField?.id] || '대표자';
+                            const representativeTel = formData[telField?.id] || '';
+
+                            const newIndex = femaleList.length + 1;
+                            const generatedName = `${representativeName}_여${newIndex}`;
+
+                            handleChange(accomRoomOptionsFieldId, {
+                              ...currentData,
+                              female: [...femaleList, { name: generatedName, age: '' }],
+                              representativeName,
+                              representativeTel
+                            });
+                          }}
+                          className="text-sm bg-pink-500 text-white px-3 py-1 rounded hover:bg-pink-600"
+                        >
+                          + 추가
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {((formData[accomRoomOptionsFieldId]?.female) || []).map((person, idx) => (
+                          <div key={idx} className="flex gap-2 items-center bg-white border border-gray-300 rounded p-2">
+                            <span className="text-sm text-gray-600 min-w-[20px]">{idx + 1}.</span>
+                            <input
+                              type="text"
+                              placeholder={person.name}
+                              value={person.name}
+                              onChange={(e) => {
+                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                const femaleList = [...(currentData.female || [])];
+                                femaleList[idx] = { ...femaleList[idx], name: e.target.value };
+                                handleChange(accomRoomOptionsFieldId, {
+                                  ...currentData,
+                                  female: femaleList
+                                });
+                              }}
+                              className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
+                            />
+                            <input
+                              type="number"
+                              placeholder="나이"
+                              value={person.age}
+                              onChange={(e) => {
+                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                const femaleList = [...(currentData.female || [])];
+                                femaleList[idx] = { ...femaleList[idx], age: e.target.value };
+                                handleChange(accomRoomOptionsFieldId, {
+                                  ...currentData,
+                                  female: femaleList
+                                });
+                              }}
+                              className="w-16 border border-gray-300 rounded px-2 py-1 text-sm"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                const femaleList = [...(currentData.female || [])];
+                                femaleList.splice(idx, 1);
+                                handleChange(accomRoomOptionsFieldId, {
+                                  ...currentData,
+                                  female: femaleList
+                                });
+                              }}
+                              className="text-red-600 hover:text-red-800 text-sm px-2"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {roomTypeOption.type === 'count' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">함께 숙박할 인원 (본인 포함)</label>
+                    <select
+                      value={formData[accomRoomOptionsFieldId]?.count || '1'}
+                      onChange={(e) => handleChange(accomRoomOptionsFieldId, {
+                        count: e.target.value
+                      })}
+                      className="w-full border border-gray-300 rounded-md p-2"
+                    >
+                      <option value="1">1명 (본인만)</option>
+                      <option value="2">2명</option>
+                      <option value="3">3명</option>
+                      <option value="4">4명</option>
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 
