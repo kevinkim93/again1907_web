@@ -7,12 +7,23 @@ export default function FormsManagementPage() {
   const router = useRouter();
   const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [popupMessage, setPopupMessage] = useState('');
+  const [popupEnabled, setPopupEnabled] = useState(false);
+  const [showPopupEditor, setShowPopupEditor] = useState(false);
+  const [savingPopup, setSavingPopup] = useState(false);
 
   const fetchForms = async () => {
     setLoading(true);
     const res = await fetch('/api/admin/forms');
     const data = await res.json();
     setForms(data.forms || []);
+
+    // settings에서 팝업 메시지 가져오기
+    const settingsRes = await fetch('/api/admin/settings');
+    const settingsData = await settingsRes.json();
+    setPopupMessage(settingsData.settings?.popupMessage || '');
+    setPopupEnabled(settingsData.settings?.popupEnabled || false);
+
     setLoading(false);
   };
 
@@ -84,6 +95,27 @@ export default function FormsManagementPage() {
     fetchForms();
   };
 
+  const savePopupMessage = async () => {
+    setSavingPopup(true);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          popupMessage,
+          popupEnabled,
+        }),
+      });
+      alert('팝업 메시지가 저장되었습니다.');
+      setShowPopupEditor(false);
+    } catch (error) {
+      alert('저장 중 오류가 발생했습니다.');
+      console.error(error);
+    } finally {
+      setSavingPopup(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="p-6">
@@ -96,12 +128,20 @@ export default function FormsManagementPage() {
     <main className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">등록 폼 관리</h1>
-        <button
-          onClick={createForm}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          + 새 폼 만들기
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowPopupEditor(true)}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+          >
+            팝업 메시지 관리
+          </button>
+          <button
+            onClick={createForm}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            + 새 폼 만들기
+          </button>
+        </div>
       </div>
 
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -204,6 +244,64 @@ export default function FormsManagementPage() {
                 </div>
               </div>
             ))}
+        </div>
+      )}
+
+      {/* 팝업 메시지 편집 모달 */}
+      {showPopupEditor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <h2 className="text-xl font-bold mb-4">팝업 메시지 관리</h2>
+
+            <div className="mb-4">
+              <label className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  checked={popupEnabled}
+                  onChange={(e) => setPopupEnabled(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="font-medium">팝업 활성화</span>
+              </label>
+
+              <label className="block mb-2 font-medium text-gray-700">
+                팝업 메시지
+              </label>
+              <textarea
+                value={popupMessage}
+                onChange={(e) => setPopupMessage(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg p-3 min-h-[200px] focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="등록 페이지에 표시될 팝업 메시지를 입력하세요...&#10;&#10;예시:&#10;성도님들께 안내드립니다.&#10;&#10;2026년 집회는 오산리 금식기도원 대성전에서 열립니다.&#10;기도원 특성에 따라 예배 및 식사와 숙박을 별도로 등록해주세요.&#10;&#10;등록상황은 마이페이지에서 확인하실 수 있습니다."
+              />
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-gray-900 mb-2">미리보기</h3>
+              <div className="bg-white border border-gray-300 rounded p-3 whitespace-pre-wrap text-sm">
+                {popupMessage || '(메시지를 입력하면 여기에 미리보기가 표시됩니다)'}
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setShowPopupEditor(false);
+                  fetchForms(); // 변경사항 취소를 위해 다시 로드
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+                disabled={savingPopup}
+              >
+                취소
+              </button>
+              <button
+                onClick={savePopupMessage}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded disabled:opacity-50"
+                disabled={savingPopup}
+              >
+                {savingPopup ? '저장 중...' : '저장'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </main>

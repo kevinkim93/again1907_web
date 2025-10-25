@@ -10,6 +10,8 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [dontShowToday, setDontShowToday] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,10 +28,33 @@ export default function RegisterPage() {
       setForms(formsData.forms || []);
       setSettings(settingsData.settings || {});
       setLoading(false);
+
+      // 팝업 표시 로직: localStorage 체크
+      if (settingsData.settings?.popupEnabled && settingsData.settings?.popupMessage) {
+        const popupHiddenUntil = localStorage.getItem('registerPopupHiddenUntil');
+        const now = new Date().getTime();
+
+        // 숨김 기한이 없거나 기한이 지났으면 팝업 표시
+        if (!popupHiddenUntil || now > parseInt(popupHiddenUntil)) {
+          setShowPopup(true);
+        }
+      }
     };
 
     fetchData();
   }, []);
+
+  const handleClosePopup = () => {
+    setShowPopup(false);
+
+    if (dontShowToday) {
+      // 오늘 자정까지 숨김 (다음날 0시에 다시 표시)
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      localStorage.setItem('registerPopupHiddenUntil', tomorrow.getTime().toString());
+    }
+  };
 
   const handleSubmit = async (formData) => {
     setSubmitting(true);
@@ -181,6 +206,44 @@ export default function RegisterPage() {
           />
         </div>
       </div>
+
+      {/* 팝업 모달 */}
+      {showPopup && settings?.popupMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            {/* 헤더 */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+              <h2 className="text-xl font-bold text-white">📢 안내사항</h2>
+            </div>
+
+            {/* 내용 */}
+            <div className="px-6 py-6">
+              <div className="text-gray-800 whitespace-pre-wrap leading-loose text-base">
+                {settings.popupMessage}
+              </div>
+            </div>
+
+            {/* 하단 영역 */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <label className="flex items-center gap-2 cursor-pointer mb-4">
+                <input
+                  type="checkbox"
+                  checked={dontShowToday}
+                  onChange={(e) => setDontShowToday(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700 font-medium">오늘 다시 보지 않기</span>
+              </label>
+              <button
+                onClick={handleClosePopup}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition shadow-sm"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

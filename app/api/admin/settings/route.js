@@ -20,3 +20,10 @@ export async function POST(req) {
   await adminDb.collection('settings').doc('current').set({ ...data, updatedAt: new Date() }, { merge: true });
   return NextResponse.json({ ok: true });
 }
+
+export async function PUT(req) {
+  const deny = requireAdmin(req); if (deny) return deny;
+  const data = await req.json();
+  await adminDb.collection('settings').doc('current').set({ ...data, updatedAt: new Date() }, { merge: true });
+  return NextResponse.json({ ok: true });
+}

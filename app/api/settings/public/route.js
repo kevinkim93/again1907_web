@@ -12,6 +12,8 @@ export async function GET(req) {
     dates: settings.dates,
     openRegistration: settings.openRegistration,
     registrationPeriods: settings.registrationPeriods,
+    popupMessage: settings.popupMessage,
+    popupEnabled: settings.popupEnabled,
   };
 
   return NextResponse.json({ settings: publicSettings });
