@@ -11,6 +11,10 @@ export default function FormsManagementPage() {
   const [popupEnabled, setPopupEnabled] = useState(false);
   const [showPopupEditor, setShowPopupEditor] = useState(false);
   const [savingPopup, setSavingPopup] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState('');
+  const [noticeEnabled, setNoticeEnabled] = useState(false);
+  const [showNoticeEditor, setShowNoticeEditor] = useState(false);
+  const [savingNotice, setSavingNotice] = useState(false);
 
   const fetchForms = async () => {
     setLoading(true);
@@ -18,11 +22,13 @@ export default function FormsManagementPage() {
     const data = await res.json();
     setForms(data.forms || []);
 
-    // settings에서 팝업 메시지 가져오기
+    // settings에서 팝업 메시지 및 안내 문구 가져오기
     const settingsRes = await fetch('/api/admin/settings');
     const settingsData = await settingsRes.json();
     setPopupMessage(settingsData.settings?.popupMessage || '');
     setPopupEnabled(settingsData.settings?.popupEnabled || false);
+    setNoticeMessage(settingsData.settings?.noticeMessage || '');
+    setNoticeEnabled(settingsData.settings?.noticeEnabled || false);
 
     setLoading(false);
   };
@@ -116,6 +122,27 @@ export default function FormsManagementPage() {
     }
   };
 
+  const saveNoticeMessage = async () => {
+    setSavingNotice(true);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          noticeMessage,
+          noticeEnabled,
+        }),
+      });
+      alert('안내 문구가 저장되었습니다.');
+      setShowNoticeEditor(false);
+    } catch (error) {
+      alert('저장 중 오류가 발생했습니다.');
+      console.error(error);
+    } finally {
+      setSavingNotice(false);
+    }
+  };
+
   if (loading) {
     return (
       <main className="p-6">
@@ -129,6 +156,12 @@ export default function FormsManagementPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">등록 폼 관리</h1>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowNoticeEditor(true)}
+            className="bg-amber-600 text-white px-4 py-2 rounded hover:bg-amber-700"
+          >
+            안내 문구 관리
+          </button>
           <button
             onClick={() => setShowPopupEditor(true)}
             className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
@@ -244,6 +277,64 @@ export default function FormsManagementPage() {
                 </div>
               </div>
             ))}
+        </div>
+      )}
+
+      {/* 안내 문구 편집 모달 */}
+      {showNoticeEditor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <h2 className="text-xl font-bold mb-4">안내 문구 관리</h2>
+
+            <div className="mb-4">
+              <label className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  checked={noticeEnabled}
+                  onChange={(e) => setNoticeEnabled(e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="font-medium">안내 문구 활성화</span>
+              </label>
+
+              <label className="block mb-2 font-medium text-gray-700">
+                안내 문구 (등록 페이지 제목 위에 표시됩니다)
+              </label>
+              <textarea
+                value={noticeMessage}
+                onChange={(e) => setNoticeMessage(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg p-3 min-h-[120px] focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                placeholder="등록 페이지에 표시될 안내 문구를 입력하세요...&#10;&#10;예시:&#10;*예배와 식사는 별도신청이 불가능합니다."
+              />
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-gray-900 mb-2">미리보기</h3>
+              <div className="bg-white border border-gray-300 rounded p-3 whitespace-pre-wrap text-sm text-gray-700">
+                {noticeMessage || '(문구를 입력하면 여기에 미리보기가 표시됩니다)'}
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setShowNoticeEditor(false);
+                  fetchForms(); // 변경사항 취소를 위해 다시 로드
+                }}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
+                disabled={savingNotice}
+              >
+                취소
+              </button>
+              <button
+                onClick={saveNoticeMessage}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded disabled:opacity-50"
+                disabled={savingNotice}
+              >
+                {savingNotice ? '저장 중...' : '저장'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -14,6 +14,8 @@ export async function GET(req) {
     registrationPeriods: settings.registrationPeriods,
     popupMessage: settings.popupMessage,
     popupEnabled: settings.popupEnabled,
+    noticeMessage: settings.noticeMessage,
+    noticeEnabled: settings.noticeEnabled,
   };
 
   return NextResponse.json({ settings: publicSettings });

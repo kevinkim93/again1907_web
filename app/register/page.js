@@ -144,6 +144,23 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
+        {/* 안내 문구 - 헤더 위에 별도 표시 */}
+        {settings?.noticeEnabled && settings?.noticeMessage && (
+          <div className="mb-6 bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-400 rounded-xl p-5 shadow-md">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-1">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-red-800 font-bold text-lg mb-2">필독 안내사항</h3>
+                <div className="text-red-900 text-base leading-relaxed whitespace-pre-wrap font-medium">
+                  {settings.noticeMessage}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 헤더 */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900">
