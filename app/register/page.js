@@ -206,6 +206,23 @@ export default function RegisterPage() {
           </div>
         )}
 
+        {/* 폼별 안내 메시지 */}
+        {forms[activeTab]?.noticeMessage && (
+          <div className="mb-6 bg-gradient-to-r from-orange-50 to-yellow-50 border-2 border-orange-400 rounded-xl p-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <span className="text-xl">💡</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-orange-800 font-bold text-base mb-1">안내사항</h3>
+                <div className="text-orange-900 text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                  {forms[activeTab].noticeMessage}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 폼 설명 */}
         {forms[activeTab]?.description && (
           <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">

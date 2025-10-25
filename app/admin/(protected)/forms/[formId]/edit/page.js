@@ -144,6 +144,24 @@ export default function FormEditorPage() {
               rows={3}
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              폼별 안내 메시지
+              <span className="text-xs text-gray-500 ml-2">(이 폼을 선택했을 때 표시되는 안내 문구)</span>
+            </label>
+            <textarea
+              value={form.noticeMessage || ''}
+              onChange={(e) => setForm({ ...form, noticeMessage: e.target.value })}
+              onBlur={(e) => updateFormMeta({ noticeMessage: e.target.value })}
+              className="w-full border border-amber-300 rounded-md p-2 focus:ring-2 focus:ring-amber-500"
+              rows={3}
+              placeholder="*예배와 식사는 별도신청이 불가능합니다."
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              등록 페이지에서 이 폼을 선택하면 눈에 띄는 안내 메시지로 표시됩니다.
+            </p>
+          </div>
         </div>
       </div>
 
