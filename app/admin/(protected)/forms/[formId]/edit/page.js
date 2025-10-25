@@ -611,6 +611,60 @@ export default function FormEditorPage() {
                         이 날짜까지는 1차 가격, 이후는 2차 가격이 적용됩니다.
                       </p>
                     </div>
+
+                    {/* 식사 옵션 설정 */}
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <h5 className="font-medium text-purple-900 mb-3">날짜별 식사 옵션 설정</h5>
+                      <label className="flex items-center gap-2 mb-2">
+                        <input
+                          type="checkbox"
+                          checked={editingField.enableMealOptions || false}
+                          onChange={(e) => setEditingField({ ...editingField, enableMealOptions: e.target.checked })}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm font-medium">날짜별 식사 옵션 활성화</span>
+                      </label>
+                      <p className="text-xs text-gray-600 mb-3">
+                        활성화하면 사용자가 각 날짜별로 식사 옵션(아침 식사 제외, 금식)을 선택할 수 있습니다.
+                      </p>
+
+                      {editingField.enableMealOptions && (
+                        <div className="space-y-2">
+                          <label className="block text-sm font-medium">식사 옵션 라벨</label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              placeholder="아침 식사 제외"
+                              value={editingField.mealLabels?.noBreakfast || '아침 식사 제외'}
+                              onChange={(e) => setEditingField({
+                                ...editingField,
+                                mealLabels: {
+                                  ...editingField.mealLabels,
+                                  noBreakfast: e.target.value
+                                }
+                              })}
+                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                            />
+                            <input
+                              type="text"
+                              placeholder="금식"
+                              value={editingField.mealLabels?.fasting || '금식'}
+                              onChange={(e) => setEditingField({
+                                ...editingField,
+                                mealLabels: {
+                                  ...editingField.mealLabels,
+                                  fasting: e.target.value
+                                }
+                              })}
+                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            식사 옵션의 표시 이름을 커스터마이징할 수 있습니다.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

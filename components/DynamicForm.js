@@ -624,25 +624,93 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
         // 참가비 자동 계산 필드
         // 날짜 선택 체크박스를 먼저 렌더링
         const dateFieldId = `${field.id}_dates`;
+        const mealOptionsFieldId = `${field.id}_mealOptions`;
         const dateOptions = field.dateOptions || [];
+        const selectedDatesForMeal = formData[dateFieldId] || [];
+        const mealOptionsData = formData[mealOptionsFieldId] || {};
 
         return (
           <div className="space-y-4">
             {/* 참석 날짜 선택 */}
             {dateOptions.length > 0 && (
               <div>
-                <label className="block text-sm font-medium mb-2">참석 날짜 선택</label>
-                <div className="space-y-2">
-                  {dateOptions.map(date => (
-                    <label key={date} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={((formData[dateFieldId] || [])).includes(date)}
-                        onChange={(e) => handleCheckboxArray(dateFieldId, date, e.target.checked)}
-                      />
-                      <span>{date}</span>
-                    </label>
-                  ))}
+                <label className="block text-sm font-medium mb-2">
+                  참석 날짜 선택
+                  {field.enableMealOptions && (
+                    <span className="text-xs text-gray-500 ml-2">(필요시 식사 옵션 체크)</span>
+                  )}
+                </label>
+                <div className="space-y-3">
+                  {dateOptions.map(date => {
+                    const isDateSelected = ((formData[dateFieldId] || [])).includes(date);
+                    const mealLabels = field.mealLabels || { noBreakfast: '아침 식사 제외', fasting: '금식' };
+                    const dateMealOptions = mealOptionsData[date] || { noBreakfast: false, fasting: false };
+
+                    return (
+                      <div key={date} className="border border-gray-200 rounded-lg p-3 bg-white">
+                        <div className="flex items-start gap-3">
+                          {/* 날짜 체크박스 */}
+                          <label className="flex items-center gap-2 min-w-[120px]">
+                            <input
+                              type="checkbox"
+                              checked={isDateSelected}
+                              onChange={(e) => handleCheckboxArray(dateFieldId, date, e.target.checked)}
+                              className="w-4 h-4"
+                            />
+                            <span className="font-medium">{date}</span>
+                          </label>
+
+                          {/* 식사 옵션 (날짜가 선택되고 활성화된 경우만) */}
+                          {field.enableMealOptions && isDateSelected && (
+                            <div className="flex gap-4 flex-1 pl-3 border-l border-gray-300">
+                              <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                                <input
+                                  type="radio"
+                                  name={`meal_${date}`}
+                                  checked={dateMealOptions.noBreakfast === true}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      const newMealOptions = {
+                                        ...mealOptionsData,
+                                        [date]: {
+                                          noBreakfast: true,
+                                          fasting: false
+                                        }
+                                      };
+                                      handleChange(mealOptionsFieldId, newMealOptions);
+                                    }
+                                  }}
+                                  className="w-3.5 h-3.5"
+                                />
+                                <span>{mealLabels.noBreakfast}</span>
+                              </label>
+                              <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                                <input
+                                  type="radio"
+                                  name={`meal_${date}`}
+                                  checked={dateMealOptions.fasting === true}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      const newMealOptions = {
+                                        ...mealOptionsData,
+                                        [date]: {
+                                          noBreakfast: false,
+                                          fasting: true
+                                        }
+                                      };
+                                      handleChange(mealOptionsFieldId, newMealOptions);
+                                    }
+                                  }}
+                                  className="w-3.5 h-3.5"
+                                />
+                                <span>{mealLabels.fasting}</span>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
