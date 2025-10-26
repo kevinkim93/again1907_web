@@ -664,9 +664,17 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               <label className="block text-sm font-medium mb-1">성인<span className="block text-xs font-normal text-gray-500 mt-0.5"><br/></span></label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 min="0"
                 value={peopleValue.adult || 0}
-                onChange={(e) => handleChange(field.id, { ...peopleValue, adult: parseInt(e.target.value) || 0 })}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 0) {
+                    handleChange(field.id, { ...peopleValue, adult: val });
+                  }
+                }}
                 className="w-full border border-gray-300 rounded-md p-2"
               />
             </div>
@@ -677,9 +685,17 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               </label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 min="0"
                 value={peopleValue.minor8plus || 0}
-                onChange={(e) => handleChange(field.id, { ...peopleValue, minor8plus: parseInt(e.target.value) || 0 })}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 0) {
+                    handleChange(field.id, { ...peopleValue, minor8plus: val });
+                  }
+                }}
                 className="w-full border border-gray-300 rounded-md p-2"
               />
             </div>
@@ -690,9 +706,17 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               </label>
               <input
                 type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 min="0"
                 value={peopleValue.minorUnder8 || 0}
-                onChange={(e) => handleChange(field.id, { ...peopleValue, minorUnder8: parseInt(e.target.value) || 0 })}
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 0) {
+                    handleChange(field.id, { ...peopleValue, minorUnder8: val });
+                  }
+                }}
                 className="w-full border border-gray-300 rounded-md p-2"
               />
             </div>
