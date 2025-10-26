@@ -12,6 +12,9 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
   const [dontShowToday, setDontShowToday] = useState(false);
+  const [showNextStepModal, setShowNextStepModal] = useState(false);
+  const [completedFormType, setCompletedFormType] = useState('');
+  const [savedUserInfo, setSavedUserInfo] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -103,9 +106,40 @@ export default function RegisterPage() {
 
       if (res.ok) {
         setSuccess(true);
-        setTimeout(() => {
-          setSuccess(false);
-        }, 5000);
+
+        // 폼 이름으로 타입 판단 (예배/식사 관련인지, 숙박 관련인지)
+        const formNameLower = currentForm.name.toLowerCase();
+        const isAccommodation = formNameLower.includes('숙박');
+        const isPayment = formNameLower.includes('예배') || formNameLower.includes('식사') || formNameLower.includes('참가');
+
+        // 사용자 정보 저장 (이름, 전화번호)
+        if (isPayment) {
+          const nameField = currentForm.fields.find(f =>
+            f.type === 'text' && (f.label.includes('이름') || f.label.includes('성명'))
+          );
+          const telField = currentForm.fields.find(f => f.type === 'tel');
+
+          if (nameField && telField) {
+            setSavedUserInfo({
+              name: filteredFormData[nameField.id],
+              tel: filteredFormData[telField.id]
+            });
+          }
+        }
+
+        // 등록 완료 후 다음 단계 안내 모달 표시
+        if (isPayment) {
+          setCompletedFormType('payment');
+          setShowNextStepModal(true);
+        } else if (isAccommodation) {
+          setCompletedFormType('accommodation');
+          setShowNextStepModal(true);
+        } else {
+          // 기타 폼은 기존대로 성공 메시지만 표시
+          setTimeout(() => {
+            setSuccess(false);
+          }, 5000);
+        }
       } else {
         const data = await res.json();
         alert(`등록 실패: ${data.error || '알 수 없는 오류'}`);
@@ -237,6 +271,7 @@ export default function RegisterPage() {
             settings={settings}
             onSubmit={handleSubmit}
             submitButtonText={submitting ? '등록 중...' : '등록하기'}
+            initialData={savedUserInfo}
           />
         </div>
       </div>
@@ -274,6 +309,72 @@ export default function RegisterPage() {
               >
                 확인
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 다음 단계 안내 모달 */}
+      {showNextStepModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            {/* 헤더 */}
+            <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+              <h2 className="text-xl font-bold text-white">✅ 등록 완료</h2>
+            </div>
+
+            {/* 내용 */}
+            <div className="px-6 py-6">
+              <p className="text-gray-800 text-base leading-relaxed mb-4">
+                {completedFormType === 'payment'
+                  ? '예배 및 식사 등록이 완료되었습니다!'
+                  : '숙박 등록이 완료되었습니다!'}
+              </p>
+              <p className="text-gray-600 text-sm">
+                {completedFormType === 'payment'
+                  ? '숙박 등록을 계속 진행하시겠습니까?'
+                  : '등록 내역을 확인하시겠습니까?'}
+              </p>
+            </div>
+
+            {/* 하단 영역 */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowNextStepModal(false);
+                    setSuccess(false);
+                    window.location.reload();
+                  }}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium px-4 py-3 rounded-lg transition"
+                >
+                  {completedFormType === 'payment' ? '나중에' : '아니오'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNextStepModal(false);
+                    setSuccess(false);
+                    if (completedFormType === 'payment') {
+                      // 숙박 폼으로 이동
+                      const accommodationFormIndex = forms.findIndex(f =>
+                        f.name.toLowerCase().includes('숙박')
+                      );
+                      if (accommodationFormIndex !== -1) {
+                        setActiveTab(accommodationFormIndex);
+                        window.scrollTo(0, 0);
+                      } else {
+                        window.location.href = '/lookup';
+                      }
+                    } else {
+                      // 마이페이지로 이동
+                      window.location.href = '/lookup';
+                    }
+                  }}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-3 rounded-lg transition shadow-sm"
+                >
+                  {completedFormType === 'payment' ? '숙박 등록하기' : '마이페이지'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

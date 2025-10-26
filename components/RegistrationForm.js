@@ -223,13 +223,13 @@ export default function RegistrationForm({ settings, disabled }) {
 
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
           <p className="text-sm text-gray-700 mb-3">
-            등록 조회 및 수정은 마이페이지에서 가능합니다.
+            등록 조회 및 수정은 등록 조회페이지에서 가능합니다.
           </p>
           <a
             href="/lookup"
             className="inline-block w-full bg-blue-600 text-white font-semibold py-3 rounded-md hover:bg-blue-700 transition"
           >
-            마이페이지로 이동
+            등록 조회로 이동
           </a>
         </div>
 

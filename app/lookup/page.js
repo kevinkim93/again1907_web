@@ -2,30 +2,13 @@
 
 import { useState } from "react";
 
-// ✨ 금액 계산 함수 (AttendeesTable과 동일)
-function calcPeriodTotal(period, extraCounts, isPartial, days) {
-  if (!period) return 0;
-  const price = isPartial ? period.partialPrice : period.fullPrice;
-  if (!price) return 0;
-
-  const a = Math.max(0, extraCounts?.adult ?? 0);
-  const m7to18 = Math.max(0, extraCounts?.minor7to18 ?? extraCounts?.minor8plus ?? 0);
-  const mu7 = Math.max(0, extraCounts?.minorUnder7 ?? extraCounts?.minorUnder8 ?? 0);
-
-  const multiplier = isPartial ? Math.max(0, days) : 1;
-  return (
-    (price.adult || 0) * a +
-    ((price.minor7to18 || price.minor8plus || 0) * m7to18) +
-    ((price.minorUnder7 || price.minorUnder8 || 0) * mu7)
-  ) * multiplier;
-}
-
 export default function LookupPage() {
   const [form, setForm] = useState({ name: "", phone: "" });
   const [loading, setLoading] = useState(false);
-  const [participant, setParticipant] = useState(null);
+  const [registrations, setRegistrations] = useState([]);
   const [settings, setSettings] = useState(null);
   const [error, setError] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const onChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -35,7 +18,8 @@ export default function LookupPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setParticipant(null);
+    setRegistrations([]);
+    setSelectedIndex(0);
 
     try {
       const res = await fetch("/api/lookup", {
@@ -45,8 +29,8 @@ export default function LookupPage() {
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
-      if (data.participant) {
-        setParticipant(data.participant);
+      if (data.registrations && data.registrations.length > 0) {
+        setRegistrations(data.registrations);
         setSettings(data.settings);
       }
       else setError("해당 정보와 일치하는 등록 내역이 없습니다.");
@@ -57,9 +41,20 @@ export default function LookupPage() {
     }
   };
 
+  // 필드 ID를 라벨로 변환하는 함수
+  const getFieldLabel = (fieldId, formFields) => {
+    // 특정 필드 ID에 대한 커스텀 라벨
+    if (fieldId === 'field_1760381312998') {
+      return '생년월일';
+    }
+
+    const field = formFields?.find(f => f.id === fieldId);
+    return field?.label || fieldId;
+  };
+
   return (
     <section className="max-w-3xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold text-center mb-8">로그인</h1>
+      <h1 className="text-3xl font-bold text-center mb-8">등록 현황 조회</h1>
 
       {/* 입력 폼 */}
       <form
@@ -109,173 +104,194 @@ export default function LookupPage() {
           <p className="text-red-600 text-center font-medium">{error}</p>
         )}
 
-        {participant && (
-          <div className="bg-white shadow-lg rounded-xl border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-blue-600 mb-4">
-              {participant.name} 님의 등록 정보
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
-              <div>
-                <p className="font-semibold text-gray-700">성별</p>
-                <p className="text-gray-900">{participant.gender || "-"}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-700">생년월일</p>
-                <p className="text-gray-900">{participant.dob || "-"}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-700">연락처</p>
-                <p className="text-gray-900">{participant.phone}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-700">소속</p>
-                <p className="text-gray-900">
-                  {participant.churchOrRegion || "-"}
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-700">총 인원</p>
-                <p className="text-gray-900">
-                  {participant.totalPeople}명
-                  {` (성인 ${participant.extraCounts?.adult || 0}, 8세 이상 ${
-                    participant.extraCounts?.minor8plus || 0
-                  }, 8세 미만 ${participant.extraCounts?.minorUnder8 || 0})`}
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-700">등록일</p>
-                <p className="text-gray-900">{participant.registeredAt}</p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-700">결제 상태</p>
-                <p
-                  className={`font-semibold ${
-                    participant.paymentStatus === "paid"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {participant.paymentStatus === "paid" ? "납부완료" : "미납"}
-                </p>
-              </div>
-              <div>
-                <p className="font-semibold text-gray-700">입금 날짜</p>
-                <p className="text-gray-900">{participant.paidAt || "-"}</p>
-              </div>
-              {/* ✅ 방 배정 정보 */}
-              <div>
-                <p className="font-semibold text-gray-700">방 배정</p>
-                <p className="text-gray-900">
-                  {participant.roomName || "미배정"}
-                </p>
-                {!participant.roomName && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    방 배정은 집회 현장에서 배정됩니다.
-                  </p>
-                )}
-              </div>
-              <div className="sm:col-span-2">
-                <p className="font-semibold text-gray-700">참가 일정</p>
-                <p className="text-gray-900">
-                  {participant.isPartial
-                    ? participant.partialDates?.join(", ")
-                    : "전체 참석"}
-                </p>
-              </div>
-              <div className="sm:col-span-2">
-                <p className="font-semibold text-gray-700 mb-2">금액 안내</p>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 text-sm text-gray-900">
-                  {(() => {
-                    // 등록일 기준으로 기간 판별
-                    const registeredAt = participant.registeredAt;
-                    const periods = settings?.registrationPeriods || [];
-
-                    let period = periods.find(p => {
-                      if (!registeredAt) return false;
-                      const regDate = new Date(registeredAt);
-                      const start = new Date(p.startDate);
-                      const end = new Date(p.endDate);
-                      return regDate >= start && regDate <= end;
-                    });
-
-                    if (!period && periods.length > 0) {
-                      period = periods[periods.length - 1];
-                    }
-
-                    const isPartial = !!participant.isPartial;
-                    const days = isPartial ? (participant.partialDates?.length || 0) : 1;
-                    const price = period ? (isPartial ? period.partialPrice : period.fullPrice) : null;
-
-                    const adultCount = participant.extraCounts?.adult || 0;
-                    const minor7to18Count = participant.extraCounts?.minor7to18 || participant.extraCounts?.minor8plus || 0;
-                    const minorUnder7Count = participant.extraCounts?.minorUnder7 || participant.extraCounts?.minorUnder8 || 0;
-
-                    const adultPrice = price?.adult || participant.amount?.adult || 0;
-                    const minor7to18Price = price?.minor7to18 || price?.minor8plus || participant.amount?.minor7to18 || participant.amount?.minor8plus || 0;
-                    const minorUnder7Price = price?.minorUnder7 || price?.minorUnder8 || participant.amount?.minorUnder7 || participant.amount?.minorUnder8 || 0;
-
-                    const adultTotal = adultPrice * adultCount * (isPartial ? days : 1);
-                    const minor7to18Total = minor7to18Price * minor7to18Count * (isPartial ? days : 1);
-                    const minorUnder7Total = minorUnder7Price * minorUnder7Count * (isPartial ? days : 1);
-                    const grandTotal = adultTotal + minor7to18Total + minorUnder7Total;
-
-                    return (
-                      <>
-                        {adultCount > 0 && (
-                          <div>
-                            성인: {adultPrice.toLocaleString()}원 × {adultCount}명
-                            {isPartial && days > 0 && ` × ${days}일`}
-                            {" = "}
-                            {adultTotal.toLocaleString()}원
-                          </div>
-                        )}
-
-                        {minor7to18Count > 0 && (
-                          <div>
-                            만 7~18세: {minor7to18Price.toLocaleString()}원 × {minor7to18Count}명
-                            {isPartial && days > 0 && ` × ${days}일`}
-                            {" = "}
-                            {minor7to18Total.toLocaleString()}원
-                          </div>
-                        )}
-
-                        {minorUnder7Count > 0 && (
-                          <div>
-                            만 7세 미만: {minorUnder7Price.toLocaleString()}원 × {minorUnder7Count}명
-                            {isPartial && days > 0 && ` × ${days}일`}
-                            {" = "}
-                            {minorUnder7Total.toLocaleString()}원
-                          </div>
-                        )}
-
-                        <hr className="border-gray-300" />
-
-                        <div className="font-bold text-blue-600 text-base">
-                          합계: {grandTotal.toLocaleString()}원
-                        </div>
-
-                        <div className="mt-4 pt-3 border-t border-gray-300">
-                          <p className="font-semibold text-gray-700 mb-1">입금 계좌</p>
-                          <p>752601-04-331363 (국민은행)</p>
-                          <p className="text-xs text-gray-600">예금주: 황금종교회(어게인1907평양대부흥)</p>
-                          <p className="text-xs text-gray-500 mt-2">
-                            * 입금자명은 신청하신 성함과 동일하게 해주세요.
-                          </p>
-                        </div>
-                      </>
-                    );
-                  })()}
+        {registrations.length > 0 && (
+          <>
+            {/* 등록 폼 선택 탭 (여러 개인 경우만 표시) */}
+            {registrations.length > 1 && (
+              <div className="mb-6 bg-white shadow rounded-lg p-2">
+                <div className="flex gap-2">
+                  {registrations.map((reg, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedIndex(index)}
+                      className={`flex-1 py-3 px-4 rounded-md font-medium transition ${
+                        selectedIndex === index
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {reg.formName}
+                    </button>
+                  ))}
                 </div>
               </div>
-              {participant.remark && (
-                <div className="sm:col-span-2">
-                  <p className="font-semibold text-gray-700">비고</p>
-                  <p className="text-gray-900">{participant.remark}</p>
+            )}
+
+            {/* 선택된 등록 정보 표시 */}
+            {registrations[selectedIndex] && (() => {
+              const participant = registrations[selectedIndex];
+              const isAccommodation = participant.formName?.toLowerCase().includes('숙박');
+
+              return (
+                <div className="bg-white shadow-lg rounded-xl border border-gray-200 p-6">
+                  <h2 className="text-xl font-bold text-blue-600 mb-4">
+                    {participant.formName} 등록 정보
+                  </h2>
+
+                  <div className="space-y-4">
+                    {/* 동적으로 모든 필드 표시 (라벨 사용) */}
+                    {Object.entries(participant)
+                      .filter(([key]) => {
+                        // 제외할 특정 필드 목록
+                        const excludedFields = [
+                          '_temp_field_1760379940577', // 예배및식사: 추가 인원 임시 필드
+                          '_temp_field_1760381312998', // 숙박: 생년월일 임시 필드
+                          'field_1760719354865' // 숙박: 제외할 필드
+                        ];
+
+                        // 시스템 필드 제외
+                        const systemFields = [
+                          'id', 'formId', 'formName', 'collectionName', 'formFields',
+                          'registeredAt', 'paymentStatus', 'paidAt', 'createdAt',
+                          'roomId', 'roomName', 'roomAssignments', 'extraCounts',
+                          'totalPeople', 'amount', 'isPartial', 'partialDates',
+                          'registrationPhase', 'accommodationDates', 'roomType',
+                          'accommodationAmount'
+                        ];
+
+                        // 추가 인원 필드 제외
+                        const field = participant.formFields?.find(f => f.id === key);
+                        const isPeopleCountField = field?.type === 'people-count';
+
+                        return !systemFields.includes(key) &&
+                               !excludedFields.includes(key) &&
+                               !isPeopleCountField &&
+                               !key.endsWith('_dates') &&
+                               !key.endsWith('_roomType') &&
+                               !key.endsWith('_mealOptions') &&
+                               !key.endsWith('_roomOptions');
+                      })
+                      .map(([key, value]) => {
+                        if (!value || (typeof value === 'object' && Object.keys(value).length === 0)) return null;
+
+                        const label = getFieldLabel(key, participant.formFields);
+
+                        return (
+                          <div key={key} className="grid grid-cols-3 gap-4">
+                            <p className="font-semibold text-gray-700">{label}</p>
+                            <p className="col-span-2 text-gray-900">
+                              {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                            </p>
+                          </div>
+                        );
+                      })}
+
+                    {/* 등록일 */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <p className="font-semibold text-gray-700">등록일</p>
+                      <p className="col-span-2 text-gray-900">{participant.registeredAt || '-'}</p>
+                    </div>
+
+                    {/* 결제 상태 */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <p className="font-semibold text-gray-700">결제 상태</p>
+                      <p className={`col-span-2 font-semibold ${
+                        participant.paymentStatus === "paid" ? "text-green-600" : "text-red-600"
+                      }`}>
+                        {participant.paymentStatus === "paid" ? "납부완료" : "미납"}
+                      </p>
+                    </div>
+
+                    {/* 입금 날짜 */}
+                    {participant.paidAt && (
+                      <div className="grid grid-cols-3 gap-4">
+                        <p className="font-semibold text-gray-700">입금 날짜</p>
+                        <p className="col-span-2 text-gray-900">{participant.paidAt}</p>
+                      </div>
+                    )}
+
+                    {/* 총 인원 */}
+                    {participant.totalPeople && (
+                      <div className="grid grid-cols-3 gap-4">
+                        <p className="font-semibold text-gray-700">총 인원</p>
+                        <p className="col-span-2 text-gray-900">
+                          {participant.totalPeople}명
+                          {participant.extraCounts && (
+                            <span className="text-sm text-gray-600">
+                              {` (성인 ${participant.extraCounts.adult || 0}, 만8-18세 ${participant.extraCounts.minor8plus || 0}, 만8세 미만 ${participant.extraCounts.minorUnder8 || 0})`}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 참가 일정 */}
+                    {(participant.isPartial !== undefined) && (
+                      <div className="grid grid-cols-3 gap-4">
+                        <p className="font-semibold text-gray-700">참가 일정</p>
+                        <p className="col-span-2 text-gray-900">
+                          {participant.isPartial
+                            ? participant.partialDates?.join(", ") || "선택한 날짜"
+                            : "전체 참석"}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 숙박 정보 */}
+                    {participant.roomType && (
+                      <div className="grid grid-cols-3 gap-4">
+                        <p className="font-semibold text-gray-700">숙박 정보</p>
+                        <div className="col-span-2 text-gray-900">
+                          <p>방 타입: {participant.roomType}</p>
+                          {participant.accommodationDates && participant.accommodationDates.length > 0 && (
+                            <p className="text-sm text-gray-900">
+                              숙박 날짜: {participant.accommodationDates.join(", ")}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 방 배정 (숙박 등록만 표시) */}
+                    {isAccommodation && (
+                      <div className="grid grid-cols-3 gap-4">
+                        <p className="font-semibold text-gray-700">방 배정</p>
+                        <p className="col-span-2 text-gray-900">
+                          {participant.roomName || "미배정"}
+                          {!participant.roomName && (
+                            <span className="block text-xs text-gray-500 mt-1">
+                              방 배정은 집회 현장에서 배정됩니다.
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 금액 안내 */}
+                    {participant.amount && (
+                      <div className="col-span-3 mt-4 pt-4 border-t border-gray-200">
+                        <p className="font-semibold text-gray-700 mb-3">금액 안내</p>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 text-sm">
+                          <div className="font-bold text-blue-600 text-lg">
+                            총 금액: {participant.amount.total?.toLocaleString() || 0}원
+                          </div>
+
+                          <div className="mt-4 pt-3 border-t border-gray-300">
+                            <p className="font-semibold text-gray-700 mb-2">입금 계좌</p>
+                            <p className="font-medium">752601-04-331363 (국민은행)</p>
+                            <p className="text-xs text-gray-600">예금주: 황금종교회(어게인1907평양대부흥)</p>
+                            <p className="text-xs text-gray-500 mt-2">
+                              * 입금자명은 신청하신 성함과 동일하게 해주세요.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
+              );
+            })()}
+          </>
         )}
       </div>
     </section>

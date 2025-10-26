@@ -362,7 +362,7 @@ export default function FormsManagementPage() {
                 value={popupMessage}
                 onChange={(e) => setPopupMessage(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg p-3 min-h-[200px] focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                placeholder="등록 페이지에 표시될 팝업 메시지를 입력하세요...&#10;&#10;예시:&#10;성도님들께 안내드립니다.&#10;&#10;2026년 집회는 오산리 금식기도원 대성전에서 열립니다.&#10;기도원 특성에 따라 예배 및 식사와 숙박을 별도로 등록해주세요.&#10;&#10;등록상황은 마이페이지에서 확인하실 수 있습니다."
+                placeholder="등록 페이지에 표시될 팝업 메시지를 입력하세요...&#10;&#10;예시:&#10;성도님들께 안내드립니다.&#10;&#10;2026년 집회는 오산리 금식기도원 대성전에서 열립니다.&#10;기도원 특성에 따라 예배 및 식사와 숙박을 별도로 등록해주세요.&#10;&#10;등록상황은 등록 조회페이지에서 확인하실 수 있습니다."
               />
             </div>
 

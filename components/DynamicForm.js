@@ -312,9 +312,34 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
   );
 }
 
-export default function DynamicForm({ formSchema, settings, onSubmit, submitButtonText = '등록하기' }) {
+export default function DynamicForm({ formSchema, settings, onSubmit, submitButtonText = '등록하기', initialData = null }) {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
+
+  // initialData가 있으면 해당 필드에 자동으로 채우기
+  useEffect(() => {
+    if (initialData && formSchema) {
+      const autoFilledData = {};
+
+      // 이름 필드 찾기
+      const nameField = formSchema.fields.find(f =>
+        f.type === 'text' && (f.label.includes('이름') || f.label.includes('성명'))
+      );
+      if (nameField && initialData.name) {
+        autoFilledData[nameField.id] = initialData.name;
+      }
+
+      // 전화번호 필드 찾기
+      const telField = formSchema.fields.find(f => f.type === 'tel');
+      if (telField && initialData.tel) {
+        autoFilledData[telField.id] = initialData.tel;
+      }
+
+      if (Object.keys(autoFilledData).length > 0) {
+        setFormData(prev => ({ ...prev, ...autoFilledData }));
+      }
+    }
+  }, [initialData, formSchema]);
 
   // 필드 값 변경 핸들러
   const handleChange = (fieldId, value) => {
@@ -646,7 +671,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               />
             </div>
             <div>
-              <label className="block text-sm mb-1">8세 이상</label>
+              <label className="block text-sm mb-1">8세 이상(2019년생 부터)</label>
               <input
                 type="number"
                 min="0"

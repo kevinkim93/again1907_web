@@ -9,25 +9,54 @@ export async function POST(req) {
       return new NextResponse("이름과 전화번호가 필요합니다.", { status: 400 });
     }
 
-    // settings에서 dbName 가져오기
+    // settings 가져오기
     const settingsSnap = await adminDb.collection("settings").doc("current").get();
-    const settings = settingsSnap.exists ? settingsSnap.data() : { dbName: "participants_default" };
-    const collectionName = settings.dbName || "participants_default";
+    const settings = settingsSnap.exists ? settingsSnap.data() : {};
 
-    // Firestore 조회
-    const snap = await adminDb
-      .collection(collectionName)
-      .where("name", "==", name)
-      .where("phone", "==", phone)
-      .get();
+    // 모든 폼 목록 가져오기
+    const forms = settings.forms || [];
 
-    if (snap.empty) {
-      return NextResponse.json({ participant: null });
+    // 모든 폼에서 해당 사용자의 등록 내역 찾기
+    const allRegistrations = [];
+
+    for (const form of forms) {
+      const collectionName = `participants_${form.id}`;
+
+      // 이름 필드 찾기
+      const nameField = form.fields?.find(f =>
+        f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명'))
+      );
+
+      // 전화번호 필드 찾기
+      const phoneField = form.fields?.find(f => f.type === 'tel');
+
+      if (!nameField || !phoneField) continue;
+
+      // Firestore 조회 (필드 ID로 조회)
+      const snap = await adminDb
+        .collection(collectionName)
+        .where(nameField.id, "==", name)
+        .where(phoneField.id, "==", phone)
+        .get();
+
+      // 해당 폼에서 찾은 모든 등록 내역 추가
+      snap.docs.forEach(doc => {
+        allRegistrations.push({
+          id: doc.id,
+          ...doc.data(),
+          formId: form.id,
+          formName: form.name,
+          formFields: form.fields, // 필드 정의 포함
+          collectionName
+        });
+      });
     }
 
-    const participant = { id: snap.docs[0].id, ...snap.docs[0].data() };
+    if (allRegistrations.length === 0) {
+      return NextResponse.json({ registrations: [] });
+    }
 
-    return NextResponse.json({ participant, settings });
+    return NextResponse.json({ registrations: allRegistrations, settings });
   } catch (err) {
     console.error("조회 에러:", err);
     return new NextResponse("조회 실패", { status: 500 });

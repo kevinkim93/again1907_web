@@ -14,7 +14,7 @@ export default function RootLayout({ children }) {
     { name: "등록", href: "/register" },
     { name: "일정", href: "/schedule" },
     { name: "FAQ", href: "/faq" },
-    { name: "마이페이지", href: "/lookup" },
+    { name: "등록조회", href: "/lookup" },
   ];
 
   return (
