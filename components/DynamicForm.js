@@ -659,9 +659,9 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
         // 성인, 8세 이상, 8세 미만 인원 입력
         const peopleValue = value || { adult: 0, minor8plus: 0, minorUnder8: 0 };
         return (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm mb-1">성인</label>
+              <label className="block text-sm font-medium mb-1">성인<span className="block text-xs font-normal text-gray-500 mt-0.5"><br/></span></label>
               <input
                 type="number"
                 min="0"
@@ -671,7 +671,10 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               />
             </div>
             <div>
-              <label className="block text-sm mb-1">8세 이상(2019년생 부터)</label>
+              <label className="block text-sm font-medium mb-1">
+                만 8~18세
+                <span className="block text-xs font-normal text-gray-500 mt-0.5">(2007~2019년생)</span>
+              </label>
               <input
                 type="number"
                 min="0"
@@ -681,7 +684,10 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               />
             </div>
             <div>
-              <label className="block text-sm mb-1">8세 미만</label>
+              <label className="block text-sm font-medium mb-1">
+                만 8세 미만
+                <span className="block text-xs font-normal text-gray-500 mt-0.5">(2020년생 이후)</span>
+              </label>
               <input
                 type="number"
                 min="0"
@@ -721,57 +727,56 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
 
                     return (
                       <div key={date} className="border border-gray-200 rounded-lg p-3 bg-white">
-                        <div className="flex items-start gap-3">
-                          {/* 날짜 체크박스 */}
-                          <label className="flex items-center gap-2 min-w-[120px]">
-                            <input
-                              type="checkbox"
-                              checked={isDateSelected}
-                              onChange={(e) => handleCheckboxArray(dateFieldId, date, e.target.checked)}
-                              className="w-4 h-4"
-                            />
-                            <span className="font-medium">{date}</span>
-                          </label>
+                        {/* 날짜 체크박스 */}
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isDateSelected}
+                            onChange={(e) => handleCheckboxArray(dateFieldId, date, e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="font-medium">{date}</span>
+                        </label>
 
-                          {/* 식사 옵션 (날짜가 선택되고 활성화된 경우만) */}
-                          {field.enableMealOptions && isDateSelected && (
-                            <div className="flex gap-4 flex-1 pl-3 border-l border-gray-300">
-                              <label className="flex items-center gap-1.5 text-sm text-gray-700">
-                                <input
-                                  type="radio"
-                                  name={`meal_${date}`}
-                                  checked={dateMealOptions.noBreakfast === true}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      const newMealOptions = {
-                                        ...mealOptionsData,
-                                        [date]: {
-                                          noBreakfast: true,
-                                          fasting: false
-                                        }
-                                      };
-                                      handleChange(mealOptionsFieldId, newMealOptions);
-                                    }
-                                  }}
-                                  className="w-3.5 h-3.5"
-                                />
-                                <span>{mealLabels.noBreakfast}</span>
-                              </label>
-                              <label className="flex items-center gap-1.5 text-sm text-gray-700">
-                                <input
-                                  type="radio"
-                                  name={`meal_${date}`}
-                                  checked={dateMealOptions.fasting === true}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      const newMealOptions = {
-                                        ...mealOptionsData,
-                                        [date]: {
-                                          noBreakfast: false,
-                                          fasting: true
-                                        }
-                                      };
-                                      handleChange(mealOptionsFieldId, newMealOptions);
+                        {/* 식사 옵션 (날짜가 선택되고 활성화된 경우만) - 모바일: 아래로, 데스크톱: 옆으로 */}
+                        {field.enableMealOptions && isDateSelected && (
+                          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-2 sm:ml-6 sm:pl-3 sm:border-l sm:border-gray-300">
+                            <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                              <input
+                                type="radio"
+                                name={`meal_${date}`}
+                                checked={dateMealOptions.noBreakfast === true}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    const newMealOptions = {
+                                      ...mealOptionsData,
+                                      [date]: {
+                                        noBreakfast: true,
+                                        fasting: false
+                                      }
+                                    };
+                                    handleChange(mealOptionsFieldId, newMealOptions);
+                                  }
+                                }}
+                                className="w-3.5 h-3.5"
+                              />
+                              <span>{mealLabels.noBreakfast}</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                              <input
+                                type="radio"
+                                name={`meal_${date}`}
+                                checked={dateMealOptions.fasting === true}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    const newMealOptions = {
+                                      ...mealOptionsData,
+                                      [date]: {
+                                        noBreakfast: false,
+                                        fasting: true
+                                      }
+                                    };
+                                    handleChange(mealOptionsFieldId, newMealOptions);
                                     }
                                   }}
                                   className="w-3.5 h-3.5"
@@ -780,7 +785,6 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                               </label>
                             </div>
                           )}
-                        </div>
                       </div>
                     );
                   })}
