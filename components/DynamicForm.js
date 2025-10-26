@@ -741,50 +741,76 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                         {/* 식사 옵션 (날짜가 선택되고 활성화된 경우만) - 모바일: 아래로, 데스크톱: 옆으로 */}
                         {field.enableMealOptions && isDateSelected && (
                           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-2 sm:ml-6 sm:pl-3 sm:border-l sm:border-gray-300">
-                            <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                            <label
+                              className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"
+                              onClick={() => {
+                                // 이미 선택된 경우 클릭하면 해제
+                                if (dateMealOptions.noBreakfast === true) {
+                                  const newMealOptions = {
+                                    ...mealOptionsData,
+                                    [date]: {
+                                      noBreakfast: false,
+                                      fasting: false
+                                    }
+                                  };
+                                  handleChange(mealOptionsFieldId, newMealOptions);
+                                } else {
+                                  const newMealOptions = {
+                                    ...mealOptionsData,
+                                    [date]: {
+                                      noBreakfast: true,
+                                      fasting: false
+                                    }
+                                  };
+                                  handleChange(mealOptionsFieldId, newMealOptions);
+                                }
+                              }}
+                            >
                               <input
                                 type="radio"
                                 name={`meal_${date}`}
                                 checked={dateMealOptions.noBreakfast === true}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    const newMealOptions = {
-                                      ...mealOptionsData,
-                                      [date]: {
-                                        noBreakfast: true,
-                                        fasting: false
-                                      }
-                                    };
-                                    handleChange(mealOptionsFieldId, newMealOptions);
-                                  }
-                                }}
-                                className="w-3.5 h-3.5"
+                                onChange={() => {}} // onClick으로 처리하므로 빈 함수
+                                className="w-3.5 h-3.5 cursor-pointer"
                               />
                               <span>{mealLabels.noBreakfast}</span>
                             </label>
-                            <label className="flex items-center gap-1.5 text-sm text-gray-700">
+                            <label
+                              className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"
+                              onClick={() => {
+                                // 이미 선택된 경우 클릭하면 해제
+                                if (dateMealOptions.fasting === true) {
+                                  const newMealOptions = {
+                                    ...mealOptionsData,
+                                    [date]: {
+                                      noBreakfast: false,
+                                      fasting: false
+                                    }
+                                  };
+                                  handleChange(mealOptionsFieldId, newMealOptions);
+                                } else {
+                                  const newMealOptions = {
+                                    ...mealOptionsData,
+                                    [date]: {
+                                      noBreakfast: false,
+                                      fasting: true
+                                    }
+                                  };
+                                  handleChange(mealOptionsFieldId, newMealOptions);
+                                }
+                              }}
+                            >
                               <input
                                 type="radio"
                                 name={`meal_${date}`}
                                 checked={dateMealOptions.fasting === true}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    const newMealOptions = {
-                                      ...mealOptionsData,
-                                      [date]: {
-                                        noBreakfast: false,
-                                        fasting: true
-                                      }
-                                    };
-                                    handleChange(mealOptionsFieldId, newMealOptions);
-                                    }
-                                  }}
-                                  className="w-3.5 h-3.5"
-                                />
-                                <span>{mealLabels.fasting}</span>
-                              </label>
-                            </div>
-                          )}
+                                onChange={() => {}} // onClick으로 처리하므로 빈 함수
+                                className="w-3.5 h-3.5 cursor-pointer"
+                              />
+                              <span>{mealLabels.fasting}</span>
+                            </label>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

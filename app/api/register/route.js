@@ -78,21 +78,28 @@ export async function POST(req) {
       return 'minorUnder8';
     };
 
+    // 대표자 본인 나이 계산
+    let adult = 0;
+    let minor8plus = 0;
+    let minorUnder8 = 0;
+
+    if (dobField && formData[dobField.id]) {
+      const representativeAgeGroup = calculateAgeGroup(formData[dobField.id]);
+      if (representativeAgeGroup === 'adult') adult = 1;
+      else if (representativeAgeGroup === 'minor8plus') minor8plus = 1;
+      else if (representativeAgeGroup === 'minorUnder8') minorUnder8 = 1;
+    }
+
+    // 추가 인원이 있으면 합산
     if (peopleField && formData[peopleField.id]) {
       const peopleData = formData[peopleField.id];
+      adult += peopleData.adult || 0;
+      minor8plus += peopleData.minor8plus || 0;
+      minorUnder8 += peopleData.minorUnder8 || 0;
+    }
 
-      let adult = peopleData.adult || 0;
-      let minor8plus = peopleData.minor8plus || 0;
-      let minorUnder8 = peopleData.minorUnder8 || 0;
-
-      // 대표자 본인 나이 확인하여 해당 그룹에 추가
-      if (dobField && formData[dobField.id]) {
-        const representativeAgeGroup = calculateAgeGroup(formData[dobField.id]);
-        if (representativeAgeGroup === 'adult') adult += 1;
-        else if (representativeAgeGroup === 'minor8plus') minor8plus += 1;
-        else if (representativeAgeGroup === 'minorUnder8') minorUnder8 += 1;
-      }
-
+    // extraCounts 및 totalPeople 설정 (생년월일이나 추가 인원이 있는 경우)
+    if (dobField || peopleField) {
       participant.extraCounts = {
         adult,
         minor8plus,

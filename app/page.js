@@ -19,22 +19,22 @@ export default function HomePage() {
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
                 Again 1907
               </h1>
-              <div className="space-y-4 text-base sm:text-lg text-gray-300">
-                <p>
-                  <span className="text-red-500 font-semibold">Again1907 평양 대부흥회</span>는<br />
-                  탈북민과 남한 성도들이 하나되어<br />
-                  오직 성령으로 충만함을 위해 기도하고 성령님의 마음을 받아<br />
+              <div className="space-y-4 text-base sm:text-lg text-gray-300 leading-relaxed break-keep">
+                <p className="break-keep">
+                  <span className="text-red-500 font-semibold">Again1907 평양 대부흥회</span>는
+                  탈북민과 남한 성도들이 하나되어
+                  오직 성령으로 충만함을 위해 기도하고 성령님의 마음을 받아
                   남과 북의 부흥을 위해 중보하는 집회입니다.
                 </p>
-                <p>
-                  탈북민과 남한 성도들 가운데 성령님께서 충만하게 임하실 때,<br /> 
-                  북한이 복음으로 회복되고 남한의 교회가 깨어나<br />
-                  <span className="text-red-500 font-semibold">복음통일</span>이 이루어질 것입니다.<br />
-                  복음통일을 통해 진정한 <span className="text-red-500 font-semibold">민족복음화</span>가 이뤄질 것입니다!<br />
-                  민족복음화를 넘어 온 열방의 부흥과<br /> 주님께서 다시 오실 길이 예비될 것입니다!
+                <p className="break-keep">
+                  탈북민과 남한 성도들 가운데 성령님께서 충만하게 임하실 때,
+                  북한이 복음으로 회복되고 남한의 교회가 깨어나
+                  <span className="text-red-500 font-semibold">복음통일</span>이 이루어질 것입니다.
+                  복음통일을 통해 진정한 <span className="text-red-500 font-semibold">민족복음화</span>가 이뤄될 것입니다!
+                  민족복음화를 넘어 온 열방의 부흥과 주님께서 다시 오실 길이 예비될 것입니다!
                 </p>
-                <p className="mt-6">
-                  성령님께서 임재하시는 곳에 함께하실 동역자분들을<br />
+                <p className="mt-6 break-keep">
+                  성령님께서 임재하시는 곳에 함께하실 동역자분들을
                   주 예수님의 이름으로 초대합니다!
                 </p>
               </div>
