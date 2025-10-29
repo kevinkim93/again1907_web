@@ -131,12 +131,12 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
           <span className="font-medium">{isPhase1 ? '1차 등록' : '2차 등록'}</span>
         </div>
 
-        <div className="flex justify-between">
-          <span className="text-gray-700">
-            {roomTypeOption?.type === 'gender' ? '1인 1박 요금:' : '1박 요금:'}
-          </span>
-          <span className="font-medium">{pricePerNight.toLocaleString()}원</span>
-        </div>
+        {roomTypeOption?.type !== 'gender' && (
+          <div className="flex justify-between">
+            <span className="text-gray-700">1박 요금:</span>
+            <span className="font-medium">{pricePerNight.toLocaleString()}원</span>
+          </div>
+        )}
 
         <div className="border-t border-green-300 pt-2 mt-2 flex justify-between font-bold text-lg">
           <span className="text-green-900">총 숙박비</span>
@@ -1092,53 +1092,91 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                       </div>
                       <div className="space-y-2">
                         {((formData[accomRoomOptionsFieldId]?.male) || []).map((person, idx) => (
-                          <div key={idx} className="flex gap-2 items-center bg-white border border-gray-300 rounded p-2">
-                            <span className="text-sm text-gray-600 min-w-[20px]">{idx + 1}.</span>
-                            <input
-                              type="text"
-                              placeholder={person.name}
-                              value={person.name}
-                              onChange={(e) => {
-                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                const maleList = [...(currentData.male || [])];
-                                maleList[idx] = { ...maleList[idx], name: e.target.value };
-                                handleChange(accomRoomOptionsFieldId, {
-                                  ...currentData,
-                                  male: maleList
-                                });
-                              }}
-                              className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="나이"
-                              value={person.age}
-                              onChange={(e) => {
-                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                const maleList = [...(currentData.male || [])];
-                                maleList[idx] = { ...maleList[idx], age: e.target.value };
-                                handleChange(accomRoomOptionsFieldId, {
-                                  ...currentData,
-                                  male: maleList
-                                });
-                              }}
-                              className="w-16 border border-gray-300 rounded px-2 py-1 text-sm"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                const maleList = [...(currentData.male || [])];
-                                maleList.splice(idx, 1);
-                                handleChange(accomRoomOptionsFieldId, {
-                                  ...currentData,
-                                  male: maleList
-                                });
-                              }}
-                              className="text-red-600 hover:text-red-800 text-sm px-2"
-                            >
-                              삭제
-                            </button>
+                          <div key={idx} className="bg-white border border-gray-300 rounded p-3">
+                            {/* 모바일: 헤더와 삭제 버튼 */}
+                            <div className="flex sm:hidden items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-700">남자 {idx + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const maleList = [...(currentData.male || [])];
+                                  maleList.splice(idx, 1);
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    male: maleList
+                                  });
+                                }}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                삭제
+                              </button>
+                            </div>
+
+                            {/* PC: 가로 배치, 모바일: 세로 배치 */}
+                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                              <span className="hidden sm:inline text-sm text-gray-600 min-w-[20px]">{idx + 1}.</span>
+                              <input
+                                type="text"
+                                placeholder="이름"
+                                value={person.name || ''}
+                                onChange={(e) => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const maleList = [...(currentData.male || [])];
+                                  maleList[idx] = { ...maleList[idx], name: e.target.value };
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    male: maleList
+                                  });
+                                }}
+                                className="w-full sm:flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+                              />
+                              <input
+                                type="number"
+                                placeholder="나이"
+                                value={person.age || ''}
+                                onChange={(e) => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const maleList = [...(currentData.male || [])];
+                                  maleList[idx] = { ...maleList[idx], age: e.target.value };
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    male: maleList
+                                  });
+                                }}
+                                className="w-full sm:w-20 border border-gray-300 rounded px-3 py-2 text-sm"
+                              />
+                              <input
+                                type="tel"
+                                placeholder="전화번호 (예: 010-1234-5678)"
+                                value={person.phone || ''}
+                                onChange={(e) => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const maleList = [...(currentData.male || [])];
+                                  maleList[idx] = { ...maleList[idx], phone: e.target.value };
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    male: maleList
+                                  });
+                                }}
+                                className="w-full sm:flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const maleList = [...(currentData.male || [])];
+                                  maleList.splice(idx, 1);
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    male: maleList
+                                  });
+                                }}
+                                className="hidden sm:block text-red-600 hover:text-red-800 text-sm px-2 whitespace-nowrap"
+                              >
+                                삭제
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1177,53 +1215,91 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                       </div>
                       <div className="space-y-2">
                         {((formData[accomRoomOptionsFieldId]?.female) || []).map((person, idx) => (
-                          <div key={idx} className="flex gap-2 items-center bg-white border border-gray-300 rounded p-2">
-                            <span className="text-sm text-gray-600 min-w-[20px]">{idx + 1}.</span>
-                            <input
-                              type="text"
-                              placeholder={person.name}
-                              value={person.name}
-                              onChange={(e) => {
-                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                const femaleList = [...(currentData.female || [])];
-                                femaleList[idx] = { ...femaleList[idx], name: e.target.value };
-                                handleChange(accomRoomOptionsFieldId, {
-                                  ...currentData,
-                                  female: femaleList
-                                });
-                              }}
-                              className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="나이"
-                              value={person.age}
-                              onChange={(e) => {
-                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                const femaleList = [...(currentData.female || [])];
-                                femaleList[idx] = { ...femaleList[idx], age: e.target.value };
-                                handleChange(accomRoomOptionsFieldId, {
-                                  ...currentData,
-                                  female: femaleList
-                                });
-                              }}
-                              className="w-16 border border-gray-300 rounded px-2 py-1 text-sm"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                const femaleList = [...(currentData.female || [])];
-                                femaleList.splice(idx, 1);
-                                handleChange(accomRoomOptionsFieldId, {
-                                  ...currentData,
-                                  female: femaleList
-                                });
-                              }}
-                              className="text-red-600 hover:text-red-800 text-sm px-2"
-                            >
-                              삭제
-                            </button>
+                          <div key={idx} className="bg-white border border-gray-300 rounded p-3">
+                            {/* 모바일: 헤더와 삭제 버튼 */}
+                            <div className="flex sm:hidden items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-gray-700">여자 {idx + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const femaleList = [...(currentData.female || [])];
+                                  femaleList.splice(idx, 1);
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    female: femaleList
+                                  });
+                                }}
+                                className="text-red-600 hover:text-red-800 text-sm"
+                              >
+                                삭제
+                              </button>
+                            </div>
+
+                            {/* PC: 가로 배치, 모바일: 세로 배치 */}
+                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                              <span className="hidden sm:inline text-sm text-gray-600 min-w-[20px]">{idx + 1}.</span>
+                              <input
+                                type="text"
+                                placeholder="이름"
+                                value={person.name || ''}
+                                onChange={(e) => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const femaleList = [...(currentData.female || [])];
+                                  femaleList[idx] = { ...femaleList[idx], name: e.target.value };
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    female: femaleList
+                                  });
+                                }}
+                                className="w-full sm:flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+                              />
+                              <input
+                                type="number"
+                                placeholder="나이"
+                                value={person.age || ''}
+                                onChange={(e) => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const femaleList = [...(currentData.female || [])];
+                                  femaleList[idx] = { ...femaleList[idx], age: e.target.value };
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    female: femaleList
+                                  });
+                                }}
+                                className="w-full sm:w-20 border border-gray-300 rounded px-3 py-2 text-sm"
+                              />
+                              <input
+                                type="tel"
+                                placeholder="전화번호 (예: 010-1234-5678)"
+                                value={person.phone || ''}
+                                onChange={(e) => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const femaleList = [...(currentData.female || [])];
+                                  femaleList[idx] = { ...femaleList[idx], phone: e.target.value };
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    female: femaleList
+                                  });
+                                }}
+                                className="w-full sm:flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                  const femaleList = [...(currentData.female || [])];
+                                  femaleList.splice(idx, 1);
+                                  handleChange(accomRoomOptionsFieldId, {
+                                    ...currentData,
+                                    female: femaleList
+                                  });
+                                }}
+                                className="hidden sm:block text-red-600 hover:text-red-800 text-sm px-2 whitespace-nowrap"
+                              >
+                                삭제
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1254,7 +1330,12 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
 
             {/* 숙박비 계산기 */}
             <AccommodationCalculator
-              formData={{...formData, [accomDateFieldId]: formData[accomDateFieldId], [accomRoomTypeFieldId]: formData[accomRoomTypeFieldId]}}
+              formData={{
+                ...formData,
+                [accomDateFieldId]: formData[accomDateFieldId],
+                [accomRoomTypeFieldId]: formData[accomRoomTypeFieldId],
+                [accomRoomOptionsFieldId]: formData[accomRoomOptionsFieldId]
+              }}
               formSchema={formSchema}
               settings={settings}
               field={field}

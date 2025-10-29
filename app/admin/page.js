@@ -36,48 +36,97 @@ export default async function AdminDashboard() {
   const rSnap = await adminDb.collection('rooms').get();
   const rooms = rSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-  // 전체 통계 계산
-  const totalParticipants = formsWithParticipants.reduce((sum, form) => sum + form.participants.length, 0);
-  const totalPeople = formsWithParticipants.reduce((sum, form) => {
-    return sum + form.participants.reduce((s, p) => s + (p.totalPeople || 1), 0);
-  }, 0);
+  // 1. 등록 폼별 등록 인원 통계
+  const formStats = formsWithParticipants.map(form => ({
+    name: form.name,
+    id: form.id,
+    totalRegistrations: form.participants.length,
+    totalPeople: form.participants.reduce((sum, p) => sum + (p.totalPeople || 1), 0),
+  }));
 
-  // 날짜별 폼별 등록 인원 집계
-  const dateFormStats = {};
-  formsWithParticipants.forEach(form => {
-    form.participants.forEach(participant => {
-      // accommodationDates 또는 partialDates 사용
-      const dates = participant.accommodationDates || participant.partialDates || [];
-      dates.forEach(date => {
-        if (!dateFormStats[date]) {
-          dateFormStats[date] = {};
-        }
-        if (!dateFormStats[date][form.name]) {
-          dateFormStats[date][form.name] = 0;
-        }
-        dateFormStats[date][form.name] += 1;
-      });
+  // 2. 방 배정 현황 통계
+  // 숙박 등록 폼 찾기
+  const accommodationForm = formsWithParticipants.find(f =>
+    f.fields?.some(field => field.type === 'accommodation-calculator')
+  );
+
+  // 숙박 등록한 총 인원 (그룹 포함)
+  const totalAccommodationParticipants = accommodationForm?.participants.length || 0;
+
+  // 방 배정 완료된 인원 (roomNumber가 있는 참가자)
+  const assignedParticipants = accommodationForm?.participants.filter(p => p.roomNumber) || [];
+  const totalAssignedParticipants = assignedParticipants.length;
+
+  // 날짜별 방 통계
+  const dateRoomStats = {};
+
+  // 먼저 모든 날짜의 방 개수 세기
+  rooms.forEach(room => {
+    const date = room.date;
+    if (!date) return;
+
+    if (!dateRoomStats[date]) {
+      dateRoomStats[date] = {
+        totalRooms: 0,
+        assignedRooms: 0,
+        assignedRoomIds: new Set(), // 중복 방지를 위한 Set
+      };
+    }
+
+    dateRoomStats[date].totalRooms += 1;
+  });
+
+  // 참가자의 roomAssignments를 확인하여 배정된 방 세기
+  accommodationForm?.participants.forEach(participant => {
+    const roomAssignments = participant.roomAssignments || {};
+
+    Object.keys(roomAssignments).forEach(dateKey => {
+      const assignment = roomAssignments[dateKey];
+      const roomId = assignment.roomId;
+      const standardDate = assignment.standardDate; // 표준 날짜 형식
+
+      if (roomId && standardDate && dateRoomStats[standardDate]) {
+        dateRoomStats[standardDate].assignedRoomIds.add(roomId);
+      }
     });
   });
 
-  // 방 배정 현황
-  const roomStats = {
-    totalRooms: rooms.length,
-    assignedRooms: 0,
-    emptyRooms: 0,
-    totalCapacity: 0,
-    occupiedCapacity: 0,
-  };
+  // Set을 배열 길이로 변환
+  Object.keys(dateRoomStats).forEach(date => {
+    dateRoomStats[date].assignedRooms = dateRoomStats[date].assignedRoomIds.size;
+    delete dateRoomStats[date].assignedRoomIds; // 불필요한 Set 제거
+  });
 
-  rooms.forEach(room => {
-    roomStats.totalCapacity += room.capacity || 0;
-    const assigned = room.assignedParticipants?.length || 0;
-    if (assigned > 0) {
-      roomStats.assignedRooms += 1;
-      roomStats.occupiedCapacity += assigned;
-    } else {
-      roomStats.emptyRooms += 1;
-    }
+  // 3. 날짜별 폼별 등록 인원 집계
+  const dateFormStats = {};
+  formsWithParticipants.forEach(form => {
+    form.participants.forEach(participant => {
+      // payment-calculator의 날짜 필드 찾기
+      const paymentField = form.fields?.find(f => f.type === 'payment-calculator');
+      const paymentDateFieldId = paymentField ? `${paymentField.id}_dates` : null;
+
+      // accommodation-calculator의 날짜 필드 찾기
+      const accomField = form.fields?.find(f => f.type === 'accommodation-calculator');
+      const accomDateFieldId = accomField ? `${accomField.id}_dates` : null;
+
+      // 날짜 배열 가져오기 (우선순위: payment dates > accommodation dates > partialDates)
+      const dates = (paymentDateFieldId && participant[paymentDateFieldId]) ||
+                    (accomDateFieldId && participant[accomDateFieldId]) ||
+                    participant.partialDates ||
+                    [];
+
+      if (Array.isArray(dates) && dates.length > 0) {
+        dates.forEach(date => {
+          if (!dateFormStats[date]) {
+            dateFormStats[date] = {};
+          }
+          if (!dateFormStats[date][form.name]) {
+            dateFormStats[date][form.name] = 0;
+          }
+          dateFormStats[date][form.name] += 1;
+        });
+      }
+    });
   });
 
   return (
@@ -119,81 +168,91 @@ export default async function AdminDashboard() {
             <p className="mt-2 text-gray-600">참가자 및 집회 현황 요약</p>
           </div>
 
-          {/* 주요 카드 요약 */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl shadow p-6 text-center">
-              <p className="text-gray-500">총 신청서 수</p>
-              <p className="text-2xl font-bold text-gray-900">{totalParticipants}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow p-6 text-center">
-              <p className="text-gray-500">총 인원</p>
-              <p className="text-2xl font-bold text-gray-900">{totalPeople}</p>
-            </div>
-            <div className="bg-white rounded-xl shadow p-6 text-center">
-              <p className="text-gray-500">등록 폼 수</p>
-              <p className="text-2xl font-bold text-blue-600">{forms.length}</p>
-            </div>
-          </div>
-
-          {/* 등록 폼별 등록 인원 */}
+          {/* 1. 등록 폼별 등록 인원 */}
           <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">등록 폼별 등록 인원</h2>
-            {formsWithParticipants.length === 0 ? (
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">📋 등록 폼별 등록 인원</h2>
+            {formStats.length === 0 ? (
               <p className="text-gray-500">등록된 폼이 없습니다.</p>
             ) : (
               <div className="space-y-3">
-                {formsWithParticipants.map(form => {
-                  const totalPeopleInForm = form.participants.reduce((sum, p) => sum + (p.totalPeople || 1), 0);
-                  return (
-                    <div key={form.id} className="flex justify-between items-center border-b pb-2">
-                      <div>
-                        <span className="text-gray-700 font-medium">{form.name}</span>
-                        <span className="text-gray-500 text-sm ml-2">
-                          ({form.participants.length}건)
-                        </span>
-                      </div>
-                      <span className="font-bold text-lg text-blue-600">{totalPeopleInForm}명</span>
+                {formStats.map(stat => (
+                  <div key={stat.id} className="flex justify-between items-center border-b pb-3">
+                    <div>
+                      <span className="text-gray-700 font-medium">{stat.name}</span>
+                      <span className="text-gray-500 text-sm ml-2">
+                        ({stat.totalRegistrations}건)
+                      </span>
                     </div>
-                  );
-                })}
+                    <span className="font-bold text-lg text-blue-600">{stat.totalPeople}명</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* 방 배정 현황 */}
+          {/* 2. 방 배정 현황 */}
           <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">방 배정 현황</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500">총 방 개수</p>
-                <p className="text-xl font-bold text-gray-900">{roomStats.totalRooms}</p>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">🏠 방 배정 현황</h2>
+
+            {/* 인원 배정 현황 */}
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+              <h3 className="font-semibold text-gray-700 mb-3">인원 배정 현황</h3>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">숙박 등록 인원</span>
+                <span className="font-bold text-2xl text-gray-900">{totalAccommodationParticipants}명</span>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <p className="text-sm text-gray-500">배정된 방</p>
-                <p className="text-xl font-bold text-green-600">{roomStats.assignedRooms}</p>
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-gray-600">방 배정 완료</span>
+                <span className="font-bold text-2xl text-green-600">{totalAssignedParticipants}명</span>
               </div>
-              <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                <p className="text-sm text-gray-500">빈 방</p>
-                <p className="text-xl font-bold text-yellow-600">{roomStats.emptyRooms}</p>
-              </div>
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-500">배정률</p>
-                <p className="text-xl font-bold text-blue-600">
-                  {roomStats.totalCapacity > 0
-                    ? Math.round((roomStats.occupiedCapacity / roomStats.totalCapacity) * 100)
-                    : 0}%
-                </p>
+              <div className="mt-3 pt-3 border-t border-blue-200">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-700 font-medium">배정률</span>
+                  <span className="font-bold text-xl text-blue-600">
+                    {totalAccommodationParticipants > 0
+                      ? Math.round((totalAssignedParticipants / totalAccommodationParticipants) * 100)
+                      : 0}%
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="text-sm text-gray-600">
-              <p>총 수용 인원: {roomStats.totalCapacity}명</p>
-              <p>배정된 인원: {roomStats.occupiedCapacity}명</p>
+
+            {/* 날짜별 방 배정 현황 */}
+            <div>
+              <h3 className="font-semibold text-gray-700 mb-3">날짜별 방 배정 현황</h3>
+              {Object.keys(dateRoomStats).length === 0 ? (
+                <p className="text-gray-500 text-sm">방 데이터가 없습니다.</p>
+              ) : (
+                <div className="space-y-2">
+                  {Object.keys(dateRoomStats).sort().map(date => {
+                    const stats = dateRoomStats[date];
+                    const percentage = stats.totalRooms > 0
+                      ? Math.round((stats.assignedRooms / stats.totalRooms) * 100)
+                      : 0;
+                    return (
+                      <div key={date} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <span className="font-medium text-gray-700">{date}</span>
+                          <div className="text-sm text-gray-600 mt-1">
+                            생성: {stats.totalRooms}개 / 배정: {stats.assignedRooms}개
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`font-bold text-lg ${percentage === 100 ? 'text-green-600' : 'text-orange-600'}`}>
+                            {percentage}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* 날짜별 폼별 등록 인원 */}
+          {/* 3. 날짜별 폼별 등록 인원 */}
           <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">날짜별 폼별 등록 인원</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">📅 날짜별 폼별 등록 인원</h2>
             {Object.keys(dateFormStats).length === 0 ? (
               <p className="text-gray-500">날짜별 데이터가 없습니다.</p>
             ) : (

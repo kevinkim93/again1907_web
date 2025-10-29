@@ -314,7 +314,9 @@ export default function LookupPage() {
                           'roomId', 'roomName', 'roomAssignments', 'extraCounts',
                           'totalPeople', 'amount', 'isPartial', 'partialDates',
                           'registrationPhase', 'accommodationDates', 'roomType',
-                          'accommodationAmount'
+                          'accommodationAmount', 'groupId', 'representativeId',
+                          'groupPosition', 'isRepresentative', 'representativeName',
+                          'totalGroupMembers', 'gender', 'age'
                         ];
 
                         // 추가 인원 필드 제외
@@ -365,6 +367,22 @@ export default function LookupPage() {
                       <div className="grid grid-cols-3 gap-4">
                         <p className="font-semibold text-gray-700">입금 날짜</p>
                         <p className="col-span-2 text-gray-900">{participant.paidAt}</p>
+                      </div>
+                    )}
+
+                    {/* 대표 등록자 */}
+                    {participant.representativeName && (
+                      <div className="grid grid-cols-3 gap-4">
+                        <p className="font-semibold text-gray-700">대표 등록자</p>
+                        <p className="col-span-2 text-gray-900">{participant.representativeName}</p>
+                      </div>
+                    )}
+
+                    {/* 총 등록 인원 (그룹 인원) */}
+                    {participant.totalGroupMembers && (
+                      <div className="grid grid-cols-3 gap-4">
+                        <p className="font-semibold text-gray-700">총 등록 인원</p>
+                        <p className="col-span-2 text-gray-900">{participant.totalGroupMembers}명</p>
                       </div>
                     )}
 
@@ -458,7 +476,7 @@ export default function LookupPage() {
                     )}
 
                     {/* 금액 안내 */}
-                    {participant.amount && (
+                    {participant.amount && participant.amount.total > 0 && (
                       <div className="col-span-3 mt-4 pt-4 border-t border-gray-200">
                         <p className="font-semibold text-gray-700 mb-3">금액 안내</p>
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 text-sm">
@@ -473,6 +491,11 @@ export default function LookupPage() {
                             <p className="text-xs text-gray-500 mt-2">
                               * 입금자명은 신청하신 성함과 동일하게 해주세요.
                             </p>
+                            {participant.representativeName && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                * 대표 등록자({participant.representativeName})가 입금하면 함께 입금 완료 처리됩니다.
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>

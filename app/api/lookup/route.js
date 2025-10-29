@@ -32,23 +32,33 @@ export async function POST(req) {
 
       if (!nameField || !phoneField) continue;
 
-      // Firestore 조회 (필드 ID로 조회)
+      // Firestore 조회 (전화번호로만 먼저 조회)
       const snap = await adminDb
         .collection(collectionName)
-        .where(nameField.id, "==", name)
         .where(phoneField.id, "==", phone)
         .get();
 
-      // 해당 폼에서 찾은 모든 등록 내역 추가
+      // 해당 폼에서 찾은 등록 내역 중 이름이 일치하는 것만 추가
       snap.docs.forEach(doc => {
-        allRegistrations.push({
-          id: doc.id,
-          ...doc.data(),
-          formId: form.id,
-          formName: form.name,
-          formFields: form.fields, // 필드 정의 포함
-          collectionName
-        });
+        const data = doc.data();
+        const storedName = data[nameField.id] || '';
+
+        // " - 등록:" 문자열이 있으면 앞부분만 추출
+        const actualName = storedName.includes(' - 등록:')
+          ? storedName.split(' - 등록:')[0]
+          : storedName;
+
+        // 이름이 일치하는 경우만 추가
+        if (actualName === name) {
+          allRegistrations.push({
+            id: doc.id,
+            ...data,
+            formId: form.id,
+            formName: form.name,
+            formFields: form.fields, // 필드 정의 포함
+            collectionName
+          });
+        }
       });
     }
 

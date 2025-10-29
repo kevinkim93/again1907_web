@@ -9,6 +9,7 @@ export default function AttendeesPage() {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState([]);
+  const [groupFilter, setGroupFilter] = useState(''); // 그룹 ID 필터
 
   // 폼 목록 가져오기
   const fetchForms = async () => {
@@ -201,6 +202,18 @@ export default function AttendeesPage() {
   // 현재 폼에 accommodation-calculator가 있는지 확인
   const hasAccommodation = currentForm?.fields?.some(f => f.type === 'accommodation-calculator');
 
+  // 그룹 ID 목록 추출 (중복 제거)
+  const groupIds = Array.from(new Set(
+    participants
+      .filter(p => p.groupId)
+      .map(p => p.groupId)
+  )).sort();
+
+  // 필터링된 참가자 목록
+  const filteredParticipants = groupFilter
+    ? participants.filter(p => p.groupId === groupFilter)
+    : participants;
+
   // 방 번호로 그룹화 (중복 제거)
   const roomNumbersSet = new Set();
   rooms.forEach(room => {
@@ -218,24 +231,73 @@ export default function AttendeesPage() {
         <label className="block text-sm font-medium mb-2">등록 폼 선택</label>
         <select
           value={selectedFormId}
-          onChange={(e) => setSelectedFormId(e.target.value)}
+          onChange={(e) => {
+            setSelectedFormId(e.target.value);
+            setGroupFilter(''); // 폼 변경시 그룹 필터 초기화
+          }}
           className="w-full max-w-md border border-gray-300 rounded-md p-2"
         >
           {forms.map(form => (
             <option key={form.id} value={form.id}>
-              {form.name} ({participants.filter(p => p.formId === form.id).length || 0}명)
+              {form.name} 
             </option>
           ))}
         </select>
       </div>
 
+      {/* 그룹 필터 (그룹이 있는 경우만 표시) */}
+      {groupIds.length > 0 && (
+        <div className="mb-6 bg-white shadow rounded-lg p-4">
+          <label className="block text-sm font-medium mb-2">그룹 필터</label>
+          <div className="flex gap-2 items-center">
+            <select
+              value={groupFilter}
+              onChange={(e) => setGroupFilter(e.target.value)}
+              className="flex-1 max-w-md border border-gray-300 rounded-md p-2"
+            >
+              <option value="">전체 보기 ({participants.length}명)</option>
+              {groupIds.map(groupId => {
+                const groupMembers = participants.filter(p => p.groupId === groupId);
+                const representative = groupMembers.find(p => p.isRepresentative);
+
+                // 대표자의 이름과 전화번호 가져오기
+                const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
+                const phoneField = currentForm?.fields?.find(f => f.type === 'tel');
+
+                const repName = representative?.[nameField?.id] || representative?.representativeName || '알 수 없음';
+                const repPhone = representative?.[phoneField?.id] || '';
+
+                const groupLabel = repPhone
+                  ? `${repName} (${repPhone})`
+                  : repName;
+
+                return (
+                  <option key={groupId} value={groupId}>
+                    그룹: {groupLabel} - {groupMembers.length}명
+                  </option>
+                );
+              })}
+            </select>
+            {groupFilter && (
+              <button
+                onClick={() => setGroupFilter('')}
+                className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+              >
+                필터 해제
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 참가자 목록 */}
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
-            {currentForm?.name} 참가자 목록 ({participants.length}명)
+            {currentForm?.name} 참가자 목록 ({filteredParticipants.length}명)
+            {groupFilter && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
           </h2>
-          {hasAccommodation && participants.length > 0 && (
+          {hasAccommodation && filteredParticipants.length > 0 && (
             <button
               onClick={goToRoomAssignment}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm font-medium"
@@ -245,15 +307,16 @@ export default function AttendeesPage() {
           )}
         </div>
 
-        {participants.length === 0 ? (
+        {filteredParticipants.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            등록된 참가자가 없습니다.
+            {groupFilter ? '해당 그룹에 참가자가 없습니다.' : '등록된 참가자가 없습니다.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse border border-gray-300 text-sm">
               <thead className="bg-gray-100">
                 <tr>
+                  <th className="border p-2">그룹 ID</th>
                   {currentForm?.fields.map(field => (
                     <th key={field.id} className="border p-2">{field.label}</th>
                   ))}
@@ -264,8 +327,47 @@ export default function AttendeesPage() {
                 </tr>
               </thead>
               <tbody>
-                {participants.map(participant => (
+                {filteredParticipants.map(participant => (
                   <tr key={participant.id}>
+                    <td className="border p-2">
+                      {participant.groupId ? (
+                        (() => {
+                          // 대표자의 이름과 전화번호 찾기
+                          const groupMembers = participants.filter(p => p.groupId === participant.groupId);
+                          const representative = groupMembers.find(p => p.isRepresentative);
+
+                          const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
+                          const phoneField = currentForm?.fields?.find(f => f.type === 'tel');
+
+                          const repName = representative?.[nameField?.id] || participant.representativeName || '알 수 없음';
+                          const repPhone = representative?.[phoneField?.id] || '';
+
+                          return (
+                            <div className="text-xs">
+                              <div className={`font-medium ${participant.isRepresentative ? 'text-blue-600' : 'text-gray-600'}`}>
+                                {participant.isRepresentative ? '👤 대표자' : '👥 구성원'}
+                              </div>
+                              <div className="text-[10px] text-gray-700 mt-0.5">
+                                {repName}
+                              </div>
+                              {repPhone && (
+                                <div className="text-[10px] text-gray-500 mt-0.5">
+                                  {repPhone}
+                                </div>
+                              )}
+                              <button
+                                onClick={() => setGroupFilter(participant.groupId)}
+                                className="text-[10px] text-blue-600 hover:text-blue-800 underline mt-1 block"
+                              >
+                                그룹 보기 ({groupMembers.length}명)
+                              </button>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        <span className="text-gray-400 text-xs">-</span>
+                      )}
+                    </td>
                     {currentForm?.fields.map(field => (
                       <td key={field.id} className="border p-2">
                         {renderFieldValue(field, participant[field.id], participant)}
