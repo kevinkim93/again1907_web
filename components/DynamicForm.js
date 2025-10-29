@@ -321,22 +321,67 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
     if (initialData && formSchema) {
       const autoFilledData = {};
 
-      // 이름 필드 찾기
-      const nameField = formSchema.fields.find(f =>
-        f.type === 'text' && (f.label.includes('이름') || f.label.includes('성명'))
-      );
-      if (nameField && initialData.name) {
-        autoFilledData[nameField.id] = initialData.name;
-      }
+      // 등록 수정 모드: initialData에 모든 필드 데이터가 있음
+      if (initialData.formId) {
+        // 모든 필드 ID를 순회하며 데이터 채우기
+        formSchema.fields.forEach(field => {
+          if (initialData[field.id] !== undefined) {
+            autoFilledData[field.id] = initialData[field.id];
+          }
 
-      // 전화번호 필드 찾기
-      const telField = formSchema.fields.find(f => f.type === 'tel');
-      if (telField && initialData.tel) {
-        autoFilledData[telField.id] = initialData.tel;
+          // payment-calculator 날짜 필드 처리
+          if (field.type === 'payment-calculator') {
+            const dateFieldId = `${field.id}_dates`;
+            const mealOptionsFieldId = `${field.id}_mealOptions`;
+            if (initialData[dateFieldId]) {
+              autoFilledData[dateFieldId] = initialData[dateFieldId];
+            }
+            if (initialData[mealOptionsFieldId]) {
+              autoFilledData[mealOptionsFieldId] = initialData[mealOptionsFieldId];
+            }
+          }
+
+          // accommodation-calculator 필드 처리
+          if (field.type === 'accommodation-calculator') {
+            const accomDateFieldId = `${field.id}_dates`;
+            const accomRoomTypeFieldId = `${field.id}_roomType`;
+            const accomRoomOptionsFieldId = `${field.id}_roomOptions`;
+            if (initialData[accomDateFieldId]) {
+              autoFilledData[accomDateFieldId] = initialData[accomDateFieldId];
+            }
+            if (initialData[accomRoomTypeFieldId]) {
+              autoFilledData[accomRoomTypeFieldId] = initialData[accomRoomTypeFieldId];
+            }
+            if (initialData[accomRoomOptionsFieldId]) {
+              autoFilledData[accomRoomOptionsFieldId] = initialData[accomRoomOptionsFieldId];
+            }
+          }
+
+          // date-of-birth 임시 필드 처리
+          if (field.type === 'date-of-birth') {
+            const tempDobKey = `_temp_${field.id}`;
+            if (initialData[tempDobKey]) {
+              autoFilledData[tempDobKey] = initialData[tempDobKey];
+            }
+          }
+        });
+      } else {
+        // 일반 등록 모드: 이름, 전화번호만 자동 채우기
+        const nameField = formSchema.fields.find(f =>
+          f.type === 'text' && (f.label.includes('이름') || f.label.includes('성명'))
+        );
+        if (nameField && initialData.name) {
+          autoFilledData[nameField.id] = initialData.name;
+        }
+
+        const telField = formSchema.fields.find(f => f.type === 'tel');
+        if (telField && initialData.tel) {
+          autoFilledData[telField.id] = initialData.tel;
+        }
       }
 
       if (Object.keys(autoFilledData).length > 0) {
-        setFormData(prev => ({ ...prev, ...autoFilledData }));
+        setFormData(autoFilledData);
       }
     }
   }, [initialData, formSchema]);
@@ -354,11 +399,25 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
   const handleCheckboxArray = (fieldId, value, checked) => {
     setFormData(prev => {
       const current = prev[fieldId] || [];
+      const newData = { ...prev };
+
       if (checked) {
-        return { ...prev, [fieldId]: [...current, value] };
+        newData[fieldId] = [...current, value];
       } else {
-        return { ...prev, [fieldId]: current.filter(v => v !== value) };
+        newData[fieldId] = current.filter(v => v !== value);
+
+        // payment-calculator의 날짜 선택 해제 시 해당 날짜의 식사 옵션도 제거
+        if (fieldId.endsWith('_dates')) {
+          const mealOptionsFieldId = fieldId.replace('_dates', '_mealOptions');
+          if (newData[mealOptionsFieldId] && newData[mealOptionsFieldId][value]) {
+            const updatedMealOptions = { ...newData[mealOptionsFieldId] };
+            delete updatedMealOptions[value];
+            newData[mealOptionsFieldId] = updatedMealOptions;
+          }
+        }
       }
+
+      return newData;
     });
   };
 
@@ -732,6 +791,14 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
         const selectedDatesForMeal = formData[dateFieldId] || [];
         const mealOptionsData = formData[mealOptionsFieldId] || {};
 
+        console.log('Payment Calculator Render:', {
+          dateFieldId,
+          mealOptionsFieldId,
+          selectedDatesForMeal,
+          mealOptionsData,
+          formData
+        });
+
         return (
           <div className="space-y-4">
             {/* 참석 날짜 선택 */}
@@ -748,6 +815,8 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     const isDateSelected = ((formData[dateFieldId] || [])).includes(date);
                     const mealLabels = field.mealLabels || { noBreakfast: '아침 식사 제외', fasting: '금식' };
                     const dateMealOptions = mealOptionsData[date] || { noBreakfast: false, fasting: false };
+
+                    console.log(`Date ${date}:`, { isDateSelected, dateMealOptions });
 
                     return (
                       <div key={date} className="border border-gray-200 rounded-lg p-3 bg-white">
@@ -909,10 +978,89 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <h4 className="font-semibold text-purple-900 mb-3">{selectedRoomType} 추가 정보</h4>
 
-                {roomTypeOption.type === 'gender' && (
-                  <div className="space-y-4">
-                    {/* 남자 인원 */}
-                    <div>
+                {roomTypeOption.type === 'gender' && (() => {
+                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                  const maleList = currentData.male || [];
+                  const femaleList = currentData.female || [];
+
+                  // 대표자 정보 가져오기
+                  const nameField = formSchema.fields.find(f => f.type === 'text' && f.label.includes('이름'));
+                  const representativeName = formData[nameField?.id] || '대표자';
+
+                  // 대표자가 어디에 추가되어 있는지 확인
+                  const isInMale = maleList.some(p => p.name === representativeName);
+                  const isInFemale = femaleList.some(p => p.name === representativeName);
+                  const representativeGender = isInMale ? 'male' : isInFemale ? 'female' : null;
+
+                  const handleRepresentativeGenderChange = (gender) => {
+                    const telField = formSchema.fields.find(f => f.type === 'tel');
+                    const representativeTel = formData[telField?.id] || '';
+
+                    let newMaleList = [...maleList];
+                    let newFemaleList = [...femaleList];
+
+                    // 기존에 있던 대표자 제거
+                    newMaleList = newMaleList.filter(p => p.name !== representativeName);
+                    newFemaleList = newFemaleList.filter(p => p.name !== representativeName);
+
+                    // 선택한 성별에 추가
+                    if (gender === 'male') {
+                      newMaleList.push({ name: representativeName, age: '' });
+                    } else if (gender === 'female') {
+                      newFemaleList.push({ name: representativeName, age: '' });
+                    }
+
+                    handleChange(accomRoomOptionsFieldId, {
+                      ...currentData,
+                      male: newMaleList,
+                      female: newFemaleList,
+                      representativeName,
+                      representativeTel
+                    });
+                  };
+
+                  return (
+                    <div className="space-y-4">
+                      {/* 대표자 본인 성별 선택 */}
+                      <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
+                        <p className="text-sm text-yellow-800 mb-2">
+                          💡 대표자 본인도 숙박할 경우 성별을 선택해주세요
+                        </p>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`${accomRoomOptionsFieldId}_representative_gender`}
+                              checked={representativeGender === 'male'}
+                              onChange={() => handleRepresentativeGenderChange('male')}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm font-medium">본인(남)</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name={`${accomRoomOptionsFieldId}_representative_gender`}
+                              checked={representativeGender === 'female'}
+                              onChange={() => handleRepresentativeGenderChange('female')}
+                              className="w-4 h-4"
+                            />
+                            <span className="text-sm font-medium">본인(여)</span>
+                          </label>
+                          {representativeGender && (
+                            <button
+                              type="button"
+                              onClick={() => handleRepresentativeGenderChange(null)}
+                              className="text-xs text-red-600 hover:text-red-800 underline"
+                            >
+                              선택 해제
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 남자 인원 */}
+                      <div>
                       <div className="flex items-center justify-between mb-2">
                         <label className="block text-sm font-medium">남자 인원</label>
                         <button
@@ -1080,8 +1228,9 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                         ))}
                       </div>
                     </div>
-                  </div>
-                )}
+                    </div>
+                  );
+                })()}
 
                 {roomTypeOption.type === 'count' && (
                   <div>

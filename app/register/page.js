@@ -68,15 +68,17 @@ export default function RegisterPage() {
     currentForm.fields.forEach(field => {
       currentFormFieldIds.add(field.id);
 
-      // payment-calculator의 날짜 필드 추가
+      // payment-calculator의 날짜 및 식사 옵션 필드 추가
       if (field.type === 'payment-calculator') {
         currentFormFieldIds.add(`${field.id}_dates`);
+        currentFormFieldIds.add(`${field.id}_mealOptions`);
       }
 
-      // accommodation-calculator의 날짜와 방 타입 필드 추가
+      // accommodation-calculator의 날짜, 방 타입, 방 옵션 필드 추가
       if (field.type === 'accommodation-calculator') {
         currentFormFieldIds.add(`${field.id}_dates`);
         currentFormFieldIds.add(`${field.id}_roomType`);
+        currentFormFieldIds.add(`${field.id}_roomOptions`);
       }
 
       // date-of-birth의 임시 필드 추가

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import DynamicForm from "@/components/DynamicForm";
 
 export default function LookupPage() {
   const [form, setForm] = useState({ name: "", phone: "" });
@@ -9,6 +10,8 @@ export default function LookupPage() {
   const [settings, setSettings] = useState(null);
   const [error, setError] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState(null);
 
   const onChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -51,6 +54,161 @@ export default function LookupPage() {
     const field = formFields?.find(f => f.id === fieldId);
     return field?.label || fieldId;
   };
+
+  const handleEdit = () => {
+    const participant = registrations[selectedIndex];
+    setEditData(participant);
+    setEditMode(true);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+
+    const participant = registrations[selectedIndex];
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/registration", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: participant.id,
+          collectionName: participant.collectionName
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      alert("삭제되었습니다.");
+      // 삭제 후 다시 조회
+      setRegistrations([]);
+      setSelectedIndex(0);
+      setForm({ name: "", phone: "" });
+    } catch (err) {
+      setError(err.message || "삭제 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdate = async (formData) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      // 현재 폼의 필드 ID 목록 생성
+      const currentFormFieldIds = new Set();
+      editData.formFields?.forEach(field => {
+        currentFormFieldIds.add(field.id);
+
+        // payment-calculator의 날짜 및 식사 옵션 필드 추가
+        if (field.type === 'payment-calculator') {
+          currentFormFieldIds.add(`${field.id}_dates`);
+          currentFormFieldIds.add(`${field.id}_mealOptions`);
+        }
+
+        // accommodation-calculator의 날짜와 방 타입 필드 추가
+        if (field.type === 'accommodation-calculator') {
+          currentFormFieldIds.add(`${field.id}_dates`);
+          currentFormFieldIds.add(`${field.id}_roomType`);
+          currentFormFieldIds.add(`${field.id}_roomOptions`);
+        }
+
+        // date-of-birth의 임시 필드 추가
+        if (field.type === 'date-of-birth') {
+          currentFormFieldIds.add(`_temp_${field.id}`);
+        }
+      });
+
+      // 현재 폼의 필드에 해당하는 데이터만 필터링
+      const filteredFormData = {};
+      Object.keys(formData).forEach(key => {
+        if (currentFormFieldIds.has(key)) {
+          filteredFormData[key] = formData[key];
+        }
+      });
+
+      const res = await fetch("/api/registration", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editData.id,
+          collectionName: editData.collectionName,
+          formData: filteredFormData,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText);
+      }
+
+      alert("수정되었습니다.");
+      setEditMode(false);
+
+      // 수정 후 다시 조회
+      const updatedRes = await fetch("/api/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!updatedRes.ok) {
+        throw new Error("다시 조회하는 중 오류가 발생했습니다.");
+      }
+
+      const updatedData = await updatedRes.json();
+
+      // 수정한 항목의 인덱스를 유지하기 위해 ID를 찾음
+      const updatedIndex = updatedData.registrations.findIndex(
+        r => r.id === editData.id && r.collectionName === editData.collectionName
+      );
+
+      setRegistrations(updatedData.registrations);
+      setSettings(updatedData.settings);
+
+      // 동일한 항목이 있으면 해당 인덱스로 설정
+      if (updatedIndex !== -1) {
+        setSelectedIndex(updatedIndex);
+      }
+    } catch (err) {
+      console.error("수정 오류:", err);
+      setError(err.message || "수정 중 오류가 발생했습니다.");
+      alert(`수정 실패: ${err.message || "알 수 없는 오류"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 수정 모드일 때 렌더링
+  if (editMode && editData) {
+    return (
+      <section className="max-w-3xl mx-auto px-4 py-12">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold">등록 정보 수정</h1>
+          <button
+            onClick={() => setEditMode(false)}
+            className="text-gray-600 hover:text-gray-800"
+          >
+            ← 뒤로
+          </button>
+        </div>
+
+        <div className="bg-white shadow-md rounded-xl p-6">
+          <DynamicForm
+            formSchema={{
+              id: editData.formId,
+              name: editData.formName,
+              fields: editData.formFields || []
+            }}
+            settings={settings}
+            onSubmit={handleUpdate}
+            submitButtonText={loading ? "수정 중..." : "수정하기"}
+            initialData={editData}
+          />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="max-w-3xl mx-auto px-4 py-12">
@@ -229,11 +387,43 @@ export default function LookupPage() {
                     {(participant.isPartial !== undefined) && (
                       <div className="grid grid-cols-3 gap-4">
                         <p className="font-semibold text-gray-700">참가 일정</p>
-                        <p className="col-span-2 text-gray-900">
-                          {participant.isPartial
-                            ? participant.partialDates?.join(", ") || "선택한 날짜"
-                            : "전체 참석"}
-                        </p>
+                        <div className="col-span-2 text-gray-900">
+                          <p>
+                            {participant.isPartial
+                              ? participant.partialDates?.join(", ") || "선택한 날짜"
+                              : "전체 참석"}
+                          </p>
+
+                          {/* 식사 옵션 표시 */}
+                          {(() => {
+                            const paymentField = participant.formFields?.find(f => f.type === 'payment-calculator');
+                            if (!paymentField) return null;
+
+                            const mealOptionsFieldId = `${paymentField.id}_mealOptions`;
+                            const mealOptions = participant[mealOptionsFieldId];
+
+                            if (!mealOptions || Object.keys(mealOptions).length === 0) return null;
+
+                            const mealLabels = paymentField.mealLabels || { noBreakfast: '아침 식사 제외', fasting: '금식' };
+
+                            return (
+                              <div className="mt-2 pl-4 border-l-2 border-gray-300">
+                                <p className="text-sm font-medium text-gray-600 mb-1">식사 옵션:</p>
+                                {Object.entries(mealOptions).map(([date, options]) => {
+                                  if (!options.noBreakfast && !options.fasting) return null;
+
+                                  return (
+                                    <div key={date} className="text-sm text-gray-700">
+                                      <span className="font-medium">{date}:</span>{' '}
+                                      {options.noBreakfast && mealLabels.noBreakfast}
+                                      {options.fasting && mealLabels.fasting}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+                        </div>
                       </div>
                     )}
 
@@ -287,6 +477,22 @@ export default function LookupPage() {
                         </div>
                       </div>
                     )}
+                  </div>
+
+                  {/* 수정 및 삭제 버튼 */}
+                  <div className="mt-6 flex gap-3">
+                    <button
+                      onClick={handleEdit}
+                      className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-md hover:bg-blue-700"
+                    >
+                      수정하기
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="flex-1 bg-red-600 text-white font-semibold py-3 rounded-md hover:bg-red-700"
+                    >
+                      삭제하기
+                    </button>
                   </div>
                 </div>
               );

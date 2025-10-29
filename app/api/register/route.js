@@ -192,8 +192,10 @@ export async function POST(req) {
     if (accommodationField) {
       const accomDateFieldId = `${accommodationField.id}_dates`;
       const accomRoomTypeFieldId = `${accommodationField.id}_roomType`;
+      const accomRoomOptionsFieldId = `${accommodationField.id}_roomOptions`;
       const selectedAccomDates = formData[accomDateFieldId] || [];
       const selectedRoomType = formData[accomRoomTypeFieldId] || '';
+      const roomOptions = formData[accomRoomOptionsFieldId] || {};
 
       // 숙박 정보 저장
       participant.accommodationDates = selectedAccomDates;
@@ -209,11 +211,35 @@ export async function POST(req) {
 
       if (pricePerNight && selectedAccomDates.length > 0) {
         const totalNights = selectedAccomDates.length;
-        const totalAccommodationAmount = pricePerNight * totalNights;
+
+        // 방 타입별 인원 수 계산
+        const roomTypeOption = accommodationField.roomTypeOptions?.[selectedRoomType];
+        let peopleCount = 1;
+
+        if (roomTypeOption?.type === 'gender') {
+          // 30인실: 남자 + 여자 인원 수
+          const maleList = roomOptions.male || [];
+          const femaleList = roomOptions.female || [];
+          peopleCount = maleList.length + femaleList.length;
+        } else if (roomTypeOption?.type === 'count') {
+          // 2인실 등: 선택한 인원 수
+          peopleCount = parseInt(roomOptions.count) || 1;
+        }
+
+        // 총 숙박비 계산
+        let totalAccommodationAmount = 0;
+        if (roomTypeOption?.type === 'gender') {
+          // 30인실: 인원 수 × 1박 요금 × 박수
+          totalAccommodationAmount = pricePerNight * peopleCount * totalNights;
+        } else {
+          // 2인실 등: 1박 요금 × 박수 (인원수 무관)
+          totalAccommodationAmount = pricePerNight * totalNights;
+        }
 
         participant.accommodationAmount = {
           pricePerNight,
           totalNights,
+          peopleCount,
           total: totalAccommodationAmount,
           phase: isPhase1 ? 'phase1' : 'phase2',
         };
