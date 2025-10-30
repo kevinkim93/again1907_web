@@ -1,15 +1,5 @@
 import { NextResponse } from 'next/server';
-import admin from 'firebase-admin';
-
-// Firebase Admin 초기화 (이미 초기화되어 있으면 재사용)
-if (!admin.apps.length) {
-  const serviceAccount = require('@/serviceAccountKey.json');
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
-
-const db = admin.firestore();
+import { adminDb as db } from '@/lib/firebaseAdmin';
 
 // PUT: 등록 정보 수정
 export async function PUT(request) {
