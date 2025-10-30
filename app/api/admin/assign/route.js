@@ -5,11 +5,22 @@ import { requireAdmin } from '../_auth';
 // 날짜 문자열을 YYYY-MM-DD 형식으로 변환
 function parseKoreanDate(dateStr) {
   // "2026년 1월 7일 (Day3 - 수요일)" → "2026-01-07"
-  const match = dateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
-  if (match) {
-    const year = match[1];
-    const month = match[2].padStart(2, '0');
-    const day = match[3].padStart(2, '0');
+  const matchWithYear = dateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+  if (matchWithYear) {
+    const year = matchWithYear[1];
+    const month = matchWithYear[2].padStart(2, '0');
+    const day = matchWithYear[3].padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // "1월 26일 (Day1)" → "2026-01-26" (연도가 없는 경우, 2026년으로 가정)
+  const matchWithoutYear = dateStr.match(/(\d{1,2})월\s*(\d{1,2})일/);
+  if (matchWithoutYear) {
+    const currentYear = new Date().getFullYear();
+    // 이벤트가 2026년이므로 하드코딩 (또는 settings에서 가져올 수도 있음)
+    const year = 2026;
+    const month = matchWithoutYear[1].padStart(2, '0');
+    const day = matchWithoutYear[2].padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
 

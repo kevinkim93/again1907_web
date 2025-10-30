@@ -316,7 +316,7 @@ export default function LookupPage() {
                           'registrationPhase', 'accommodationDates', 'roomType',
                           'accommodationAmount', 'groupId', 'representativeId',
                           'groupPosition', 'isRepresentative', 'representativeName',
-                          'totalGroupMembers', 'gender', 'age'
+                          'totalGroupMembers', 'gender', 'age', 'representativeIncluded', 'updatedAt'
                         ];
 
                         // 추가 인원 필드 제외

@@ -338,267 +338,342 @@ export default function FormEditorPage() {
 
                     {/* 1차 등록 가격 */}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h5 className="font-medium text-blue-900 mb-3">1차 등록 가격</h5>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium mb-2">전체 참석 (총액)</label>
-                          <div className="grid grid-cols-3 gap-2">
-                            <input
-                              type="number"
-                              placeholder="성인"
-                              value={editingField.pricing?.phase1?.full?.adult || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase1: {
-                                    ...editingField.pricing?.phase1,
-                                    full: {
-                                      ...editingField.pricing?.phase1?.full,
-                                      adult: parseInt(e.target.value) || 0
-                                    }
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-medium text-blue-900">1차 등록 가격</h5>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editingField.enablePhase1 !== false}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              enablePhase1: e.target.checked
+                            })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">사용</span>
+                        </label>
+                      </div>
+
+                      {editingField.enablePhase1 !== false && (
+                        <>
+
+                      {/* 전체 참석 가격 */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">전체 참석 (총액)</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <input
+                            type="number"
+                            placeholder="성인"
+                            value={editingField.pricing?.phase1?.full?.adult || ''}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              pricing: {
+                                ...editingField.pricing,
+                                phase1: {
+                                  ...editingField.pricing?.phase1,
+                                  full: {
+                                    ...editingField.pricing?.phase1?.full,
+                                    adult: parseInt(e.target.value) || 0
                                   }
                                 }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="만8세↑"
-                              value={editingField.pricing?.phase1?.full?.minor8plus || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase1: {
-                                    ...editingField.pricing?.phase1,
-                                    full: {
-                                      ...editingField.pricing?.phase1?.full,
-                                      minor8plus: parseInt(e.target.value) || 0
-                                    }
+                              }
+                            })}
+                            className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                          />
+                          <input
+                            type="number"
+                            placeholder="만8세↑"
+                            value={editingField.pricing?.phase1?.full?.minor8plus || ''}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              pricing: {
+                                ...editingField.pricing,
+                                phase1: {
+                                  ...editingField.pricing?.phase1,
+                                  full: {
+                                    ...editingField.pricing?.phase1?.full,
+                                    minor8plus: parseInt(e.target.value) || 0
                                   }
                                 }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="만7세↓"
-                              value={editingField.pricing?.phase1?.full?.minorUnder8 || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase1: {
-                                    ...editingField.pricing?.phase1,
-                                    full: {
-                                      ...editingField.pricing?.phase1?.full,
-                                      minorUnder8: parseInt(e.target.value) || 0
-                                    }
+                              }
+                            })}
+                            className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                          />
+                          <input
+                            type="number"
+                            placeholder="만7세↓"
+                            value={editingField.pricing?.phase1?.full?.minorUnder8 || ''}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              pricing: {
+                                ...editingField.pricing,
+                                phase1: {
+                                  ...editingField.pricing?.phase1,
+                                  full: {
+                                    ...editingField.pricing?.phase1?.full,
+                                    minorUnder8: parseInt(e.target.value) || 0
                                   }
                                 }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium mb-2">부분 참석 (일별 금액)</label>
-                          <div className="grid grid-cols-3 gap-2">
-                            <input
-                              type="number"
-                              placeholder="성인"
-                              value={editingField.pricing?.phase1?.daily?.adult || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase1: {
-                                    ...editingField.pricing?.phase1,
-                                    daily: {
-                                      ...editingField.pricing?.phase1?.daily,
-                                      adult: parseInt(e.target.value) || 0
-                                    }
-                                  }
-                                }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="만8세↑"
-                              value={editingField.pricing?.phase1?.daily?.minor8plus || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase1: {
-                                    ...editingField.pricing?.phase1,
-                                    daily: {
-                                      ...editingField.pricing?.phase1?.daily,
-                                      minor8plus: parseInt(e.target.value) || 0
-                                    }
-                                  }
-                                }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="만7세↓"
-                              value={editingField.pricing?.phase1?.daily?.minorUnder8 || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase1: {
-                                    ...editingField.pricing?.phase1,
-                                    daily: {
-                                      ...editingField.pricing?.phase1?.daily,
-                                      minorUnder8: parseInt(e.target.value) || 0
-                                    }
-                                  }
-                                }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                          </div>
+                              }
+                            })}
+                            className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                          />
                         </div>
                       </div>
+
+                      {/* 날짜별 개별 가격 */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">날짜별 개별 가격</label>
+                        <div className="space-y-3">
+                          {(editingField.dateOptions || []).map((date, idx) => (
+                            <div key={idx} className="bg-white border border-blue-300 rounded-lg p-3">
+                              <div className="font-medium text-sm text-gray-700 mb-2">{date}</div>
+                              <div className="grid grid-cols-3 gap-2">
+                                <input
+                                  type="number"
+                                  placeholder="성인"
+                                  value={editingField.pricing?.phase1?.perDate?.[date]?.adult || ''}
+                                  onChange={(e) => setEditingField({
+                                    ...editingField,
+                                    pricing: {
+                                      ...editingField.pricing,
+                                      phase1: {
+                                        ...editingField.pricing?.phase1,
+                                        perDate: {
+                                          ...editingField.pricing?.phase1?.perDate,
+                                          [date]: {
+                                            ...editingField.pricing?.phase1?.perDate?.[date],
+                                            adult: parseInt(e.target.value) || 0
+                                          }
+                                        }
+                                      }
+                                    }
+                                  })}
+                                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="만8세↑"
+                                  value={editingField.pricing?.phase1?.perDate?.[date]?.minor8plus || ''}
+                                  onChange={(e) => setEditingField({
+                                    ...editingField,
+                                    pricing: {
+                                      ...editingField.pricing,
+                                      phase1: {
+                                        ...editingField.pricing?.phase1,
+                                        perDate: {
+                                          ...editingField.pricing?.phase1?.perDate,
+                                          [date]: {
+                                            ...editingField.pricing?.phase1?.perDate?.[date],
+                                            minor8plus: parseInt(e.target.value) || 0
+                                          }
+                                        }
+                                      }
+                                    }
+                                  })}
+                                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="만7세↓"
+                                  value={editingField.pricing?.phase1?.perDate?.[date]?.minorUnder8 || ''}
+                                  onChange={(e) => setEditingField({
+                                    ...editingField,
+                                    pricing: {
+                                      ...editingField.pricing,
+                                      phase1: {
+                                        ...editingField.pricing?.phase1,
+                                        perDate: {
+                                          ...editingField.pricing?.phase1?.perDate,
+                                          [date]: {
+                                            ...editingField.pricing?.phase1?.perDate?.[date],
+                                            minorUnder8: parseInt(e.target.value) || 0
+                                          }
+                                        }
+                                      }
+                                    }
+                                  })}
+                                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                        </>
+                      )}
                     </div>
 
                     {/* 2차 등록 가격 */}
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <h5 className="font-medium text-green-900 mb-3">2차 등록 가격</h5>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium mb-2">전체 참석 (총액)</label>
-                          <div className="grid grid-cols-3 gap-2">
-                            <input
-                              type="number"
-                              placeholder="성인"
-                              value={editingField.pricing?.phase2?.full?.adult || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase2: {
-                                    ...editingField.pricing?.phase2,
-                                    full: {
-                                      ...editingField.pricing?.phase2?.full,
-                                      adult: parseInt(e.target.value) || 0
-                                    }
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-medium text-green-900">2차 등록 가격</h5>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editingField.enablePhase2 !== false}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              enablePhase2: e.target.checked
+                            })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">사용</span>
+                        </label>
+                      </div>
+
+                      {editingField.enablePhase2 !== false && (
+                        <>
+
+                      {/* 전체 참석 가격 */}
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2">전체 참석 (총액)</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          <input
+                            type="number"
+                            placeholder="성인"
+                            value={editingField.pricing?.phase2?.full?.adult || ''}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              pricing: {
+                                ...editingField.pricing,
+                                phase2: {
+                                  ...editingField.pricing?.phase2,
+                                  full: {
+                                    ...editingField.pricing?.phase2?.full,
+                                    adult: parseInt(e.target.value) || 0
                                   }
                                 }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="만8세↑"
-                              value={editingField.pricing?.phase2?.full?.minor8plus || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase2: {
-                                    ...editingField.pricing?.phase2,
-                                    full: {
-                                      ...editingField.pricing?.phase2?.full,
-                                      minor8plus: parseInt(e.target.value) || 0
-                                    }
+                              }
+                            })}
+                            className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                          />
+                          <input
+                            type="number"
+                            placeholder="만8세↑"
+                            value={editingField.pricing?.phase2?.full?.minor8plus || ''}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              pricing: {
+                                ...editingField.pricing,
+                                phase2: {
+                                  ...editingField.pricing?.phase2,
+                                  full: {
+                                    ...editingField.pricing?.phase2?.full,
+                                    minor8plus: parseInt(e.target.value) || 0
                                   }
                                 }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="만7세↓"
-                              value={editingField.pricing?.phase2?.full?.minorUnder8 || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase2: {
-                                    ...editingField.pricing?.phase2,
-                                    full: {
-                                      ...editingField.pricing?.phase2?.full,
-                                      minorUnder8: parseInt(e.target.value) || 0
-                                    }
+                              }
+                            })}
+                            className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                          />
+                          <input
+                            type="number"
+                            placeholder="만7세↓"
+                            value={editingField.pricing?.phase2?.full?.minorUnder8 || ''}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              pricing: {
+                                ...editingField.pricing,
+                                phase2: {
+                                  ...editingField.pricing?.phase2,
+                                  full: {
+                                    ...editingField.pricing?.phase2?.full,
+                                    minorUnder8: parseInt(e.target.value) || 0
                                   }
                                 }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                          </div>
-                        </div>
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium mb-2">부분 참석 (일별 금액)</label>
-                          <div className="grid grid-cols-3 gap-2">
-                            <input
-                              type="number"
-                              placeholder="성인"
-                              value={editingField.pricing?.phase2?.daily?.adult || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase2: {
-                                    ...editingField.pricing?.phase2,
-                                    daily: {
-                                      ...editingField.pricing?.phase2?.daily,
-                                      adult: parseInt(e.target.value) || 0
-                                    }
-                                  }
-                                }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="만8세↑"
-                              value={editingField.pricing?.phase2?.daily?.minor8plus || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase2: {
-                                    ...editingField.pricing?.phase2,
-                                    daily: {
-                                      ...editingField.pricing?.phase2?.daily,
-                                      minor8plus: parseInt(e.target.value) || 0
-                                    }
-                                  }
-                                }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                            <input
-                              type="number"
-                              placeholder="만7세↓"
-                              value={editingField.pricing?.phase2?.daily?.minorUnder8 || ''}
-                              onChange={(e) => setEditingField({
-                                ...editingField,
-                                pricing: {
-                                  ...editingField.pricing,
-                                  phase2: {
-                                    ...editingField.pricing?.phase2,
-                                    daily: {
-                                      ...editingField.pricing?.phase2?.daily,
-                                      minorUnder8: parseInt(e.target.value) || 0
-                                    }
-                                  }
-                                }
-                              })}
-                              className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                            />
-                          </div>
+                              }
+                            })}
+                            className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                          />
                         </div>
                       </div>
+
+                      {/* 날짜별 개별 가격 */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">날짜별 개별 가격</label>
+                        <div className="space-y-3">
+                          {(editingField.dateOptions || []).map((date, idx) => (
+                            <div key={idx} className="bg-white border border-green-300 rounded-lg p-3">
+                              <div className="font-medium text-sm text-gray-700 mb-2">{date}</div>
+                              <div className="grid grid-cols-3 gap-2">
+                                <input
+                                  type="number"
+                                  placeholder="성인"
+                                  value={editingField.pricing?.phase2?.perDate?.[date]?.adult || ''}
+                                  onChange={(e) => setEditingField({
+                                    ...editingField,
+                                    pricing: {
+                                      ...editingField.pricing,
+                                      phase2: {
+                                        ...editingField.pricing?.phase2,
+                                        perDate: {
+                                          ...editingField.pricing?.phase2?.perDate,
+                                          [date]: {
+                                            ...editingField.pricing?.phase2?.perDate?.[date],
+                                            adult: parseInt(e.target.value) || 0
+                                          }
+                                        }
+                                      }
+                                    }
+                                  })}
+                                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="만8세↑"
+                                  value={editingField.pricing?.phase2?.perDate?.[date]?.minor8plus || ''}
+                                  onChange={(e) => setEditingField({
+                                    ...editingField,
+                                    pricing: {
+                                      ...editingField.pricing,
+                                      phase2: {
+                                        ...editingField.pricing?.phase2,
+                                        perDate: {
+                                          ...editingField.pricing?.phase2?.perDate,
+                                          [date]: {
+                                            ...editingField.pricing?.phase2?.perDate?.[date],
+                                            minor8plus: parseInt(e.target.value) || 0
+                                          }
+                                        }
+                                      }
+                                    }
+                                  })}
+                                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="만7세↓"
+                                  value={editingField.pricing?.phase2?.perDate?.[date]?.minorUnder8 || ''}
+                                  onChange={(e) => setEditingField({
+                                    ...editingField,
+                                    pricing: {
+                                      ...editingField.pricing,
+                                      phase2: {
+                                        ...editingField.pricing?.phase2,
+                                        perDate: {
+                                          ...editingField.pricing?.phase2?.perDate,
+                                          [date]: {
+                                            ...editingField.pricing?.phase2?.perDate?.[date],
+                                            minorUnder8: parseInt(e.target.value) || 0
+                                          }
+                                        }
+                                      }
+                                    }
+                                  })}
+                                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                        </>
+                      )}
                     </div>
 
                     {/* 등록 기간 설정 */}
+                    {editingField.enablePhase1 !== false && editingField.enablePhase2 !== false && (
                     <div>
                       <label className="block text-sm font-medium mb-2">1차 등록 마감일</label>
                       <input
@@ -611,6 +686,7 @@ export default function FormEditorPage() {
                         이 날짜까지는 1차 가격, 이후는 2차 가격이 적용됩니다.
                       </p>
                     </div>
+                    )}
 
                     {/* 식사 옵션 설정 */}
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -718,7 +794,7 @@ export default function FormEditorPage() {
                     <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                       <h5 className="font-medium text-purple-900 mb-3">방 타입별 추가 옵션 설정</h5>
                       <p className="text-xs text-purple-700 mb-3">
-                        특정 방 타입 선택 시 추가 정보를 받을 수 있습니다.
+                        각 방 타입이 개인실인지 단체실인지 선택하세요. 단체실은 남녀별 인원 입력을, 개인실은 동숙 인원 수를 받습니다.
                       </p>
                       <div className="space-y-3">
                         {(editingField.roomTypes || []).map((roomType, idx) => (
@@ -739,17 +815,17 @@ export default function FormEditorPage() {
                               className="w-full border border-gray-300 rounded-md p-2 text-sm"
                             >
                               <option value="none">추가 옵션 없음</option>
-                              <option value="gender">남녀 인원 선택</option>
-                              <option value="count">동숙 인원 선택</option>
+                              <option value="gender">단체실 (남녀 인원 입력)</option>
+                              <option value="count">개인실 (동숙 인원 선택)</option>
                             </select>
                             {editingField.roomTypeOptions?.[roomType]?.type === 'gender' && (
                               <p className="text-xs text-gray-600 mt-1">
-                                → 사용자가 남자/여자 인원을 입력하게 됩니다.
+                                → 단체실: 사용자가 남자/여자 인원을 각각 입력합니다. 각 인원의 이름, 나이, 전화번호를 받습니다.
                               </p>
                             )}
                             {editingField.roomTypeOptions?.[roomType]?.type === 'count' && (
                               <p className="text-xs text-gray-600 mt-1">
-                                → 사용자가 함께 숙박할 인원 수를 선택하게 됩니다.
+                                → 개인실: 사용자가 함께 숙박할 총 인원 수를 선택합니다.
                               </p>
                             )}
                           </div>

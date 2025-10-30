@@ -225,9 +225,10 @@ export async function POST(req) {
         let peopleCount = 1;
 
         if (roomTypeOption?.type === 'gender') {
-          // 30인실: 남자 + 여자 인원 수
+          // 단체실: 남자 + 여자 인원 수 (대표자 포함)
           const maleList = roomOptions.male || [];
           const femaleList = roomOptions.female || [];
+
           peopleCount = maleList.length + femaleList.length;
         } else if (roomTypeOption?.type === 'count') {
           // 2인실 등: 선택한 인원 수
@@ -273,12 +274,17 @@ export async function POST(req) {
     // 10. formId별 컬렉션에 저장
     const collectionName = `participants_${formId}`;
 
-    // 10-1. 만약 30인실 등 gender type 방이라면, 각 인원을 개별 문서로 저장
+    // 10-1. 만약 단체실 등 gender type 방이라면, 각 인원을 개별 문서로 저장
     if (roomTypeOption?.type === 'gender' && accommodationField) {
       const accomRoomOptionsFieldId = `${accommodationField.id}_roomOptions`;
       const roomOptions = formData[accomRoomOptionsFieldId] || {};
-      const maleList = roomOptions.male || [];
-      const femaleList = roomOptions.female || [];
+      const maleList = (roomOptions.male || []).filter(p => !p.isRepresentative);
+      const femaleList = (roomOptions.female || []).filter(p => !p.isRepresentative);
+
+      // 대표자 확인
+      const allPeople = [...(roomOptions.male || []), ...(roomOptions.female || [])];
+      const representativePerson = allPeople.find(p => p.isRepresentative);
+      const representativeIncluded = !!representativePerson;
 
       // 대표자 이름 가져오기
       const nameField = form.fields.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
@@ -286,11 +292,15 @@ export async function POST(req) {
 
       // 그룹 ID 생성
       const groupId = `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const totalGroupMembers = maleList.length + femaleList.length;
+
+      // 총 그룹 인원: 남자 + 여자 (대표자 제외) + 대표자(1명)
+      let totalGroupMembers = maleList.length + femaleList.length;
+      if (representativeIncluded) totalGroupMembers += 1;
 
       // 대표자 문서에 그룹 정보 추가
       participant.groupId = groupId;
       participant.isRepresentative = true;
+      participant.representativeIncluded = representativeIncluded;
       participant.totalGroupMembers = totalGroupMembers;
       participant.groupPosition = 0;
 

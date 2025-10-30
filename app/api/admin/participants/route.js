@@ -14,14 +14,30 @@ export async function GET(req) {
 
   try {
     const snap = await adminDb.collection(collectionName).orderBy('createdAt', 'desc').get();
-    const rawParticipants = snap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate()?.toISOString() || null,
-    }));
+    const participants = snap.docs.map(doc => {
+      const data = doc.data();
 
-    // 모든 Timestamp 객체를 평범한 객체로 변환
-    const participants = JSON.parse(JSON.stringify(rawParticipants));
+      // roomAssignments를 명시적으로 처리
+      const roomAssignments = data.roomAssignments || {};
+
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate()?.toISOString() || null,
+        roomAssignments: roomAssignments, // 명시적으로 포함
+      };
+    });
+
+    console.log('🔍 Participants API Debug:');
+    console.log('  Total participants:', participants.length);
+    const withAssignments = participants.filter(p => p.roomAssignments && Object.keys(p.roomAssignments).length > 0);
+    console.log('  With room assignments:', withAssignments.length);
+    if (withAssignments.length > 0) {
+      console.log('  Sample assignment:', {
+        id: withAssignments[0].id,
+        roomAssignments: withAssignments[0].roomAssignments
+      });
+    }
 
     return NextResponse.json({ participants });
   } catch (err) {

@@ -74,9 +74,10 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
   let femaleCount = 0;
 
   if (roomTypeOption?.type === 'gender') {
-    // 30인실 같은 경우: 배열 기반 남자 + 여자 인원
+    // 단체실: 배열 기반 남자 + 여자 인원
     const maleList = roomOptions.male || [];
     const femaleList = roomOptions.female || [];
+
     maleCount = maleList.length;
     femaleCount = femaleList.length;
     peopleCount = maleCount + femaleCount;
@@ -209,21 +210,37 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
   const totalDates = field.dateOptions.length;
   const isPartial = selectedDates.length < totalDates;
 
+  // 1차/2차 가격 활성화 여부 확인
+  const phase1Enabled = field.enablePhase1 !== false;
+  const phase2Enabled = field.enablePhase2 !== false;
+
   // 현재 날짜가 1차 등록 마감일 이전인지 확인
   const now = new Date();
   const phase1Deadline = field.phase1Deadline ? new Date(field.phase1Deadline) : null;
-  const isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+  let isPhase1 = false;
 
-  const phase = isPhase1 ? field.pricing.phase1 : field.pricing.phase2;
-  const price = isPartial ? phase?.daily : phase?.full;
-
-  if (!price) {
+  // 1차만 활성화된 경우
+  if (phase1Enabled && !phase2Enabled) {
+    isPhase1 = true;
+  }
+  // 2차만 활성화된 경우
+  else if (!phase1Enabled && phase2Enabled) {
+    isPhase1 = false;
+  }
+  // 둘 다 활성화된 경우
+  else if (phase1Enabled && phase2Enabled) {
+    isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+  }
+  // 둘 다 비활성화된 경우
+  else {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
         <p className="text-sm text-gray-600">가격 정보가 설정되지 않았습니다.</p>
       </div>
     );
   }
+
+  const phase = isPhase1 ? field.pricing.phase1 : field.pricing.phase2;
 
   // 대표자 본인만 기본으로 포함
   let adult = 0;
@@ -246,19 +263,37 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
 
   const totalPeople = adult + minor8plus + minorUnder8;
 
+  // 가격 계산
   let totalAmount = 0;
+  let priceDetails = { adult: 0, minor8plus: 0, minorUnder8: 0 };
+
   if (isPartial) {
-    const days = selectedDates.length;
-    totalAmount = (
-      (price?.adult || 0) * adult * days +
-      (price?.minor8plus || 0) * minor8plus * days +
-      (price?.minorUnder8 || 0) * minorUnder8 * days
-    );
+    // 부분 참석: 날짜별 개별 가격 합산
+    selectedDates.forEach(date => {
+      const datePrice = phase?.perDate?.[date];
+      if (datePrice) {
+        priceDetails.adult += (datePrice.adult || 0) * adult;
+        priceDetails.minor8plus += (datePrice.minor8plus || 0) * minor8plus;
+        priceDetails.minorUnder8 += (datePrice.minorUnder8 || 0) * minorUnder8;
+      }
+    });
+    totalAmount = priceDetails.adult + priceDetails.minor8plus + priceDetails.minorUnder8;
   } else {
-    totalAmount = (
-      (price?.adult || 0) * adult +
-      (price?.minor8plus || 0) * minor8plus +
-      (price?.minorUnder8 || 0) * minorUnder8
+    // 전체 참석: 전체 참석 가격 사용
+    const fullPrice = phase?.full;
+    if (fullPrice) {
+      priceDetails.adult = (fullPrice.adult || 0) * adult;
+      priceDetails.minor8plus = (fullPrice.minor8plus || 0) * minor8plus;
+      priceDetails.minorUnder8 = (fullPrice.minorUnder8 || 0) * minorUnder8;
+      totalAmount = priceDetails.adult + priceDetails.minor8plus + priceDetails.minorUnder8;
+    }
+  }
+
+  if (totalAmount === 0) {
+    return (
+      <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+        <p className="text-sm text-gray-600">가격 정보가 설정되지 않았습니다.</p>
+      </div>
     );
   }
 
@@ -272,10 +307,12 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
           <span className="font-medium">{isPartial ? `부분 참석 (${selectedDates.length}일)` : '전체 참석'}</span>
         </div>
 
-        <div className="flex justify-between">
-          <span className="text-gray-700">등록 시기:</span>
-          <span className="font-medium">{isPhase1 ? '1차 등록' : '2차 등록'}</span>
-        </div>
+        {phase1Enabled && phase2Enabled && (
+          <div className="flex justify-between">
+            <span className="text-gray-700">등록 시기:</span>
+            <span className="font-medium">{isPhase1 ? '1차 등록' : '2차 등록'}</span>
+          </div>
+        )}
 
         <div className="flex justify-between">
           <span className="text-gray-700">총 인원:</span>
@@ -286,19 +323,19 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
           {adult > 0 && (
             <div className="flex justify-between">
               <span className="text-gray-700">성인 {adult}명</span>
-              <span>{((price?.adult || 0) * adult * (isPartial ? selectedDates.length : 1)).toLocaleString()}원</span>
+              <span>{priceDetails.adult.toLocaleString()}원</span>
             </div>
           )}
           {minor8plus > 0 && (
             <div className="flex justify-between">
               <span className="text-gray-700">만8세 이상 {minor8plus}명</span>
-              <span>{((price?.minor8plus || 0) * minor8plus * (isPartial ? selectedDates.length : 1)).toLocaleString()}원</span>
+              <span>{priceDetails.minor8plus.toLocaleString()}원</span>
             </div>
           )}
           {minorUnder8 > 0 && (
             <div className="flex justify-between">
               <span className="text-gray-700">만7세 이하 {minorUnder8}명</span>
-              <span>{((price?.minorUnder8 || 0) * minorUnder8 * (isPartial ? selectedDates.length : 1)).toLocaleString()}원</span>
+              <span>{priceDetails.minorUnder8.toLocaleString()}원</span>
             </div>
           )}
         </div>
@@ -937,17 +974,23 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             {accomDateOptions.length > 0 && (
               <div>
                 <label className="block text-sm font-medium mb-2">숙박 날짜 선택</label>
-                <div className="space-y-2">
-                  {accomDateOptions.map(date => (
-                    <label key={date} className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={((formData[accomDateFieldId] || [])).includes(date)}
-                        onChange={(e) => handleCheckboxArray(accomDateFieldId, date, e.target.checked)}
-                      />
-                      <span>{date}</span>
-                    </label>
-                  ))}
+                <div className="space-y-3">
+                  {accomDateOptions.map(date => {
+                    const isDateSelected = ((formData[accomDateFieldId] || [])).includes(date);
+                    return (
+                      <div key={date} className="border border-gray-200 rounded-lg p-3 bg-white">
+                        <label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isDateSelected}
+                            onChange={(e) => handleCheckboxArray(accomDateFieldId, date, e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                          <span className="font-medium">{date}</span>
+                        </label>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -985,29 +1028,94 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
 
                   // 대표자 정보 가져오기
                   const nameField = formSchema.fields.find(f => f.type === 'text' && f.label.includes('이름'));
+                  const telField = formSchema.fields.find(f => f.type === 'tel');
+                  const dobField = formSchema.fields.find(f => f.label.includes('나이'));
                   const representativeName = formData[nameField?.id] || '대표자';
+                  const representativeTel = formData[telField?.id] || '';
+                  const representativeAge = formData[dobField?.id]
+                    ? String(formData[dobField.id])
+                    : '';
 
                   // 대표자가 어디에 추가되어 있는지 확인
-                  const isInMale = maleList.some(p => p.name === representativeName);
-                  const isInFemale = femaleList.some(p => p.name === representativeName);
+                  const isInMale = maleList.some(p => p.isRepresentative);
+                  const isInFemale = femaleList.some(p => p.isRepresentative);
                   const representativeGender = isInMale ? 'male' : isInFemale ? 'female' : null;
 
-                  const handleRepresentativeGenderChange = (gender) => {
-                    const telField = formSchema.fields.find(f => f.type === 'tel');
-                    const representativeTel = formData[telField?.id] || '';
+                  // 대표자 정보가 변경되었는지 확인하고 자동 업데이트
+                  if (representativeGender) {
+                    const currentRepresentative = representativeGender === 'male'
+                      ? maleList.find(p => p.isRepresentative)
+                      : femaleList.find(p => p.isRepresentative);
 
+                    // 정보가 다르면 업데이트
+                    if (currentRepresentative && (
+                      currentRepresentative.name !== representativeName ||
+                      currentRepresentative.phone !== representativeTel ||
+                      String(currentRepresentative.age || '') !== String(representativeAge)
+                    )) {
+                      let newMaleList = [...maleList];
+                      let newFemaleList = [...femaleList];
+
+                      if (representativeGender === 'male') {
+                        const repIndex = newMaleList.findIndex(p => p.isRepresentative);
+                        if (repIndex >= 0) {
+                          newMaleList[repIndex] = {
+                            ...newMaleList[repIndex],
+                            name: representativeName,
+                            age: representativeAge,
+                            phone: representativeTel,
+                            isRepresentative: true
+                          };
+                        }
+                      } else if (representativeGender === 'female') {
+                        const repIndex = newFemaleList.findIndex(p => p.isRepresentative);
+                        if (repIndex >= 0) {
+                          newFemaleList[repIndex] = {
+                            ...newFemaleList[repIndex],
+                            name: representativeName,
+                            age: representativeAge,
+                            phone: representativeTel,
+                            isRepresentative: true
+                          };
+                        }
+                      }
+
+                      // 다음 렌더링 사이클에서 업데이트 (무한 루프 방지)
+                      setTimeout(() => {
+                        handleChange(accomRoomOptionsFieldId, {
+                          ...currentData,
+                          male: newMaleList,
+                          female: newFemaleList,
+                          representativeName,
+                          representativeTel
+                        });
+                      }, 0);
+                    }
+                  }
+
+                  const handleRepresentativeGenderChange = (gender) => {
                     let newMaleList = [...maleList];
                     let newFemaleList = [...femaleList];
 
                     // 기존에 있던 대표자 제거
-                    newMaleList = newMaleList.filter(p => p.name !== representativeName);
-                    newFemaleList = newFemaleList.filter(p => p.name !== representativeName);
+                    newMaleList = newMaleList.filter(p => !p.isRepresentative);
+                    newFemaleList = newFemaleList.filter(p => !p.isRepresentative);
 
-                    // 선택한 성별에 추가
+                    // 선택한 성별에 대표자 추가
                     if (gender === 'male') {
-                      newMaleList.push({ name: representativeName, age: '' });
+                      newMaleList.unshift({
+                        name: representativeName,
+                        age: representativeAge,
+                        phone: representativeTel,
+                        isRepresentative: true
+                      });
                     } else if (gender === 'female') {
-                      newFemaleList.push({ name: representativeName, age: '' });
+                      newFemaleList.unshift({
+                        name: representativeName,
+                        age: representativeAge,
+                        phone: representativeTel,
+                        isRepresentative: true
+                      });
                     }
 
                     handleChange(accomRoomOptionsFieldId, {
@@ -1069,20 +1177,9 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                             const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
                             const maleList = currentData.male || [];
 
-                            // 대표자 정보 가져오기
-                            const nameField = formSchema.fields.find(f => f.type === 'text' && f.label.includes('이름'));
-                            const telField = formSchema.fields.find(f => f.type === 'tel');
-                            const representativeName = formData[nameField?.id] || '대표자';
-                            const representativeTel = formData[telField?.id] || '';
-
-                            const newIndex = maleList.length + 1;
-                            const generatedName = `${representativeName}_남${newIndex}`;
-
                             handleChange(accomRoomOptionsFieldId, {
                               ...currentData,
-                              male: [...maleList, { name: generatedName, age: '' }],
-                              representativeName,
-                              representativeTel
+                              male: [...maleList, { name: '', age: '', phone: '', isRepresentative: false }]
                             });
                           }}
                           className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
@@ -1091,94 +1188,111 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                         </button>
                       </div>
                       <div className="space-y-2">
-                        {((formData[accomRoomOptionsFieldId]?.male) || []).map((person, idx) => (
-                          <div key={idx} className="bg-white border border-gray-300 rounded p-3">
-                            {/* 모바일: 헤더와 삭제 버튼 */}
-                            <div className="flex sm:hidden items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-gray-700">남자 {idx + 1}</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const maleList = [...(currentData.male || [])];
-                                  maleList.splice(idx, 1);
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    male: maleList
-                                  });
-                                }}
-                                className="text-red-600 hover:text-red-800 text-sm"
-                              >
-                                삭제
-                              </button>
-                            </div>
+                        {((formData[accomRoomOptionsFieldId]?.male) || []).map((person, idx) => {
+                          const isRep = person.isRepresentative;
+                          return (
+                            <div key={idx} className={`border rounded p-3 ${isRep ? 'bg-blue-50 border-blue-300' : 'bg-white border-gray-300'}`}>
+                              {/* 모바일: 헤더와 삭제 버튼 */}
+                              <div className="flex sm:hidden items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-700">
+                                  남자 {idx + 1} {isRep && '(대표자)'}
+                                </span>
+                                {!isRep && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                      const maleList = [...(currentData.male || [])];
+                                      maleList.splice(idx, 1);
+                                      handleChange(accomRoomOptionsFieldId, {
+                                        ...currentData,
+                                        male: maleList
+                                      });
+                                    }}
+                                    className="text-red-600 hover:text-red-800 text-sm"
+                                  >
+                                    삭제
+                                  </button>
+                                )}
+                              </div>
 
-                            {/* PC: 가로 배치, 모바일: 세로 배치 */}
-                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                              <span className="hidden sm:inline text-sm text-gray-600 min-w-[20px]">{idx + 1}.</span>
-                              <input
-                                type="text"
-                                placeholder="이름"
-                                value={person.name || ''}
-                                onChange={(e) => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const maleList = [...(currentData.male || [])];
-                                  maleList[idx] = { ...maleList[idx], name: e.target.value };
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    male: maleList
-                                  });
-                                }}
-                                className="w-full sm:flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
-                              />
-                              <input
-                                type="number"
-                                placeholder="나이"
-                                value={person.age || ''}
-                                onChange={(e) => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const maleList = [...(currentData.male || [])];
-                                  maleList[idx] = { ...maleList[idx], age: e.target.value };
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    male: maleList
-                                  });
-                                }}
-                                className="w-full sm:w-20 border border-gray-300 rounded px-3 py-2 text-sm"
-                              />
-                              <input
-                                type="tel"
-                                placeholder="전화번호 (예: 010-1234-5678)"
-                                value={person.phone || ''}
-                                onChange={(e) => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const maleList = [...(currentData.male || [])];
-                                  maleList[idx] = { ...maleList[idx], phone: e.target.value };
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    male: maleList
-                                  });
-                                }}
-                                className="w-full sm:flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const maleList = [...(currentData.male || [])];
-                                  maleList.splice(idx, 1);
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    male: maleList
-                                  });
-                                }}
-                                className="hidden sm:block text-red-600 hover:text-red-800 text-sm px-2 whitespace-nowrap"
-                              >
-                                삭제
-                              </button>
+                              {/* PC: 가로 배치, 모바일: 세로 배치 */}
+                              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                <span className="hidden sm:inline text-sm text-gray-600 min-w-[60px]">
+                                  {idx + 1}. {isRep && '(대표자)'}
+                                </span>
+                                <input
+                                  type="text"
+                                  placeholder="이름"
+                                  value={person.name || ''}
+                                  readOnly={isRep}
+                                  onChange={(e) => {
+                                    if (isRep) return;
+                                    const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                    const maleList = [...(currentData.male || [])];
+                                    maleList[idx] = { ...maleList[idx], name: e.target.value };
+                                    handleChange(accomRoomOptionsFieldId, {
+                                      ...currentData,
+                                      male: maleList
+                                    });
+                                  }}
+                                  className={`w-full sm:flex-1 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="나이"
+                                  value={person.age || ''}
+                                  readOnly={isRep}
+                                  onChange={(e) => {
+                                    if (isRep) return;
+                                    const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                    const maleList = [...(currentData.male || [])];
+                                    maleList[idx] = { ...maleList[idx], age: e.target.value };
+                                    handleChange(accomRoomOptionsFieldId, {
+                                      ...currentData,
+                                      male: maleList
+                                    });
+                                  }}
+                                  className={`w-full sm:w-20 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                />
+                                <input
+                                  type="tel"
+                                  placeholder="전화번호 (예: 010-1234-5678)"
+                                  value={person.phone || ''}
+                                  readOnly={isRep}
+                                  onChange={(e) => {
+                                    if (isRep) return;
+                                    const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                    const maleList = [...(currentData.male || [])];
+                                    maleList[idx] = { ...maleList[idx], phone: e.target.value };
+                                    handleChange(accomRoomOptionsFieldId, {
+                                      ...currentData,
+                                      male: maleList
+                                    });
+                                  }}
+                                  className={`w-full sm:flex-1 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                />
+                                {!isRep && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                      const maleList = [...(currentData.male || [])];
+                                      maleList.splice(idx, 1);
+                                      handleChange(accomRoomOptionsFieldId, {
+                                        ...currentData,
+                                        male: maleList
+                                      });
+                                    }}
+                                    className="hidden sm:block text-red-600 hover:text-red-800 text-sm px-2 whitespace-nowrap"
+                                  >
+                                    삭제
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1192,20 +1306,9 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                             const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
                             const femaleList = currentData.female || [];
 
-                            // 대표자 정보 가져오기
-                            const nameField = formSchema.fields.find(f => f.type === 'text' && f.label.includes('이름'));
-                            const telField = formSchema.fields.find(f => f.type === 'tel');
-                            const representativeName = formData[nameField?.id] || '대표자';
-                            const representativeTel = formData[telField?.id] || '';
-
-                            const newIndex = femaleList.length + 1;
-                            const generatedName = `${representativeName}_여${newIndex}`;
-
                             handleChange(accomRoomOptionsFieldId, {
                               ...currentData,
-                              female: [...femaleList, { name: generatedName, age: '' }],
-                              representativeName,
-                              representativeTel
+                              female: [...femaleList, { name: '', age: '', phone: '', isRepresentative: false }]
                             });
                           }}
                           className="text-sm bg-pink-500 text-white px-3 py-1 rounded hover:bg-pink-600"
@@ -1214,94 +1317,111 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                         </button>
                       </div>
                       <div className="space-y-2">
-                        {((formData[accomRoomOptionsFieldId]?.female) || []).map((person, idx) => (
-                          <div key={idx} className="bg-white border border-gray-300 rounded p-3">
-                            {/* 모바일: 헤더와 삭제 버튼 */}
-                            <div className="flex sm:hidden items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-gray-700">여자 {idx + 1}</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const femaleList = [...(currentData.female || [])];
-                                  femaleList.splice(idx, 1);
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    female: femaleList
-                                  });
-                                }}
-                                className="text-red-600 hover:text-red-800 text-sm"
-                              >
-                                삭제
-                              </button>
-                            </div>
+                        {((formData[accomRoomOptionsFieldId]?.female) || []).map((person, idx) => {
+                          const isRep = person.isRepresentative;
+                          return (
+                            <div key={idx} className={`border rounded p-3 ${isRep ? 'bg-pink-50 border-pink-300' : 'bg-white border-gray-300'}`}>
+                              {/* 모바일: 헤더와 삭제 버튼 */}
+                              <div className="flex sm:hidden items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-700">
+                                  여자 {idx + 1} {isRep && '(대표자)'}
+                                </span>
+                                {!isRep && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                      const femaleList = [...(currentData.female || [])];
+                                      femaleList.splice(idx, 1);
+                                      handleChange(accomRoomOptionsFieldId, {
+                                        ...currentData,
+                                        female: femaleList
+                                      });
+                                    }}
+                                    className="text-red-600 hover:text-red-800 text-sm"
+                                  >
+                                    삭제
+                                  </button>
+                                )}
+                              </div>
 
-                            {/* PC: 가로 배치, 모바일: 세로 배치 */}
-                            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                              <span className="hidden sm:inline text-sm text-gray-600 min-w-[20px]">{idx + 1}.</span>
-                              <input
-                                type="text"
-                                placeholder="이름"
-                                value={person.name || ''}
-                                onChange={(e) => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const femaleList = [...(currentData.female || [])];
-                                  femaleList[idx] = { ...femaleList[idx], name: e.target.value };
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    female: femaleList
-                                  });
-                                }}
-                                className="w-full sm:flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
-                              />
-                              <input
-                                type="number"
-                                placeholder="나이"
-                                value={person.age || ''}
-                                onChange={(e) => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const femaleList = [...(currentData.female || [])];
-                                  femaleList[idx] = { ...femaleList[idx], age: e.target.value };
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    female: femaleList
-                                  });
-                                }}
-                                className="w-full sm:w-20 border border-gray-300 rounded px-3 py-2 text-sm"
-                              />
-                              <input
-                                type="tel"
-                                placeholder="전화번호 (예: 010-1234-5678)"
-                                value={person.phone || ''}
-                                onChange={(e) => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const femaleList = [...(currentData.female || [])];
-                                  femaleList[idx] = { ...femaleList[idx], phone: e.target.value };
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    female: femaleList
-                                  });
-                                }}
-                                className="w-full sm:flex-1 border border-gray-300 rounded px-3 py-2 text-sm"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
-                                  const femaleList = [...(currentData.female || [])];
-                                  femaleList.splice(idx, 1);
-                                  handleChange(accomRoomOptionsFieldId, {
-                                    ...currentData,
-                                    female: femaleList
-                                  });
-                                }}
-                                className="hidden sm:block text-red-600 hover:text-red-800 text-sm px-2 whitespace-nowrap"
-                              >
-                                삭제
-                              </button>
+                              {/* PC: 가로 배치, 모바일: 세로 배치 */}
+                              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                <span className="hidden sm:inline text-sm text-gray-600 min-w-[60px]">
+                                  {idx + 1}. {isRep && '(대표자)'}
+                                </span>
+                                <input
+                                  type="text"
+                                  placeholder="이름"
+                                  value={person.name || ''}
+                                  readOnly={isRep}
+                                  onChange={(e) => {
+                                    if (isRep) return;
+                                    const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                    const femaleList = [...(currentData.female || [])];
+                                    femaleList[idx] = { ...femaleList[idx], name: e.target.value };
+                                    handleChange(accomRoomOptionsFieldId, {
+                                      ...currentData,
+                                      female: femaleList
+                                    });
+                                  }}
+                                  className={`w-full sm:flex-1 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                />
+                                <input
+                                  type="number"
+                                  placeholder="나이"
+                                  value={person.age || ''}
+                                  readOnly={isRep}
+                                  onChange={(e) => {
+                                    if (isRep) return;
+                                    const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                    const femaleList = [...(currentData.female || [])];
+                                    femaleList[idx] = { ...femaleList[idx], age: e.target.value };
+                                    handleChange(accomRoomOptionsFieldId, {
+                                      ...currentData,
+                                      female: femaleList
+                                    });
+                                  }}
+                                  className={`w-full sm:w-20 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                />
+                                <input
+                                  type="tel"
+                                  placeholder="전화번호 (예: 010-1234-5678)"
+                                  value={person.phone || ''}
+                                  readOnly={isRep}
+                                  onChange={(e) => {
+                                    if (isRep) return;
+                                    const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                    const femaleList = [...(currentData.female || [])];
+                                    femaleList[idx] = { ...femaleList[idx], phone: e.target.value };
+                                    handleChange(accomRoomOptionsFieldId, {
+                                      ...currentData,
+                                      female: femaleList
+                                    });
+                                  }}
+                                  className={`w-full sm:flex-1 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                />
+                                {!isRep && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const currentData = formData[accomRoomOptionsFieldId] || { male: [], female: [] };
+                                      const femaleList = [...(currentData.female || [])];
+                                      femaleList.splice(idx, 1);
+                                      handleChange(accomRoomOptionsFieldId, {
+                                        ...currentData,
+                                        female: femaleList
+                                      });
+                                    }}
+                                    className="hidden sm:block text-red-600 hover:text-red-800 text-sm px-2 whitespace-nowrap"
+                                  >
+                                    삭제
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                     </div>

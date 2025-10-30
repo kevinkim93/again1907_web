@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function RoomsPage() {
+  const pathname = usePathname();
   const [rooms, setRooms] = useState([]);
   const [allParticipants, setAllParticipants] = useState([]);
   const [settings, setSettings] = useState(null);
@@ -16,6 +18,7 @@ export default function RoomsPage() {
   });
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null); // 모달용
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchSettings = async () => {
     const res = await fetch('/api/admin/settings');
@@ -24,7 +27,12 @@ export default function RoomsPage() {
   };
 
   const fetchRooms = async () => {
-    const res = await fetch('/api/admin/rooms');
+    const res = await fetch('/api/admin/rooms', {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache',
+      }
+    });
     const data = await res.json();
     setRooms(data.rooms || []);
     setSelectedRooms([]);
@@ -43,7 +51,12 @@ export default function RoomsPage() {
       for (const form of forms) {
         const collectionName = `participants_${form.id}`;
         console.log(`🔍 Fetching from collection: ${collectionName}`);
-        const res = await fetch(`/api/admin/participants?collectionName=${collectionName}`);
+        const res = await fetch(`/api/admin/participants?collectionName=${collectionName}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          }
+        });
         const data = await res.json();
         const participants = data.participants || [];
 
@@ -80,7 +93,26 @@ export default function RoomsPage() {
     fetchSettings();
     fetchRooms();
     fetchAllParticipants();
+
+    // 페이지가 다시 포커스될 때마다 데이터 새로고침
+    const handleFocus = () => {
+      console.log('🔄 Page focused - refreshing data...');
+      fetchRooms();
+      fetchAllParticipants();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
+
+  // pathname이 변경될 때마다 데이터 새로고침
+  useEffect(() => {
+    if (pathname === '/admin/rooms') {
+      console.log('🔄 Navigated to rooms page - refreshing data...');
+      fetchRooms();
+      fetchAllParticipants();
+    }
+  }, [pathname]);
 
   const createRooms = async (e) => {
     e.preventDefault();
@@ -126,6 +158,18 @@ export default function RoomsPage() {
 
     // roomDate가 제공된 경우: 해당 날짜에 이 방에 배정된 참가자 찾기
     if (roomDate) {
+      // 배정 정보가 있는 참가자만 필터링해서 확인
+      const participantsWithAssignments = allParticipants.filter(p => p.roomAssignments && Object.keys(p.roomAssignments).length > 0);
+      console.log('👥 Participants with room assignments:', participantsWithAssignments.length);
+
+      if (participantsWithAssignments.length > 0) {
+        console.log('📋 Sample participant with assignments:', {
+          id: participantsWithAssignments[0].id,
+          name: participantsWithAssignments[0].name,
+          roomAssignments: participantsWithAssignments[0].roomAssignments
+        });
+      }
+
       const filtered = allParticipants.filter(p => {
         if (!p.roomAssignments || typeof p.roomAssignments !== 'object') {
           return false;
@@ -138,9 +182,11 @@ export default function RoomsPage() {
           // standardDate가 있으면 그것으로 비교, 없으면 한글 날짜로 비교
           const assignmentDate = assignment.standardDate || dateKey;
 
+          console.log(`  🔎 Checking ${p.name || p.id}: dateKey="${dateKey}", standardDate="${assignmentDate}", roomId="${assignment.roomId}" vs target roomDate="${roomDate}", roomId="${roomId}"`);
+
           // roomDate와 비교 (표준 날짜 형식으로)
           if (assignmentDate === roomDate && assignment.roomId === roomId) {
-            console.log(`✅ Match found: ${p.name || p.id} → ${dateKey} (${assignmentDate}) → Room ${roomId}`);
+            console.log(`    ✅ Match found: ${p.name || p.id}`);
             return true;
           }
         }
@@ -182,9 +228,28 @@ export default function RoomsPage() {
     setSelectedRoom(null);
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      fetchRooms(),
+      fetchAllParticipants()
+    ]);
+    setIsRefreshing(false);
+  };
+
   return (
     <main className="p-6">
-      <h1 className="text-2xl font-bold mb-6">방 관리</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">방 관리</h1>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition"
+        >
+          <span className={isRefreshing ? 'animate-spin' : ''}>🔄</span>
+          {isRefreshing ? '새로고침 중...' : '새로고침'}
+        </button>
+      </div>
 
       {/* 방 생성 */}
       <form onSubmit={createRooms} className="bg-white shadow rounded-lg p-6 mb-6 max-w-2xl">

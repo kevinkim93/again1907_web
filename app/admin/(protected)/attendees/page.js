@@ -42,6 +42,28 @@ export default function AttendeesPage() {
     const collectionName = `participants_${formId}`;
     const res = await fetch(`/api/admin/participants?collectionName=${collectionName}`);
     const data = await res.json();
+
+    console.log('🔍 Attendees Page - Fetched participants:', data.participants?.length);
+
+    // roomNumber가 있는 참가자 확인
+    const withRoomNumber = data.participants?.filter(p => p.roomNumber) || [];
+    console.log('🚪 Participants with roomNumber:', withRoomNumber.length);
+
+    // roomAssignments가 있는 참가자 확인
+    const withAssignments = data.participants?.filter(p => p.roomAssignments && Object.keys(p.roomAssignments).length > 0) || [];
+    console.log('🏠 Participants with room assignments:', withAssignments.length);
+
+    if (withRoomNumber.length > 0) {
+      console.log('📋 Sample participant with roomNumber:', {
+        id: withRoomNumber[0].id,
+        roomNumber: withRoomNumber[0].roomNumber,
+        roomId: withRoomNumber[0].roomId,
+        roomName: withRoomNumber[0].roomName,
+        roomAssignments: withRoomNumber[0].roomAssignments,
+        accommodationDates: withRoomNumber[0].accommodationDates
+      });
+    }
+
     setParticipants(data.participants || []);
   };
 
@@ -126,28 +148,82 @@ export default function AttendeesPage() {
       }
     }
 
-    // 정원 초과 경고
+    // 정원 초과 경고 - 날짜별로 체크
     if (accommodationDates.length > 0) {
-      for (const date of accommodationDates) {
+      // 날짜별로 표준 형식으로 변환하는 함수
+      const parseKoreanDate = (dateStr) => {
+        // "2026년 1월 7일 (Day3 - 수요일)" → "2026-01-07"
+        const matchWithYear = dateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+        if (matchWithYear) {
+          const year = matchWithYear[1];
+          const month = matchWithYear[2].padStart(2, '0');
+          const day = matchWithYear[3].padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+
+        // "1월 26일 (Day1)" → "2026-01-26"
+        const matchWithoutYear = dateStr.match(/(\d{1,2})월\s*(\d{1,2})일/);
+        if (matchWithoutYear) {
+          const year = 2026;
+          const month = matchWithoutYear[1].padStart(2, '0');
+          const day = matchWithoutYear[2].padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
+
+        // 이미 YYYY-MM-DD 형식이면 그대로 반환
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+          return dateStr;
+        }
+
+        return null;
+      };
+
+      for (const accomDate of accommodationDates) {
+        const standardDate = parseKoreanDate(accomDate);
+
+        // 해당 날짜, 해당 방 번호의 방 찾기
         const roomOnDate = rooms.find(r =>
           (r.roomNumber === roomNumber || r.name?.replace(/[^\d]/g, '') === roomNumber) &&
-          r.date === date
+          r.date === standardDate
         );
 
         if (roomOnDate) {
+          // 해당 날짜에 이 방에 배정된 참가자들 찾기 (자기 자신 제외)
           const participantsInRoomOnDate = participants.filter(p => {
             if (p.id === participantId) return false;
-            return p.roomAssignments?.[date]?.roomId === roomOnDate.id;
+
+            // roomAssignments가 있으면 그것으로 체크
+            if (p.roomAssignments && typeof p.roomAssignments === 'object') {
+              for (const dateKey in p.roomAssignments) {
+                const assignment = p.roomAssignments[dateKey];
+                if (assignment.roomId === roomOnDate.id ||
+                    (assignment.standardDate === standardDate && p.roomNumber === roomNumber)) {
+                  return true;
+                }
+              }
+              return false; // roomAssignments가 있으면 명시적으로 false
+            }
+
+            // roomAssignments가 없으면 스킵 (날짜별 정보 없음)
+            return false;
           });
 
-          const currentOccupancy = participantsInRoomOnDate.reduce((sum, p) => sum + (p.totalPeople || 0), 0);
-          const afterOccupancy = currentOccupancy + (participant.totalPeople || 0);
+          const currentOccupancy = participantsInRoomOnDate.reduce((sum, p) => sum + (p.totalPeople || 1), 0);
+          const afterOccupancy = currentOccupancy + (participant.totalPeople || 1);
 
           if (afterOccupancy > roomOnDate.capacity) {
-            if (!confirm(`정원 초과 경고!\n\n방: ${roomNumber}호\n날짜: ${date}\n정원: ${roomOnDate.capacity}명\n현재: ${currentOccupancy}명\n배정 후: ${afterOccupancy}명\n\n그래도 배정하시겠습니까?`)) {
+            const warningMessage = `⚠️ 정원 초과 경고!\n\n` +
+              `방: ${roomNumber}호\n` +
+              `날짜: ${accomDate}\n` +
+              `정원: ${roomOnDate.capacity}명\n` +
+              `현재 배정: ${currentOccupancy}명\n` +
+              `배정 후: ${afterOccupancy}명 (${afterOccupancy - roomOnDate.capacity}명 초과)\n\n` +
+              `그래도 배정하시겠습니까?`;
+
+            if (!confirm(warningMessage)) {
               return;
             }
-            break;
+            break; // 한 번만 경고
           }
         }
       }
@@ -430,9 +506,81 @@ export default function AttendeesPage() {
                                 const sampleRoom = rooms.find(r =>
                                   (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum)
                                 );
+
+                                const capacity = sampleRoom?.capacity || 0;
+
+                                // 날짜별로 표준 형식으로 변환하는 함수
+                                const parseKoreanDate = (dateStr) => {
+                                  const matchWithYear = dateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+                                  if (matchWithYear) {
+                                    return `${matchWithYear[1]}-${matchWithYear[2].padStart(2, '0')}-${matchWithYear[3].padStart(2, '0')}`;
+                                  }
+                                  const matchWithoutYear = dateStr.match(/(\d{1,2})월\s*(\d{1,2})일/);
+                                  if (matchWithoutYear) {
+                                    return `2026-${matchWithoutYear[1].padStart(2, '0')}-${matchWithoutYear[2].padStart(2, '0')}`;
+                                  }
+                                  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                                    return dateStr;
+                                  }
+                                  return null;
+                                };
+
+                                // 현재 참가자의 숙박 날짜
+                                const myAccommodationDates = participant.accommodationDates || [];
+
+                                // 내 숙박 날짜들을 표준 형식으로 변환
+                                const myStandardDates = myAccommodationDates
+                                  .map(date => parseKoreanDate(date))
+                                  .filter(date => date !== null);
+
+                                // 내 숙박 날짜들 중에서 각 날짜별 배정 인원 계산
+                                let maxOccupancy = 0;
+                                myStandardDates.forEach(standardDate => {
+                                  // 해당 날짜의 해당 방 번호 방 찾기
+                                  const roomOnDate = rooms.find(r =>
+                                    (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum) &&
+                                    r.date === standardDate
+                                  );
+
+                                  if (roomOnDate) {
+                                    // 해당 날짜에 이 방에 배정된 참가자들 찾기 (자기 자신 제외)
+                                    const participantsInRoomOnDate = participants.filter(p => {
+                                      if (p.id === participant.id) return false; // 자기 자신 제외
+
+                                      // roomAssignments로 체크 (정확한 날짜별 매칭)
+                                      if (p.roomAssignments && typeof p.roomAssignments === 'object') {
+                                        const hasAssignment = Object.keys(p.roomAssignments).length > 0;
+                                        if (!hasAssignment) return false; // 빈 객체는 스킵
+
+                                        for (const dateKey in p.roomAssignments) {
+                                          const assignment = p.roomAssignments[dateKey];
+                                          if (assignment.roomId === roomOnDate.id ||
+                                              (assignment.standardDate === standardDate && p.roomNumber === roomNum)) {
+                                            return true;
+                                          }
+                                        }
+                                        return false;
+                                      }
+                                      return false;
+                                    });
+
+                                    const occupancy = participantsInRoomOnDate.reduce((sum, p) => sum + (p.totalPeople || 1), 0);
+                                    maxOccupancy = Math.max(maxOccupancy, occupancy);
+                                  }
+                                });
+
+                                const isOverCapacity = maxOccupancy >= capacity;
+
                                 return (
-                                  <option key={roomNum} value={roomNum}>
-                                    {roomNum}호 ({sampleRoom?.capacity || '?'}명)
+                                  <option
+                                    key={roomNum}
+                                    value={roomNum}
+                                    style={{
+                                      color: isOverCapacity ? '#dc2626' : '#000',
+                                      fontWeight: isOverCapacity ? 'bold' : 'normal'
+                                    }}
+                                  >
+                                    {roomNum}호 ({maxOccupancy}/{capacity}명) {isOverCapacity ? '⚠️ 만실' : ''}
                                   </option>
                                 );
                               })}
