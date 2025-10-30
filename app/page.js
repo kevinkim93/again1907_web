@@ -106,7 +106,7 @@ export default function HomePage() {
         >
           <img
             src="/images/home1.jpg"
-            alt="Again 1907 소개 1"
+            alt="Again1907 소개 1"
             className="w-full h-full object-cover"
           />
         </section>
@@ -118,7 +118,7 @@ export default function HomePage() {
         >
           <img
             src="/images/home2.jpg"
-            alt="Again 1907 소개 2"
+            alt="Again1907 소개 2"
             className="w-full h-full object-cover"
           />
         </section>
@@ -130,7 +130,7 @@ export default function HomePage() {
         >
           <img
             src="/images/home3.jpg"
-            alt="Again 1907 소개 3"
+            alt="Again1907 소개 3"
             className="w-full h-full object-cover"
           />
         </section>
