@@ -511,7 +511,37 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
     switch (field.type) {
       case 'text':
       case 'email':
+        return (
+          <input
+            type={field.type}
+            id={field.id}
+            value={value}
+            onChange={(e) => handleChange(field.id, e.target.value)}
+            placeholder={field.placeholder}
+            className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+          />
+        );
+
       case 'tel':
+        return (
+          <input
+            type="tel"
+            id={field.id}
+            defaultValue={value}
+            onInput={(e) => {
+              // 숫자와 하이픈만 허용
+              e.target.value = e.target.value.replace(/[^0-9-]/g, '');
+            }}
+            onBlur={(e) => {
+              // 포커스를 잃을 때 숫자만 저장
+              const numericValue = e.target.value.replace(/[^0-9]/g, '');
+              handleChange(field.id, numericValue);
+            }}
+            placeholder={field.placeholder}
+            className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+          />
+        );
+
       case 'number':
         return (
           <input

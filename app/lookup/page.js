@@ -14,7 +14,15 @@ export default function LookupPage() {
   const [editData, setEditData] = useState(null);
 
   const onChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // 전화번호 필드는 숫자와 하이픈만 허용
+    if (name === 'phone') {
+      const sanitizedValue = value.replace(/[^0-9-]/g, '');
+      setForm({ ...form, [name]: sanitizedValue });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const onSubmit = async (e) => {
@@ -25,10 +33,16 @@ export default function LookupPage() {
     setSelectedIndex(0);
 
     try {
+      // 전화번호는 숫자만 추출해서 조회
+      const phoneNumeric = form.phone.replace(/[^0-9]/g, '');
+
       const res = await fetch("/api/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.name,
+          phone: phoneNumeric
+        }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
