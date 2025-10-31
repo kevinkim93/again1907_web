@@ -1,117 +1,139 @@
 "use client";
 
-import { useState } from "react";
-
-const faqs = [
-  {
-    category: "등록",
-    items: [
-      {
-        q: "등록은 어떻게 해야 하나요?",
-        a: "홈페이지(www.again1907.com)에서 신청 가능합니다. 신청 후 등록비를 계좌로 입금해 주세요.\n등록 기간: 2024.10.28(월) ~ 2024.12.31(화) (선착순 등록)",
-      },
-      {
-        q: "등록 변경/취소 하고 싶습니다.",
-        a: "등록 변경/취소는 카카오채널 @again1907로 문의해 주세요.",
-      },
-      {
-        q: "가족 단위 등록은 어떻게 하나요?",
-        a: "가족단위 등록은 홈페이지 메뉴 '등록하기'의 '가족 신청'을 통해 신청해 주세요. 대표 등록자 이름으로 입금 시 가족 모두의 등록이 완료됩니다.",
-      },
-      {
-        q: "단체등록은 어떻게 하나요?",
-        a: "단체등록(10인 이상)은 홈페이지 메뉴 '단체등록'에서 신청서를 작성해 주세요.",
-      },
-      {
-        q: "부분참가는 얼마인가요?",
-        a: "부분참가비는 1일 참가 기준으로 책정되며, 숙소 포함 여부에 따라 상이합니다.\n숙소제공: 5만원 / 숙소 미제공: 3만원",
-      },
-    ],
-  },
-  {
-    category: "숙소",
-    items: [
-      {
-        q: "숙소는 어떻게 배정되나요?",
-        a: "가족, 교회, 지역 단위로 최대한 배정되며, 개별 사정에 따라 조정될 수 있습니다.",
-      },
-      {
-        q: "방 배정은 언제 되나요?",
-        a: "1월 6일 행사 당일 현장에서 배정됩니다.",
-      },
-      {
-        q: "숙소에 침대가 있나요?",
-        a: "2인용 싱글 침대 2개가 구비되어 있습니다.",
-      },
-      {
-        q: "숙소에 개별 화장실이 있나요?",
-        a: "방마다 개별 화장실과 기본 세면도구가 제공됩니다.",
-      },
-    ],
-  },
-  {
-    category: "기타",
-    items: [
-      {
-        q: "캠프 당일 접수는 어떻게 진행되나요?",
-        a: "접수 시간은 오후 3시부터이며, 현장에서 안내해 드립니다.",
-      },
-      {
-        q: "유치부/초등부 프로그램이 있나요?",
-        a: "네, 별도 장소에서 유치부/초등부 프로그램이 진행됩니다.",
-      },
-      {
-        q: "온라인 예배는 어떻게 볼 수 있나요?",
-        a: "홈페이지에서 실시간 예배 영상이 제공됩니다.",
-      },
-    ],
-  },
-];
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function FAQPage() {
+  const [faqs, setFaqs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [openIndex, setOpenIndex] = useState(null);
 
-  const toggle = (index) => {
+  useEffect(() => {
+    fetchFAQs();
+  }, []);
+
+  const fetchFAQs = async () => {
+    try {
+      const res = await fetch("/api/faq");
+      if (!res.ok) throw new Error("FAQ 조회 실패");
+      const data = await res.json();
+      setFaqs(data.faqs || []);
+    } catch (error) {
+      console.error("FAQ 조회 오류:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleFAQ = (index) => {
     setOpenIndex(openIndex === index ? null : index);
   };
 
-  let index = 0;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-gray-600">로딩 중...</p>
+      </div>
+    );
+  }
 
   return (
-    <section className="max-w-3xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold text-center mb-8">자주 묻는 질문 (FAQ)</h1>
-
-      {faqs.map((group, gIdx) => (
-        <div key={gIdx} className="mb-10">
-          <h2 className="text-xl font-semibold text-blue-600 mb-4">{group.category}</h2>
-          <div className="space-y-3">
-            {group.items.map((item, iIdx) => {
-              const currentIndex = index++;
-              return (
-                <div
-                  key={iIdx}
-                  className="border rounded-md bg-white shadow-sm"
-                >
-                  <button
-                    onClick={() => toggle(currentIndex)}
-                    className="w-full flex justify-between items-center p-4 text-left"
-                  >
-                    <span className="font-medium text-gray-800">{item.q}</span>
-                    <span className="ml-2 text-blue-500">
-                      {openIndex === currentIndex ? "▲" : "▼"}
-                    </span>
-                  </button>
-                  {openIndex === currentIndex && (
-                    <div className="px-4 pb-4 text-gray-600 whitespace-pre-line">
-                      {item.a}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+    <div className="max-w-4xl mx-auto px-4 py-12">
+      {/* 헤더 */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-3xl font-bold text-gray-900">자주 묻는 질문 (FAQ)</h1>
+          <Link
+            href="/"
+            className="text-blue-600 hover:text-blue-800 underline"
+          >
+            홈으로
+          </Link>
         </div>
-      ))}
-    </section>
+        <p className="text-gray-600">
+          궁금하신 내용을 확인해보세요. 질문을 클릭하면 답변을 볼 수 있습니다.
+        </p>
+      </div>
+
+      {/* FAQ 목록 */}
+      {faqs.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-500">등록된 FAQ가 없습니다.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {faqs.map((faq, index) => (
+            <div
+              key={faq.id}
+              className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+            >
+              {/* 질문 */}
+              <button
+                onClick={() => toggleFAQ(index)}
+                className="w-full text-left px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-start gap-3 flex-1">
+                  <span className="bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold shrink-0 mt-0.5">
+                    Q
+                  </span>
+                  <span className="font-semibold text-gray-900">
+                    {faq.question}
+                  </span>
+                </div>
+                <svg
+                  className={`w-6 h-6 text-gray-500 transition-transform shrink-0 ml-2 ${
+                    openIndex === index ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </button>
+
+              {/* 답변 */}
+              {openIndex === index && (
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                  <div className="flex items-start gap-3">
+                    <span className="bg-green-600 text-white px-2 py-1 rounded text-xs font-bold shrink-0">
+                      A
+                    </span>
+                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {faq.answer}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 추가 문의 안내 */}
+      <div className="mt-12 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 className="text-lg font-bold text-blue-900 mb-2 text-center">
+          더 궁금한 사항이 있으신가요?
+        </h3>
+        <p className="text-blue-700 text-center mb-4">
+          카카오채널로 문의해주시면 친절히 답변드리겠습니다.
+        </p>
+        <div className="text-center">
+          <a
+            href="http://pf.kakao.com/_zCjxdn"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-6 py-3 rounded-lg transition-colors"
+          >
+            카카오채널 @again1907 문의하기
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -141,37 +141,64 @@ export async function POST(req) {
       // 현재 날짜가 1차 등록 마감일 이전인지 확인
       const now = new Date();
       const phase1Deadline = paymentField.phase1Deadline ? new Date(paymentField.phase1Deadline) : null;
-      const isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+
+      // 1차/2차 가격 활성화 여부 확인
+      const phase1Enabled = paymentField.enablePhase1 !== false;
+      const phase2Enabled = paymentField.enablePhase2 !== false;
+
+      let isPhase1 = false;
+
+      // 1차만 활성화된 경우
+      if (phase1Enabled && !phase2Enabled) {
+        isPhase1 = true;
+      }
+      // 2차만 활성화된 경우
+      else if (!phase1Enabled && phase2Enabled) {
+        isPhase1 = false;
+      }
+      // 둘 다 활성화된 경우
+      else if (phase1Enabled && phase2Enabled) {
+        isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+      }
 
       const phase = isPhase1 ? paymentField.pricing?.phase1 : paymentField.pricing?.phase2;
-      const price = isPartial ? phase?.daily : phase?.full;
 
       console.log('💰 Price Info:', {
         isPhase1,
+        phase1Enabled,
+        phase2Enabled,
         phase,
-        price,
+        isPartial,
       });
 
-      if (price && selectedDates.length > 0) {
+      if (phase && selectedDates.length > 0) {
         // extraCounts에서 계산 (대표자 포함된 값)
         const adult = participant.extraCounts?.adult || 0;
         const minor8plus = participant.extraCounts?.minor8plus || 0;
         const minorUnder8 = participant.extraCounts?.minorUnder8 || 0;
 
         let totalAmount = 0;
-        if (isPartial && selectedDates.length > 0) {
-          const days = selectedDates.length;
-          totalAmount = (
-            (price?.adult || 0) * adult * days +
-            (price?.minor8plus || 0) * minor8plus * days +
-            (price?.minorUnder8 || 0) * minorUnder8 * days
-          );
+
+        if (isPartial) {
+          // 부분 참석: 날짜별 개별 가격 합산
+          selectedDates.forEach(date => {
+            const datePrice = phase?.perDate?.[date];
+            if (datePrice) {
+              totalAmount += (datePrice.adult || 0) * adult;
+              totalAmount += (datePrice.minor8plus || 0) * minor8plus;
+              totalAmount += (datePrice.minorUnder8 || 0) * minorUnder8;
+            }
+          });
         } else {
-          totalAmount = (
-            (price?.adult || 0) * adult +
-            (price?.minor8plus || 0) * minor8plus +
-            (price?.minorUnder8 || 0) * minorUnder8
-          );
+          // 전체 참석: 전체 참석 가격 사용
+          const fullPrice = phase?.full;
+          if (fullPrice) {
+            totalAmount = (
+              (fullPrice.adult || 0) * adult +
+              (fullPrice.minor8plus || 0) * minor8plus +
+              (fullPrice.minorUnder8 || 0) * minorUnder8
+            );
+          }
         }
 
         console.log('💵 Calculated Amount:', totalAmount);
