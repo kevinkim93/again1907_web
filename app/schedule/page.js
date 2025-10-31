@@ -1,135 +1,51 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function SchedulePage() {
-  const [activeTab, setActiveTab] = useState('main'); // 'main' or 'kids'
+  const [tabs, setTabs] = useState([]);
+  const [data, setData] = useState({});
+  const [activeTab, setActiveTab] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const days = [
-    {
-      day: "DAY 1",
-      date: "1/6 (월)",
-      sessions: [
-        {
-          time: "19:30-23:00",
-          title: "개회예배",
-          detail: "개회: 최창묵 목사 / 설교: 김관호 목사 / 기도: 이호준 목사",
-        },
-      ],
-    },
-    {
-      day: "DAY 2",
-      date: "1/7 (화)",
-      sessions: [
-        { time: "08:00-09:30", title: "아침식사" },
-        {
-          time: "09:30-12:30",
-          title: "오전예배",
-          detail: "간증: 하현일 목사 / 설교: 장광우 목사",
-        },
-        { time: "12:30-13:50", title: "점심식사" },
-        { time: "13:50-14:30", title: "휴식" },
-        { time: "14:30-17:30", title: "오후예배", detail: "설교: 최광 목사" },
-        { time: "17:30-18:50", title: "저녁식사" },
-        { time: "18:50-19:30", title: "휴식" },
-        {
-          time: "19:30-23:00",
-          title: "저녁예배",
-          detail: "뮤지컬 <십자가의 아이들> / 설교: 김요한 목사",
-        },
-      ],
-    },
-    {
-      day: "DAY 3",
-      date: "1/7 (화)",
-      sessions: [
-        { time: "08:00-09:30", title: "아침식사" },
-        {
-          time: "09:30-12:30",
-          title: "오전예배",
-          detail: "간증: 하현일 목사 / 설교: 장광우 목사",
-        },
-        { time: "12:30-13:50", title: "점심식사" },
-        { time: "13:50-14:30", title: "휴식" },
-        { time: "14:30-17:30", title: "오후예배", detail: "설교: 최광 목사" },
-        { time: "17:30-18:50", title: "저녁식사" },
-        { time: "18:50-19:30", title: "휴식" },
-        {
-          time: "19:30-23:00",
-          title: "저녁예배",
-          detail: "뮤지컬 <십자가의 아이들> / 설교: 김요한 목사",
-        },
-      ],
-    },
-    {
-      day: "DAY 4",
-      date: "1/7 (화)",
-      sessions: [
-        { time: "08:00-09:30", title: "아침식사" },
-        {
-          time: "09:30-12:30",
-          title: "오전예배",
-          detail: "간증: 하현일 목사 / 설교: 장광우 목사",
-        },
-        { time: "12:30-13:50", title: "점심식사" },
-        { time: "13:50-14:30", title: "휴식" },
-        { time: "14:30-17:30", title: "오후예배", detail: "설교: 최광 목사" },
-        { time: "17:30-18:50", title: "저녁식사" },
-        { time: "18:50-19:30", title: "휴식" },
-        {
-          time: "19:30-23:00",
-          title: "저녁예배",
-          detail: "뮤지컬 <십자가의 아이들> / 설교: 김요한 목사",
-        },
-      ],
-    },
-    {
-      day: "DAY 5",
-      date: "1/7 (화)",
-      sessions: [
-        { time: "08:00-09:30", title: "아침식사" },
-        {
-          time: "09:30-12:30",
-          title: "오전예배",
-          detail: "간증: 하현일 목사 / 설교: 장광우 목사",
-        },
-        { time: "12:30-13:50", title: "점심식사" },
-        { time: "13:50-14:30", title: "휴식" },
-        { time: "14:30-17:30", title: "오후예배", detail: "설교: 최광 목사" },
-        { time: "17:30-18:50", title: "저녁식사" },
-        { time: "18:50-19:30", title: "휴식" },
-        {
-          time: "19:30-23:00",
-          title: "저녁예배",
-          detail: "뮤지컬 <십자가의 아이들> / 설교: 김요한 목사",
-        },
-      ],
-    },
-    // DAY3~DAY6 생략 (동일 구조로 채우면 됨)
-  ];
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await fetch('/api/schedule/public');
+        if (!res.ok) throw new Error('스케줄을 불러오지 못했습니다.');
+        const json = await res.json();
+        setTabs(json.tabs || []);
+        setData(json.data || {});
+        const initial = (json.tabs && json.tabs[0]?.id) || '';
+        setActiveTab(initial);
+      } catch (e) {
+        console.error(e);
+        setError('스케줄을 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSchedules();
+  }, []);
 
-  const kidsDays = [
-    {
-      day: "DAY 1",
-      date: "1/6 (월)",
-      sessions: [
-        { time: "19:30-23:00", title: "개회 프로그램", detail: "어린이 환영식" },
-      ],
-    },
-    {
-      day: "DAY 2",
-      date: "1/7 (화)",
-      sessions: [
-        { time: "09:30-12:30", title: "오전 프로그램", detail: "성경 놀이" },
-        { time: "14:30-17:30", title: "오후 프로그램", detail: "찬양 배우기" },
-        { time: "19:30-23:00", title: "저녁 프로그램", detail: "특별 공연" },
-      ],
-    },
-    // 추가 날짜...
-  ];
-
-  const currentSchedule = activeTab === 'main' ? days : kidsDays;
-
+  const currentSchedule = useMemo(() => (activeTab ? (data[activeTab] || []) : []), [data, activeTab]);
+  const timeRows = useMemo(() => {
+    const seen = new Set();
+    const rows = [];
+    for (const day of currentSchedule) {
+      for (const s of day.sessions || []) {
+        if (s.time && !seen.has(s.time)) {
+          seen.add(s.time);
+          rows.push(s.time);
+        }
+      }
+    }
+    // 필요 시 정렬 규칙을 바꿀 수 있습니다. (예: 문자열 정렬)
+    return rows;
+  }, [currentSchedule]);
   return (
     <section className="bg-black text-white min-h-screen py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -140,26 +56,25 @@ export default function SchedulePage() {
 
         {/* 탭 버튼 */}
         <div className="flex justify-center gap-4 mb-12">
-          <button
-            onClick={() => setActiveTab('main')}
-            className={`w-40 px-8 py-3 font-semibold text-base rounded-lg transition-all ${
-              activeTab === 'main'
-                ? 'bg-red-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            집회 일정
-          </button>
-          <button
-            onClick={() => setActiveTab('kids')}
-            className={`w-40 px-8 py-3 font-semibold text-base rounded-lg transition-all ${
-              activeTab === 'kids'
-                ? 'bg-red-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-            }`}
-          >
-            어린이<br/>프로그램
-          </button>
+          {loading ? (
+            <div className="text-gray-300">불러오는 중...</div>
+          ) : error ? (
+            <div className="text-red-400">{error}</div>
+          ) : (
+            tabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                className={`w-40 px-8 py-3 font-semibold text-base rounded-lg transition-all ${
+                  activeTab === t.id
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                }`}
+              >
+                {t.name}
+              </button>
+            ))
+          )}
         </div>
 
         {/* 데스크탑 테이블 */}
@@ -177,16 +92,7 @@ export default function SchedulePage() {
               </tr>
             </thead>
             <tbody>
-              {[
-                "08:00-09:30",
-                "09:30-12:30",
-                "12:30-13:50",
-                "13:50-14:30",
-                "14:30-17:30",
-                "17:30-18:50",
-                "18:50-19:30",
-                "19:30-23:00",
-              ].map((time, idx) => (
+            {timeRows.map((time, idx) => (
                 <tr key={idx} className="odd:bg-gray-800 even:bg-gray-750">
                   <td className="border border-gray-700 p-3 font-medium text-gray-300">
                     {time}
