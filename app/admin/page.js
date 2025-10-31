@@ -152,6 +152,9 @@ export default async function AdminDashboard() {
           <a href="/admin/faq" className="block rounded-md px-3 py-2 text-gray-700 hover:bg-blue-100 hover:text-blue-700">
             FAQ 관리
           </a>
+          <a href="/admin/schedule" className="block rounded-md px-3 py-2 text-gray-700 hover:bg-blue-100 hover:text-blue-700">
+            일정 관리
+          </a>
         </nav>
         <div className="px-4 py-4 border-t">
           <a href="/admin/login?logout=1" className="block w-full text-left rounded-md px-3 py-2 text-red-600 hover:bg-red-100">
