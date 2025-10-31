@@ -125,7 +125,7 @@ export default function FAQPage() {
         </p>
         <div className="text-center">
           <a
-            href="http://pf.kakao.com/_zCjxdn"
+            href="http://pf.kakao.com/_Mtxlxdxj/chat"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-4 sm:px-6 py-2 sm:py-3 rounded-lg transition-colors text-sm sm:text-base"

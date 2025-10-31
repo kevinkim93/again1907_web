@@ -142,6 +142,16 @@ export default function RootLayout({ children }) {
         {/* 메인 */}
         <main className="flex-1">{children}</main>
 
+        {/* 채팅 문의 플로팅 버튼 */}
+        <a
+          href="http://pf.kakao.com/_Mtxlxdxj/chat"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-24 right-6 bg-yellow-400 text-gray-900 px-6 py-3 rounded-full shadow-lg hover:bg-yellow-500 transition-all font-semibold text-sm z-50"
+        >
+          채팅<br/>문의
+        </a>
+
         {/* 후원하기 플로팅 버튼 */}
         {!donationOpen && (
           <button
