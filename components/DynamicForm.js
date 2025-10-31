@@ -18,7 +18,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
   if (!field.dateOptions || field.dateOptions.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">관리자가 숙박 날짜 옵션을 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-600">관리자가 숙박 날짜 옵션을 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -26,7 +26,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
   if (!field.roomTypes || field.roomTypes.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">관리자가 방 타입을 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-600">관리자가 방 타입을 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -35,7 +35,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
   if (selectedDates.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">숙박 날짜를 하나 이상 선택해주세요.</p>
+        <p className="text-sm text-black sm:text-gray-600">숙박 날짜를 하나 이상 선택해주세요.</p>
       </div>
     );
   }
@@ -44,7 +44,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
   if (!selectedRoomType) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">방 타입을 선택해주세요.</p>
+        <p className="text-sm text-black sm:text-gray-600">방 타입을 선택해주세요.</p>
       </div>
     );
   }
@@ -52,7 +52,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
   if (!field.accommodationPricing) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">관리자가 가격 정보를 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-600">관리자가 가격 정보를 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -102,14 +102,14 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-gray-700">방 타입:</span>
-          <span className="font-medium">{selectedRoomType}</span>
+          <span className="text-black sm:text-gray-700">방 타입:</span>
+          <span className="font-medium text-black sm:text-gray-900">{selectedRoomType}</span>
         </div>
 
         {roomTypeOption?.type === 'gender' && (
           <div className="flex justify-between">
-            <span className="text-gray-700">인원:</span>
-            <span className="font-medium">
+            <span className="text-black sm:text-gray-700">인원:</span>
+            <span className="font-medium text-black sm:text-gray-900">
               {peopleCount}명 (남 {maleCount}, 여 {femaleCount})
             </span>
           </div>
@@ -117,25 +117,25 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
 
         {roomTypeOption?.type === 'count' && (
           <div className="flex justify-between">
-            <span className="text-gray-700">동숙 인원:</span>
-            <span className="font-medium">{peopleCount}명</span>
+            <span className="text-black sm:text-gray-700">동숙 인원:</span>
+            <span className="font-medium text-black sm:text-gray-900">{peopleCount}명</span>
           </div>
         )}
 
         <div className="flex justify-between">
-          <span className="text-gray-700">숙박 일수:</span>
-          <span className="font-medium">{totalNights}박</span>
+          <span className="text-black sm:text-gray-700">숙박 일수:</span>
+          <span className="font-medium text-black sm:text-gray-900">{totalNights}박</span>
         </div>
 
         <div className="flex justify-between">
-          <span className="text-gray-700">등록 시기:</span>
-          <span className="font-medium">{isPhase1 ? '1차 등록' : '2차 등록'}</span>
+          <span className="text-black sm:text-gray-700">등록 시기:</span>
+          <span className="font-medium text-black sm:text-gray-900">{isPhase1 ? '1차 등록' : '2차 등록'}</span>
         </div>
 
         {roomTypeOption?.type !== 'gender' && (
           <div className="flex justify-between">
-            <span className="text-gray-700">1박 요금:</span>
-            <span className="font-medium">{pricePerNight.toLocaleString()}원</span>
+            <span className="text-black sm:text-gray-700">1박 요금:</span>
+            <span className="font-medium text-black sm:text-gray-900">{pricePerNight.toLocaleString()}원</span>
           </div>
         )}
 
@@ -175,7 +175,7 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
   if (!dobField || !formData[dobField.id]) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">생년월일을 입력하면 참가비가 자동으로 계산됩니다.</p>
+        <p className="text-sm text-black sm:text-gray-600">생년월일을 입력하면 참가비가 자동으로 계산됩니다.</p>
       </div>
     );
   }
@@ -183,7 +183,7 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
   if (!field.dateOptions || field.dateOptions.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">관리자가 참석 날짜 옵션을 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-600">관리자가 참석 날짜 옵션을 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -191,7 +191,7 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
   if (!field.pricing) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">관리자가 가격 정보를 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-600">관리자가 가격 정보를 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -202,7 +202,7 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
   if (selectedDates.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">참석 날짜를 하나 이상 선택해주세요.</p>
+        <p className="text-sm text-black sm:text-gray-600">참석 날짜를 하나 이상 선택해주세요.</p>
       </div>
     );
   }
@@ -235,7 +235,7 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
   else {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">가격 정보가 설정되지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-600">가격 정보가 설정되지 않았습니다.</p>
       </div>
     );
   }
@@ -292,7 +292,7 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
   if (totalAmount === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-gray-600">가격 정보가 설정되지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-600">가격 정보가 설정되지 않았습니다.</p>
       </div>
     );
   }
@@ -303,39 +303,39 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-gray-700">참가 유형:</span>
-          <span className="font-medium">{isPartial ? `부분 참석 (${selectedDates.length}일)` : '전체 참석'}</span>
+          <span className="text-black sm:text-gray-700">참가 유형:</span>
+          <span className="font-medium text-black sm:text-gray-900">{isPartial ? `부분 참석 (${selectedDates.length}일)` : '전체 참석'}</span>
         </div>
 
         {phase1Enabled && phase2Enabled && (
           <div className="flex justify-between">
-            <span className="text-gray-700">등록 시기:</span>
-            <span className="font-medium">{isPhase1 ? '1차 등록' : '2차 등록'}</span>
+            <span className="text-black sm:text-gray-700">등록 시기:</span>
+            <span className="font-medium text-black sm:text-gray-900">{isPhase1 ? '1차 등록' : '2차 등록'}</span>
           </div>
         )}
 
         <div className="flex justify-between">
-          <span className="text-gray-700">총 인원:</span>
-          <span className="font-medium">{totalPeople}명 (본인 포함)</span>
+          <span className="text-black sm:text-gray-700">총 인원:</span>
+          <span className="font-medium text-black sm:text-gray-900">{totalPeople}명 (본인 포함)</span>
         </div>
 
         <div className="border-t border-blue-200 pt-2 mt-2">
           {adult > 0 && (
             <div className="flex justify-between">
-              <span className="text-gray-700">성인 {adult}명</span>
-              <span>{priceDetails.adult.toLocaleString()}원</span>
+              <span className="text-black sm:text-gray-700">성인 {adult}명</span>
+              <span className="text-black sm:text-gray-900">{priceDetails.adult.toLocaleString()}원</span>
             </div>
           )}
           {minor8plus > 0 && (
             <div className="flex justify-between">
-              <span className="text-gray-700">만8세 이상 {minor8plus}명</span>
-              <span>{priceDetails.minor8plus.toLocaleString()}원</span>
+              <span className="text-black sm:text-gray-700">만8세 이상 {minor8plus}명</span>
+              <span className="text-black sm:text-gray-900">{priceDetails.minor8plus.toLocaleString()}원</span>
             </div>
           )}
           {minorUnder8 > 0 && (
             <div className="flex justify-between">
-              <span className="text-gray-700">만7세 이하 {minorUnder8}명</span>
-              <span>{priceDetails.minorUnder8.toLocaleString()}원</span>
+              <span className="text-black sm:text-gray-700">만7세 이하 {minorUnder8}명</span>
+              <span className="text-black sm:text-gray-900">{priceDetails.minorUnder8.toLocaleString()}원</span>
             </div>
           )}
         </div>
@@ -726,7 +726,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             </div>
 
             {age !== null && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-black sm:text-gray-600">
                 만 {age}세 (만 나이 기준)
               </p>
             )}
@@ -757,7 +757,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
         return (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">성인<span className="block text-xs font-normal text-gray-500 mt-0.5"><br/></span></label>
+              <label className="block text-sm font-medium mb-1 text-black sm:text-gray-900">성인<span className="block text-xs font-normal text-black sm:text-gray-500 mt-0.5"><br/></span></label>
               <input
                 type="number"
                 inputMode="numeric"
@@ -775,9 +775,9 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-black sm:text-gray-900">
                 만 8~18세
-                <span className="block text-xs font-normal text-gray-500 mt-0.5">(2007~2019년생)</span>
+                <span className="block text-xs font-normal text-black sm:text-gray-500 mt-0.5">(2007~2019년생)</span>
               </label>
               <input
                 type="number"
@@ -796,9 +796,9 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">
+              <label className="block text-sm font-medium mb-1 text-black sm:text-gray-900">
                 만 8세 미만
-                <span className="block text-xs font-normal text-gray-500 mt-0.5">(2020년생 이후)</span>
+                <span className="block text-xs font-normal text-black sm:text-gray-500 mt-0.5">(2020년생 이후)</span>
               </label>
               <input
                 type="number"
@@ -841,10 +841,10 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             {/* 참석 날짜 선택 */}
             {dateOptions.length > 0 && (
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 text-black sm:text-gray-900">
                   참석 날짜 선택
                   {field.enableMealOptions && (
-                    <span className="text-xs text-gray-500 ml-2">(필요시 식사 옵션 체크)</span>
+                    <span className="text-xs text-black sm:text-gray-500 ml-2">(필요시 식사 옵션 체크)</span>
                   )}
                 </label>
                 <div className="space-y-3">
@@ -872,7 +872,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                         {field.enableMealOptions && isDateSelected && (
                           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-3 sm:mt-2 sm:ml-6 sm:pl-3 sm:border-l sm:border-gray-300">
                             <label
-                              className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"
+                              className="flex items-center gap-1.5 text-sm text-black sm:text-gray-700 cursor-pointer"
                               onClick={() => {
                                 // 이미 선택된 경우 클릭하면 해제
                                 if (dateMealOptions.noBreakfast === true) {
@@ -906,7 +906,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                               <span>{mealLabels.noBreakfast}</span>
                             </label>
                             <label
-                              className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer"
+                              className="flex items-center gap-1.5 text-sm text-black sm:text-gray-700 cursor-pointer"
                               onClick={() => {
                                 // 이미 선택된 경우 클릭하면 해제
                                 if (dateMealOptions.fasting === true) {
@@ -973,7 +973,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             {/* 숙박 날짜 선택 */}
             {accomDateOptions.length > 0 && (
               <div>
-                <label className="block text-sm font-medium mb-2">숙박 날짜 선택</label>
+                <label className="block text-sm font-medium mb-2 text-black sm:text-gray-900">숙박 날짜 선택</label>
                 <div className="space-y-3">
                   {accomDateOptions.map(date => {
                     const isDateSelected = ((formData[accomDateFieldId] || [])).includes(date);
@@ -998,7 +998,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             {/* 방 타입 선택 */}
             {accomRoomTypes.length > 0 && (
               <div>
-                <label className="block text-sm font-medium mb-2">방 타입 선택</label>
+                <label className="block text-sm font-medium mb-2 text-black sm:text-gray-900">방 타입 선택</label>
                 <div className="space-y-2">
                   {accomRoomTypes.map(roomType => (
                     <label key={roomType} className="flex items-center gap-2">
@@ -1170,7 +1170,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                       {/* 남자 인원 */}
                       <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium">남자 인원</label>
+                        <label className="block text-sm font-medium text-black sm:text-gray-900">남자 인원</label>
                         <button
                           type="button"
                           onClick={() => {
@@ -1194,7 +1194,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                             <div key={idx} className={`border rounded p-3 ${isRep ? 'bg-blue-50 border-blue-300' : 'bg-white border-gray-300'}`}>
                               {/* 모바일: 헤더와 삭제 버튼 */}
                               <div className="flex sm:hidden items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-black sm:text-gray-700">
                                   남자 {idx + 1} {isRep && '(대표자)'}
                                 </span>
                                 {!isRep && (
@@ -1299,7 +1299,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     {/* 여자 인원 */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <label className="block text-sm font-medium">여자 인원</label>
+                        <label className="block text-sm font-medium text-black sm:text-gray-900">여자 인원</label>
                         <button
                           type="button"
                           onClick={() => {
@@ -1323,7 +1323,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                             <div key={idx} className={`border rounded p-3 ${isRep ? 'bg-pink-50 border-pink-300' : 'bg-white border-gray-300'}`}>
                               {/* 모바일: 헤더와 삭제 버튼 */}
                               <div className="flex sm:hidden items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-gray-700">
+                                <span className="text-sm font-medium text-black sm:text-gray-700">
                                   여자 {idx + 1} {isRep && '(대표자)'}
                                 </span>
                                 {!isRep && (
@@ -1430,7 +1430,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
 
                 {roomTypeOption.type === 'count' && (
                   <div>
-                    <label className="block text-sm font-medium mb-1">함께 숙박할 인원 (본인 포함)</label>
+                    <label className="block text-sm font-medium mb-1 text-black sm:text-gray-900">함께 숙박할 인원 (본인 포함)</label>
                     <select
                       value={formData[accomRoomOptionsFieldId]?.count || '1'}
                       onChange={(e) => handleChange(accomRoomOptionsFieldId, {
@@ -1464,7 +1464,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
         );
 
       default:
-        return <p className="text-gray-500 text-sm">알 수 없는 필드 타입: {field.type}</p>;
+        return <p className="text-black sm:text-gray-500 text-sm">알 수 없는 필드 타입: {field.type}</p>;
     }
   };
 
@@ -1472,7 +1472,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
     <form onSubmit={handleSubmit} className="space-y-6">
       {formSchema.fields.map(field => (
         <div key={field.id}>
-          <label htmlFor={field.id} className="block text-sm font-medium mb-2">
+          <label htmlFor={field.id} className="block text-sm font-medium mb-2 text-black sm:text-gray-900">
             {field.label}
             {field.required && <span className="text-red-600 ml-1">*</span>}
           </label>

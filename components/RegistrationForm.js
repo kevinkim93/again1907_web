@@ -217,7 +217,13 @@ export default function RegistrationForm({ settings, disabled }) {
 
           <p className="text-xs text-gray-500 mt-4">
             * 등록비 입금 후 참가 확정됩니다.<br />
-            * 입금자명은 신청하신 성함과 동일하게 해주세요.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            * 입금자명은 ‘전화번호 뒷자리+성명’으로 부탁드립니다.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            * 결제 상태는 입금 확인 후 변경 되며 2~3일 정도 소요됩니다.
+
           </p>
         </div>
 
