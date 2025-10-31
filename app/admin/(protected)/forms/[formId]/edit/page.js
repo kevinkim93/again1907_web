@@ -317,6 +317,40 @@ export default function FormEditorPage() {
                   <div className="space-y-4 border-t border-gray-200 pt-4">
                     <h4 className="font-semibold text-gray-900">참가비 설정</h4>
 
+                    {/* 무료 전환 체크박스 옵션 */}
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <h5 className="font-medium text-yellow-900 mb-3">무료 전환 옵션</h5>
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editingField.enableFreeOption || false}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              enableFreeOption: e.target.checked
+                            })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">무료 전환 체크박스 활성화</span>
+                        </label>
+                        {editingField.enableFreeOption && (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">체크박스 라벨</label>
+                            <input
+                              type="text"
+                              value={editingField.freeOptionLabel || '무료 (봉사자/스텝)'}
+                              onChange={(e) => setEditingField({
+                                ...editingField,
+                                freeOptionLabel: e.target.value
+                              })}
+                              className="w-full border border-gray-300 rounded-md p-2"
+                              placeholder="예: 무료 (봉사자/스텝)"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {/* 참석 날짜 옵션 */}
                     <div>
                       <label className="block text-sm font-medium mb-2">참석 날짜 옵션 (한 줄에 하나씩)</label>
@@ -748,6 +782,40 @@ export default function FormEditorPage() {
                 {editingField.type === 'accommodation-calculator' && (
                   <div className="space-y-4 border-t border-gray-200 pt-4">
                     <h4 className="font-semibold text-gray-900">숙박비 설정</h4>
+
+                    {/* 무료 전환 체크박스 옵션 */}
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <h5 className="font-medium text-yellow-900 mb-3">무료 전환 옵션</h5>
+                      <div className="space-y-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={editingField.enableFreeOption || false}
+                            onChange={(e) => setEditingField({
+                              ...editingField,
+                              enableFreeOption: e.target.checked
+                            })}
+                            className="w-4 h-4"
+                          />
+                          <span className="text-sm">무료 전환 체크박스 활성화</span>
+                        </label>
+                        {editingField.enableFreeOption && (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">체크박스 라벨</label>
+                            <input
+                              type="text"
+                              value={editingField.freeOptionLabel || '무료 (봉사자/스텝)'}
+                              onChange={(e) => setEditingField({
+                                ...editingField,
+                                freeOptionLabel: e.target.value
+                              })}
+                              className="w-full border border-gray-300 rounded-md p-2"
+                              placeholder="예: 무료 (봉사자/스텝)"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
                     {/* 숙박 날짜 옵션 */}
                     <div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 
 // 숙박비 계산 컴포넌트
-function AccommodationCalculator({ formData, formSchema, settings, field }) {
+function AccommodationCalculator({ formData, formSchema, settings, field, handleChange }) {
   // 날짜 선택 필드 ID
   const dateFieldId = `${field.id}_dates`;
   // 방 타입 선택 필드 ID
@@ -14,6 +14,10 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
   const selectedDates = formData[dateFieldId] || [];
   const selectedRoomType = formData[roomTypeFieldId] || '';
   const roomOptions = formData[roomOptionsFieldId] || {};
+
+  // 무료 체크박스 필드 ID
+  const freeOptionFieldId = `${field.id}_free`;
+  const isFree = formData[freeOptionFieldId] || false;
 
   if (!field.dateOptions || field.dateOptions.length === 0) {
     return (
@@ -88,6 +92,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
 
   // 총 금액 계산: 30인실은 인원당 가격, 그 외는 방당 가격
   let totalAmount = 0;
+
   if (roomTypeOption?.type === 'gender') {
     // 30인실: 인원 수 × 1박 요금 × 박수
     totalAmount = pricePerNight * peopleCount * totalNights;
@@ -95,10 +100,28 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
     // 2인실 등: 1박 요금 × 박수 (인원수 무관)
     totalAmount = pricePerNight * totalNights;
   }
+  totalAmount = isFree?0:totalAmount
 
   return (
     <div className="bg-green-50 border border-green-300 rounded-lg p-4">
       <h3 className="font-semibold text-green-900 mb-3">숙박비 계산</h3>
+
+      {/* 무료 전환 체크박스 */}
+      {field.enableFreeOption && (
+        <div className="mb-3 pb-3 border-b border-green-200">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isFree}
+              onChange={(e) => handleChange(freeOptionFieldId, e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-sm font-medium text-black sm:text-gray-900">
+              {field.freeOptionLabel || '무료 (봉사자/스텝)'}
+            </span>
+          </label>
+        </div>
+      )}
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
@@ -149,7 +172,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field }) {
 }
 
 // 참가비 계산 컴포넌트
-function PaymentCalculator({ formData, formSchema, settings, field }) {
+function PaymentCalculator({ formData, formSchema, settings, field, handleChange }) {
   // 생년월일 필드 찾기 (대표자 나이 확인)
   const dobField = formSchema.fields.find(f => f.type === 'date-of-birth');
 
@@ -159,6 +182,10 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
 
   // people-count 필드 찾기
   const peopleField = formSchema.fields.find(f => f.type === 'people-count');
+
+  // 무료 체크박스 필드 ID
+  const freeOptionFieldId = `${field.id}_free`;
+  const isFree = formData[freeOptionFieldId] || false;
 
   const calculateAgeGroup = (dob) => {
     if (!dob) return null;
@@ -267,6 +294,7 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
   let totalAmount = 0;
   let priceDetails = { adult: 0, minor8plus: 0, minorUnder8: 0 };
 
+
   if (isPartial) {
     // 부분 참석: 날짜별 개별 가격 합산
     selectedDates.forEach(date => {
@@ -288,18 +316,36 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
       totalAmount = priceDetails.adult + priceDetails.minor8plus + priceDetails.minorUnder8;
     }
   }
+  totalAmount=isFree?0:totalAmount
 
-  if (totalAmount === 0) {
-    return (
-      <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">가격 정보가 설정되지 않았습니다.</p>
-      </div>
-    );
-  }
+  // if (totalAmount === 0) {
+  //   return (
+  //     <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+  //       <p className="text-sm text-black sm:text-gray-600">가격 정보가 설정되지 않았습니다.</p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="bg-blue-50 border border-blue-300 rounded-lg p-4">
       <h3 className="font-semibold text-blue-900 mb-3">참가비 계산</h3>
+
+      {/* 무료 전환 체크박스 */}
+      {field.enableFreeOption && (
+        <div className="mb-3 pb-3 border-b border-blue-200">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isFree}
+              onChange={(e) => handleChange(freeOptionFieldId, e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-sm font-medium text-black sm:text-gray-900">
+              {field.freeOptionLabel || '무료 (봉사자/스텝)'}
+            </span>
+          </label>
+        </div>
+      )}
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
@@ -323,19 +369,19 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
           {adult > 0 && (
             <div className="flex justify-between">
               <span className="text-black sm:text-gray-700">성인 {adult}명</span>
-              <span className="text-black sm:text-gray-900">{priceDetails.adult.toLocaleString()}원</span>
+              <span className="text-black sm:text-gray-900">{isFree?0:priceDetails.adult.toLocaleString()}원</span>
             </div>
           )}
           {minor8plus > 0 && (
             <div className="flex justify-between">
               <span className="text-black sm:text-gray-700">만8세 이상 {minor8plus}명</span>
-              <span className="text-black sm:text-gray-900">{priceDetails.minor8plus.toLocaleString()}원</span>
+              <span className="text-black sm:text-gray-900">{isFree?0:priceDetails.minor8plus.toLocaleString()}원</span>
             </div>
           )}
           {minorUnder8 > 0 && (
             <div className="flex justify-between">
               <span className="text-black sm:text-gray-700">만7세 이하 {minorUnder8}명</span>
-              <span className="text-black sm:text-gray-900">{priceDetails.minorUnder8.toLocaleString()}원</span>
+              <span className="text-black sm:text-gray-900">{isFree?0:priceDetails.minorUnder8.toLocaleString()}원</span>
             </div>
           )}
         </div>
@@ -990,6 +1036,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               formSchema={{...formSchema, fields: [...formSchema.fields, {id: dateFieldId, type: 'checkbox-multiple'}]}}
               settings={settings}
               field={{...field, dateFieldId}}
+              handleChange={handleChange}
             />
           </div>
         );
@@ -1495,6 +1542,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               formSchema={formSchema}
               settings={settings}
               field={field}
+              handleChange={handleChange}
             />
           </div>
         );
@@ -1720,7 +1768,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                   </div>
                   <div className="text-sm text-gray-600 space-y-1 ml-4">
                     <div>방 타입: {confirmInfo.accommodationDetails.roomType}</div>
-                    <div>1박 요금: {confirmInfo.accommodationDetails.pricePerNight.toLocaleString()}원</div>
+                    <div>1박 요금: {isFree?0:confirmInfo.accommodationDetails.pricePerNight.toLocaleString()}원</div>
                     <div>숙박 일수: {confirmInfo.accommodationDetails.nights}박</div>
                     {confirmInfo.accommodationDetails.people > 1 && (
                       <div>인원: {confirmInfo.accommodationDetails.people}명</div>
@@ -1732,7 +1780,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               {confirmInfo.totalAmount > 0 && (
                 <div className="flex justify-between pt-2">
                   <span className="font-bold text-gray-900 text-lg">총 금액</span>
-                  <span className="font-bold text-blue-600 text-lg">{confirmInfo.totalAmount.toLocaleString()}원</span>
+                  <span className="font-bold text-blue-600 text-lg">{isFree?0:confirmInfo.totalAmount.toLocaleString()}원</span>
                 </div>
               )}
             </div>
