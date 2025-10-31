@@ -352,6 +352,7 @@ function PaymentCalculator({ formData, formSchema, settings, field }) {
 export default function DynamicForm({ formSchema, settings, onSubmit, submitButtonText = '등록하기', initialData = null }) {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // initialData가 있으면 해당 필드에 자동으로 채우기
   useEffect(() => {
@@ -499,8 +500,13 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validate()) {
-      onSubmit(formData);
+      setShowConfirmModal(true);
     }
+  };
+
+  const handleConfirmSubmit = () => {
+    setShowConfirmModal(false);
+    onSubmit(formData);
   };
 
   // 필드 렌더링
@@ -1498,27 +1504,256 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {formSchema.fields.map(field => (
-        <div key={field.id}>
-          <label htmlFor={field.id} className="block text-sm font-medium mb-2 text-black sm:text-gray-900">
-            {field.label}
-            {field.required && <span className="text-red-600 ml-1">*</span>}
-          </label>
-          {renderField(field)}
-          {errors[field.id] && (
-            <p className="text-red-600 text-sm mt-1">{errors[field.id]}</p>
-          )}
-        </div>
-      ))}
+  // 확인 모달에 표시할 정보 추출
+  const getConfirmationInfo = () => {
+    const info = {
+      name: '',
+      phone: '',
+      extraPeople: { adult: 0, minor8plus: 0, minorUnder8: 0 },
+      totalAmount: 0,
+      paymentAmount: 0,
+      accommodationAmount: 0,
+      accommodationDetails: {
+        pricePerNight: 0,
+        nights: 0,
+        people: 0,
+        roomType: ''
+      }
+    };
 
-      <button
-        type="submit"
-        className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 font-medium"
-      >
-        {submitButtonText}
-      </button>
-    </form>
+    formSchema.fields.forEach(field => {
+      // 이름
+      if (field.type === 'text' && (field.label.includes('이름') || field.label.includes('성명'))) {
+        info.name = formData[field.id] || '';
+      }
+      // 전화번호
+      if (field.type === 'tel') {
+        info.phone = formData[field.id] || '';
+      }
+      // 추가 인원
+      if (field.type === 'people-count') {
+        const peopleData = formData[field.id] || {};
+        info.extraPeople.adult = peopleData.adult || 0;
+        info.extraPeople.minor8plus = peopleData.minor8plus || 0;
+        info.extraPeople.minorUnder8 = peopleData.minorUnder8 || 0;
+      }
+      // 참가비 계산
+      if (field.type === 'payment-calculator') {
+        const dateFieldId = `${field.id}_dates`;
+        const selectedDates = formData[dateFieldId] || [];
+
+        if (selectedDates.length > 0) {
+          const totalDates = field.dateOptions?.length || 0;
+          const isPartial = selectedDates.length < totalDates;
+
+          const phase1Enabled = field.enablePhase1 !== false;
+          const phase2Enabled = field.enablePhase2 !== false;
+          const now = new Date();
+          const phase1Deadline = field.phase1Deadline ? new Date(field.phase1Deadline) : null;
+
+          let isPhase1 = false;
+          if (phase1Enabled && !phase2Enabled) isPhase1 = true;
+          else if (!phase1Enabled && phase2Enabled) isPhase1 = false;
+          else if (phase1Enabled && phase2Enabled) isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+
+          const phase = isPhase1 ? field.pricing?.phase1 : field.pricing?.phase2;
+
+          // 대표자 + 추가 인원 계산
+          const dobField = formSchema.fields.find(f => f.type === 'date-of-birth');
+          let adult = 0, minor8plus = 0, minorUnder8 = 0;
+
+          if (dobField && formData[dobField.id]) {
+            const birthYear = new Date(formData[dobField.id]).getFullYear();
+            const age = new Date().getFullYear() - birthYear;
+            if (age >= 19) adult = 1;
+            else if (age >= 8) minor8plus = 1;
+            else minorUnder8 = 1;
+          }
+
+          adult += info.extraPeople.adult;
+          minor8plus += info.extraPeople.minor8plus;
+          minorUnder8 += info.extraPeople.minorUnder8;
+
+          if (isPartial) {
+            selectedDates.forEach(date => {
+              const datePrice = phase?.perDate?.[date];
+              if (datePrice) {
+                info.paymentAmount += (datePrice.adult || 0) * adult;
+                info.paymentAmount += (datePrice.minor8plus || 0) * minor8plus;
+                info.paymentAmount += (datePrice.minorUnder8 || 0) * minorUnder8;
+              }
+            });
+          } else {
+            const fullPrice = phase?.full;
+            if (fullPrice) {
+              info.paymentAmount = (
+                (fullPrice.adult || 0) * adult +
+                (fullPrice.minor8plus || 0) * minor8plus +
+                (fullPrice.minorUnder8 || 0) * minorUnder8
+              );
+            }
+          }
+        }
+      }
+      // 숙박비 계산
+      if (field.type === 'accommodation-calculator') {
+        const accomDateFieldId = `${field.id}_dates`;
+        const accomRoomTypeFieldId = `${field.id}_roomType`;
+        const accomRoomOptionsFieldId = `${field.id}_roomOptions`;
+
+        const selectedAccomDates = formData[accomDateFieldId] || [];
+        const selectedRoomType = formData[accomRoomTypeFieldId] || '';
+        const roomOptions = formData[accomRoomOptionsFieldId] || {};
+
+        if (selectedAccomDates.length > 0 && selectedRoomType) {
+          const now = new Date();
+          const phase1Deadline = field.phase1Deadline ? new Date(field.phase1Deadline) : null;
+          const isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+
+          const phase = isPhase1 ? field.accommodationPricing?.phase1 : field.accommodationPricing?.phase2;
+          const pricePerNight = phase?.[selectedRoomType] || 0;
+          const totalNights = selectedAccomDates.length;
+
+          const roomTypeOption = field.roomTypeOptions?.[selectedRoomType];
+          let peopleCount = 1;
+
+          if (roomTypeOption?.type === 'gender') {
+            const maleList = roomOptions.male || [];
+            const femaleList = roomOptions.female || [];
+            peopleCount = maleList.length + femaleList.length;
+            info.accommodationAmount = pricePerNight * peopleCount * totalNights;
+          } else {
+            info.accommodationAmount = pricePerNight * totalNights;
+          }
+
+          info.accommodationDetails = {
+            pricePerNight,
+            nights: totalNights,
+            people: peopleCount,
+            roomType: selectedRoomType
+          };
+        }
+      }
+    });
+
+    info.totalAmount = info.paymentAmount + info.accommodationAmount;
+    return info;
+  };
+
+  const confirmInfo = getConfirmationInfo();
+  const totalPeople = 1 + confirmInfo.extraPeople.adult + confirmInfo.extraPeople.minor8plus + confirmInfo.extraPeople.minorUnder8;
+
+  return (
+    <>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {formSchema.fields.map(field => (
+          <div key={field.id}>
+            <label htmlFor={field.id} className="block text-sm font-medium mb-2 text-black sm:text-gray-900">
+              {field.label}
+              {field.required && <span className="text-red-600 ml-1">*</span>}
+            </label>
+            {renderField(field)}
+            {errors[field.id] && (
+              <p className="text-red-600 text-sm mt-1">{errors[field.id]}</p>
+            )}
+          </div>
+        ))}
+
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 font-medium"
+        >
+          {submitButtonText}
+        </button>
+      </form>
+
+      {/* 확인 모달 */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">등록 정보 확인</h2>
+
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-medium text-gray-700">이름</span>
+                <span className="text-gray-900">{confirmInfo.name}</span>
+              </div>
+
+              <div className="flex justify-between border-b pb-2">
+                <span className="font-medium text-gray-700">전화번호</span>
+                <span className="text-gray-900">{confirmInfo.phone}</span>
+              </div>
+
+              {totalPeople > 1 && (
+                <div className="border-b pb-2">
+                  <div className="flex justify-between mb-1">
+                    <span className="font-medium text-gray-700">총 인원</span>
+                    <span className="text-gray-900">{totalPeople}명</span>
+                  </div>
+                  <div className="text-sm text-gray-600 space-y-1 ml-4">
+                    <div>본인 1명</div>
+                    {confirmInfo.extraPeople.adult > 0 && (
+                      <div>성인 {confirmInfo.extraPeople.adult}명</div>
+                    )}
+                    {confirmInfo.extraPeople.minor8plus > 0 && (
+                      <div>만 8~18세 {confirmInfo.extraPeople.minor8plus}명</div>
+                    )}
+                    {confirmInfo.extraPeople.minorUnder8 > 0 && (
+                      <div>만 8세 미만 {confirmInfo.extraPeople.minorUnder8}명</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {confirmInfo.paymentAmount > 0 && (
+                <div className="flex justify-between border-b pb-2">
+                  <span className="font-medium text-gray-700">참가비</span>
+                  <span className="text-gray-900">{confirmInfo.paymentAmount.toLocaleString()}원</span>
+                </div>
+              )}
+
+              {confirmInfo.accommodationAmount > 0 && (
+                <div className="border-b pb-2">
+                  <div className="flex justify-between mb-1">
+                    <span className="font-medium text-gray-700">숙박비</span>
+                    <span className="text-gray-900">{confirmInfo.accommodationAmount.toLocaleString()}원</span>
+                  </div>
+                  <div className="text-sm text-gray-600 space-y-1 ml-4">
+                    <div>방 타입: {confirmInfo.accommodationDetails.roomType}</div>
+                    <div>1박 요금: {confirmInfo.accommodationDetails.pricePerNight.toLocaleString()}원</div>
+                    <div>숙박 일수: {confirmInfo.accommodationDetails.nights}박</div>
+                    {confirmInfo.accommodationDetails.people > 1 && (
+                      <div>인원: {confirmInfo.accommodationDetails.people}명</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {confirmInfo.totalAmount > 0 && (
+                <div className="flex justify-between pt-2">
+                  <span className="font-bold text-gray-900 text-lg">총 금액</span>
+                  <span className="font-bold text-blue-600 text-lg">{confirmInfo.totalAmount.toLocaleString()}원</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-md hover:bg-gray-300 font-medium"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleConfirmSubmit}
+                className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 font-medium"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
