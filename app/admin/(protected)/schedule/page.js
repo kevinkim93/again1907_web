@@ -290,7 +290,7 @@ export default function AdminSchedulePage() {
         {!activeTabId ? (
           <p>탭을 선택하거나 추가해 주세요.</p>
         ) : days.length === 0 ? (
-          <p>일자가 없습니다. 상단의 "+ 일자 추가" 버튼을 눌러 추가하세요.</p>
+          <p>일자가 없습니다. 상단의 &quot;+ 일자 추가&quot; 버튼을 눌러 추가하세요.</p>
         ) : (
           <ul className="space-y-3">
             {days.map((d, i) => (
