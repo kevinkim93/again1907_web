@@ -570,7 +570,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             value={value}
             onChange={(e) => handleChange(field.id, e.target.value)}
             placeholder={field.placeholder}
-            className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
           />
         );
 
@@ -590,7 +590,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               handleChange(field.id, numericValue);
             }}
             placeholder={field.placeholder}
-            className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
           />
         );
 
@@ -602,7 +602,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             value={value}
             onChange={(e) => handleChange(field.id, e.target.value)}
             placeholder={field.placeholder}
-            className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
           />
         );
 
@@ -614,7 +614,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             onChange={(e) => handleChange(field.id, e.target.value)}
             placeholder={field.placeholder}
             rows={4}
-            className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
           />
         );
 
@@ -624,7 +624,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             id={field.id}
             value={value}
             onChange={(e) => handleChange(field.id, e.target.value)}
-            className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
           >
             <option value="">선택하세요</option>
             {(field.options || []).map(opt => (
@@ -643,7 +643,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
               handleChange(field.id, selected);
             }}
-            className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
             size={Math.min((field.options || []).length, 5)}
           >
             {(field.options || []).map(opt => (
@@ -707,7 +707,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             id={field.id}
             value={value}
             onChange={(e) => handleChange(field.id, e.target.value)}
-            className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
           />
         );
 
@@ -776,7 +776,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               <select
                 value={tempDob.year || ''}
                 onChange={(e) => handleDobChange('year', e.target.value)}
-                className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
               >
                 <option value="">년도</option>
                 {years.map(y => (
@@ -787,7 +787,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               <select
                 value={tempDob.month || ''}
                 onChange={(e) => handleDobChange('month', e.target.value)}
-                className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
               >
                 <option value="">월</option>
                 {months.map(m => (
@@ -798,7 +798,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               <select
                 value={tempDob.day || ''}
                 onChange={(e) => handleDobChange('day', e.target.value)}
-                className={`w-full border rounded-md p-2 ${error ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full border rounded-md p-2 text-gray-900 ${error ? 'border-red-500' : 'border-gray-300'}`}
               >
                 <option value="">일</option>
                 {days.map(d => (
