@@ -22,7 +22,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
   if (!field.dateOptions || field.dateOptions.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">관리자가 숙박 날짜 옵션을 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-900">관리자가 숙박 날짜 옵션을 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -30,7 +30,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
   if (!field.roomTypes || field.roomTypes.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">관리자가 방 타입을 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-900">관리자가 방 타입을 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -39,7 +39,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
   if (selectedDates.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">숙박 날짜를 하나 이상 선택해주세요.</p>
+        <p className="text-sm text-black sm:text-gray-900">숙박 날짜를 하나 이상 선택해주세요.</p>
       </div>
     );
   }
@@ -48,7 +48,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
   if (!selectedRoomType) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">방 타입을 선택해주세요.</p>
+        <p className="text-sm text-black sm:text-gray-900">방 타입을 선택해주세요.</p>
       </div>
     );
   }
@@ -56,7 +56,7 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
   if (!field.accommodationPricing) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">관리자가 가격 정보를 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-900">관리자가 가격 정보를 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -202,7 +202,7 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
   if (!dobField || !formData[dobField.id]) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">생년월일을 입력하면 참가비가 자동으로 계산됩니다.</p>
+        <p className="text-sm text-black sm:text-gray-900">생년월일을 입력하면 참가비가 자동으로 계산됩니다.</p>
       </div>
     );
   }
@@ -210,7 +210,7 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
   if (!field.dateOptions || field.dateOptions.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">관리자가 참석 날짜 옵션을 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-900">관리자가 참석 날짜 옵션을 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -218,7 +218,7 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
   if (!field.pricing) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">관리자가 가격 정보를 설정하지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-900">관리자가 가격 정보를 설정하지 않았습니다.</p>
       </div>
     );
   }
@@ -229,7 +229,7 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
   if (selectedDates.length === 0) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">참석 날짜를 하나 이상 선택해주세요.</p>
+        <p className="text-sm text-black sm:text-gray-900">참석 날짜를 하나 이상 선택해주세요.</p>
       </div>
     );
   }
@@ -262,7 +262,7 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
   else {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-        <p className="text-sm text-black sm:text-gray-600">가격 정보가 설정되지 않았습니다.</p>
+        <p className="text-sm text-black sm:text-gray-900">가격 정보가 설정되지 않았습니다.</p>
       </div>
     );
   }
@@ -808,7 +808,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             </div>
 
             {age !== null && (
-              <p className="text-sm text-black sm:text-gray-600">
+              <p className="text-sm text-black sm:text-gray-900">
                 만 {age}세 (만 나이 기준)
               </p>
             )}
@@ -929,7 +929,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     <span className="text-xs text-black sm:text-gray-500 ml-2">(필요시 식사 옵션 체크)</span>
                   )}
                 </label>
-                <div className="space-y-3">
+                <div className="space-y-3 text-black sm:text-gray-900">
                   {dateOptions.map(date => {
                     const isDateSelected = ((formData[dateFieldId] || [])).includes(date);
                     const mealLabels = field.mealLabels || { noBreakfast: '아침 식사 제외', fasting: '금식' };
@@ -940,7 +940,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     return (
                       <div key={date} className="border border-gray-200 rounded-lg p-3 bg-white">
                         {/* 날짜 체크박스 */}
-                        <label className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 text-black sm:text-gray-900">
                           <input
                             type="checkbox"
                             checked={isDateSelected}
@@ -1062,7 +1062,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     const isDateSelected = ((formData[accomDateFieldId] || [])).includes(date);
                     return (
                       <div key={date} className="border border-gray-200 rounded-lg p-3 bg-white">
-                        <label className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 text-black sm:text-gray-900">
                           <input
                             type="checkbox"
                             checked={isDateSelected}
@@ -1082,9 +1082,9 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             {accomRoomTypes.length > 0 && (
               <div>
                 <label className="block text-sm font-medium mb-2 text-black sm:text-gray-900">방 타입 선택</label>
-                <div className="space-y-2">
+                <div className="space-y-2 ">
                   {accomRoomTypes.map(roomType => (
-                    <label key={roomType} className="flex items-center gap-2">
+                    <label key={roomType} className="flex items-center gap-2 text-black sm:text-gray-900">
                       <input
                         type="radio"
                         name={accomRoomTypeFieldId}
@@ -1301,7 +1301,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
 
                               {/* PC: 가로 배치, 모바일: 세로 배치 */}
                               <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                                <span className="hidden sm:inline text-sm text-gray-600 min-w-[60px]">
+                                <span className="hidden sm:inline text-sm text-gray-900 min-w-[60px]">
                                   {idx + 1}. {isRep && '(대표자)'}
                                 </span>
                                 <input
@@ -1430,7 +1430,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
 
                               {/* PC: 가로 배치, 모바일: 세로 배치 */}
                               <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-                                <span className="hidden sm:inline text-sm text-gray-600 min-w-[60px]">
+                                <span className="hidden sm:inline text-sm text-gray-900 min-w-[60px]">
                                   {idx + 1}. {isRep && '(대표자)'}
                                 </span>
                                 <input
@@ -1748,7 +1748,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     <span className="font-medium text-gray-700">총 인원</span>
                     <span className="text-gray-900">{totalPeople}명</span>
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1 ml-4">
+                  <div className="text-sm text-gray-900 space-y-1 ml-4">
                     <div>본인 1명</div>
                     {confirmInfo.extraPeople.adult > 0 && (
                       <div>성인 {confirmInfo.extraPeople.adult}명</div>
@@ -1776,7 +1776,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     <span className="font-medium text-gray-700">숙박비</span>
                     <span className="text-gray-900">{confirmInfo.accommodationAmount.toLocaleString()}원</span>
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1 ml-4">
+                  <div className="text-sm text-gray-900 space-y-1 ml-4">
                     <div>방 타입: {confirmInfo.accommodationDetails.roomType}</div>
                     <div>1박 요금: {isFree?0:confirmInfo.accommodationDetails.pricePerNight.toLocaleString()}원</div>
                     <div>숙박 일수: {confirmInfo.accommodationDetails.nights}박</div>
