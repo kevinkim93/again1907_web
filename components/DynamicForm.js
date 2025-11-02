@@ -1519,7 +1519,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                       onChange={(e) => handleChange(accomRoomOptionsFieldId, {
                         count: e.target.value
                       })}
-                      className="w-full border border-gray-300 rounded-md p-2"
+                      className="w-full border border-gray-300 rounded-md p-2 text-black sm:text-gray-900"
                     >
                       <option value="1">1명 (본인만)</option>
                       <option value="2">2명</option>
