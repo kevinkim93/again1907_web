@@ -166,7 +166,6 @@ export default function RootLayout({ children }) {
         {donationOpen && (
           <div className="fixed bottom-6 right-6 bg-white rounded-lg shadow-2xl p-6 max-w-sm z-50 animate-fadeIn">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-bold text-gray-900">후원 안내</h3>
               <button
                 onClick={() => setDonationOpen(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -189,10 +188,6 @@ export default function RootLayout({ children }) {
             </div>
 
             <div className="space-y-4 text-sm text-gray-700">
-              <div>
-                <p className="font-semibold text-gray-900 mb-1">후원문의</p>
-                <p>02-325-0691</p>
-              </div>
 
               <div>
                 <p className="font-semibold text-gray-900 mb-1">후원 계좌</p>
@@ -208,17 +203,14 @@ export default function RootLayout({ children }) {
             </div>
           </div>
         )}
+
         {/* Footer */}
-        <footer className="bg-gray-900 text-gray-200 py-6">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h3 className="text-lg font-semibold mb-2">집회문의</h3>
-            <p className="text-sm">전화: 010-9866-7628</p>
-            <p className="text-sm">이메일: again1907@gmail.com</p>
-          </div>
-          <br />
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center text-sm">
-            © {new Date().getFullYear()} Again 1907 평양 대부흥회. All rights reserved.
-          </div>
+        <footer className="relative w-full">
+          <img
+            src="/images/footer.jpg"
+            alt="Again 1907 Footer"
+            className="w-full h-auto"
+          />
         </footer>
       </body>
     </html>
