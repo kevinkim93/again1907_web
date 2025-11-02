@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 
 // 숙박비 계산 컴포넌트
 function AccommodationCalculator({ formData, formSchema, settings, field, handleChange }) {
+  // 무료 체크박스 필드 ID
+  const freeOptionFieldId = `${field.id}_free`;
+  const isFree = formData[freeOptionFieldId] || false;
   // 날짜 선택 필드 ID
   const dateFieldId = `${field.id}_dates`;
   // 방 타입 선택 필드 ID
@@ -15,9 +18,6 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
   const selectedRoomType = formData[roomTypeFieldId] || '';
   const roomOptions = formData[roomOptionsFieldId] || {};
 
-  // 무료 체크박스 필드 ID
-  const freeOptionFieldId = `${field.id}_free`;
-  const isFree = formData[freeOptionFieldId] || false;
 
   if (!field.dateOptions || field.dateOptions.length === 0) {
     return (
@@ -173,6 +173,9 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
 
 // 참가비 계산 컴포넌트
 function PaymentCalculator({ formData, formSchema, settings, field, handleChange }) {
+  // 무료 체크박스 필드 ID
+  const freeOptionFieldId = `${field.id}_free`;
+  const isFree = formData[freeOptionFieldId] || false;
   // 생년월일 필드 찾기 (대표자 나이 확인)
   const dobField = formSchema.fields.find(f => f.type === 'date-of-birth');
 
@@ -183,9 +186,6 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
   // people-count 필드 찾기
   const peopleField = formSchema.fields.find(f => f.type === 'people-count');
 
-  // 무료 체크박스 필드 ID
-  const freeOptionFieldId = `${field.id}_free`;
-  const isFree = formData[freeOptionFieldId] || false;
 
   const calculateAgeGroup = (dob) => {
     if (!dob) return null;
@@ -1553,6 +1553,16 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
   };
 
   // 확인 모달에 표시할 정보 추출
+  // 확인 모달에서 사용할 isFree 값 계산
+  let isFree = false;
+  formSchema?.fields?.forEach(field => {
+    if (field.type === 'payment-calculator' || field.type === 'accommodation-calculator') {
+      const freeOptionFieldId = `${field.id}_free`;
+      if (formData[freeOptionFieldId]) {
+        isFree = true;
+      }
+    }
+  });
   const getConfirmationInfo = () => {
     const info = {
       name: '',
