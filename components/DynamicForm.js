@@ -853,7 +853,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     handleChange(field.id, { ...peopleValue, adult: val });
                   }
                 }}
-                className="w-full border border-gray-300 rounded-md p-2"
+                className="w-full border border-gray-300 text-black sm:text-gray-900 rounded-md p-2"
               />
             </div>
             <div>
@@ -874,7 +874,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     handleChange(field.id, { ...peopleValue, minor8plus: val });
                   }
                 }}
-                className="w-full border border-gray-300 rounded-md p-2"
+                className="w-full border border-gray-300 text-black sm:text-gray-900 rounded-md p-2 "
               />
             </div>
             <div>
@@ -895,7 +895,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                     handleChange(field.id, { ...peopleValue, minorUnder8: val });
                   }
                 }}
-                className="w-full border border-gray-300 rounded-md p-2"
+                className="w-full border border-gray-300 text-black sm:text-gray-900 rounded-md p-2"
               />
             </div>
           </div>
@@ -1226,7 +1226,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                               onChange={() => handleRepresentativeGenderChange('male')}
                               className="w-4 h-4"
                             />
-                            <span className="text-sm font-medium">본인(남)</span>
+                            <span className="text-sm font-medium text-black sm:text-gray-900">본인(남)</span>
                           </label>
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -1236,7 +1236,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                               onChange={() => handleRepresentativeGenderChange('female')}
                               className="w-4 h-4"
                             />
-                            <span className="text-sm font-medium">본인(여)</span>
+                            <span className="text-sm font-medium text-black sm:text-gray-900">본인(여)</span>
                           </label>
                           {representativeGender && (
                             <button
@@ -1319,7 +1319,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                                       male: maleList
                                     });
                                   }}
-                                  className={`w-full sm:flex-1 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                  className={`w-full sm:flex-1 text-black sm:text-gray-900 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
                                 />
                                 <input
                                   type="number"
@@ -1336,7 +1336,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                                       male: maleList
                                     });
                                   }}
-                                  className={`w-full sm:w-20 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                  className={`w-full sm:w-20 text-black sm:text-gray-900 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
                                 />
                                 <input
                                   type="tel"
@@ -1353,7 +1353,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                                       male: maleList
                                     });
                                   }}
-                                  className={`w-full sm:flex-1 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                  className={`w-full sm:flex-1 text-black sm:text-gray-900 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
                                 />
                                 {!isRep && (
                                   <button
@@ -1429,7 +1429,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                               </div>
 
                               {/* PC: 가로 배치, 모바일: 세로 배치 */}
-                              <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                              <div className="flex flex-col sm:flex-row gap-2 sm:items-center ">
                                 <span className="hidden sm:inline text-sm text-gray-900 min-w-[60px]">
                                   {idx + 1}. {isRep && '(대표자)'}
                                 </span>
@@ -1448,7 +1448,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                                       female: femaleList
                                     });
                                   }}
-                                  className={`w-full sm:flex-1 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                  className={`w-full sm:flex-1 text-black sm:text-gray-900 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
                                 />
                                 <input
                                   type="number"
@@ -1465,7 +1465,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                                       female: femaleList
                                     });
                                   }}
-                                  className={`w-full sm:w-20 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                  className={`w-full sm:w-20 text-black sm:text-gray-900 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
                                 />
                                 <input
                                   type="tel"
@@ -1482,7 +1482,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                                       female: femaleList
                                     });
                                   }}
-                                  className={`w-full sm:flex-1 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                  className={`w-full sm:flex-1 text-black sm:text-gray-900 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
                                 />
                                 {!isRep && (
                                   <button
