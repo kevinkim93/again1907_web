@@ -124,6 +124,8 @@ export async function POST(req) {
 
     if (paymentField) {
       const dateFieldId = `${paymentField.id}_dates`;
+      const freeOptionFieldId = `${paymentField.id}_free`;
+      const isFree = formData[freeOptionFieldId] || false;
       const selectedDates = formData[dateFieldId] || [];
       const totalDates = paymentField.dateOptions?.length || 0;
       const isPartial = selectedDates.length > 0 && selectedDates.length < totalDates;
@@ -131,6 +133,8 @@ export async function POST(req) {
       console.log('🔍 Payment Calculator Debug:', {
         paymentField: paymentField.id,
         dateFieldId,
+        freeOptionFieldId,
+        isFree,
         selectedDates,
         totalDates,
         isPartial,
@@ -169,6 +173,7 @@ export async function POST(req) {
         phase2Enabled,
         phase,
         isPartial,
+        isFree,
       });
 
       if (phase && selectedDates.length > 0) {
@@ -179,29 +184,32 @@ export async function POST(req) {
 
         let totalAmount = 0;
 
-        if (isPartial) {
-          // 부분 참석: 날짜별 개별 가격 합산
-          selectedDates.forEach(date => {
-            const datePrice = phase?.perDate?.[date];
-            if (datePrice) {
-              totalAmount += (datePrice.adult || 0) * adult;
-              totalAmount += (datePrice.minor8plus || 0) * minor8plus;
-              totalAmount += (datePrice.minorUnder8 || 0) * minorUnder8;
+        // isFree가 체크되지 않은 경우에만 금액 계산
+        if (!isFree) {
+          if (isPartial) {
+            // 부분 참석: 날짜별 개별 가격 합산
+            selectedDates.forEach(date => {
+              const datePrice = phase?.perDate?.[date];
+              if (datePrice) {
+                totalAmount += (datePrice.adult || 0) * adult;
+                totalAmount += (datePrice.minor8plus || 0) * minor8plus;
+                totalAmount += (datePrice.minorUnder8 || 0) * minorUnder8;
+              }
+            });
+          } else {
+            // 전체 참석: 전체 참석 가격 사용
+            const fullPrice = phase?.full;
+            if (fullPrice) {
+              totalAmount = (
+                (fullPrice.adult || 0) * adult +
+                (fullPrice.minor8plus || 0) * minor8plus +
+                (fullPrice.minorUnder8 || 0) * minorUnder8
+              );
             }
-          });
-        } else {
-          // 전체 참석: 전체 참석 가격 사용
-          const fullPrice = phase?.full;
-          if (fullPrice) {
-            totalAmount = (
-              (fullPrice.adult || 0) * adult +
-              (fullPrice.minor8plus || 0) * minor8plus +
-              (fullPrice.minorUnder8 || 0) * minorUnder8
-            );
           }
         }
 
-        console.log('💵 Calculated Amount:', totalAmount);
+        console.log('💵 Calculated Amount:', totalAmount, isFree ? '(isFree=true, amount set to 0)' : '');
 
         participant.amount = {
           first: totalAmount,
@@ -211,6 +219,7 @@ export async function POST(req) {
         participant.isPartial = isPartial;
         participant.partialDates = isPartial ? selectedDates : [];
         participant.registrationPhase = isPhase1 ? 'phase1' : 'phase2';
+        participant.isFreePayment = isFree;
       }
     }
 
@@ -222,11 +231,14 @@ export async function POST(req) {
     let pricePerNight = 0;
     let isPhase1 = true;
     let roomTypeOption = null;
+    let isFreeAccommodation = false;
 
     if (accommodationField) {
       const accomDateFieldId = `${accommodationField.id}_dates`;
       const accomRoomTypeFieldId = `${accommodationField.id}_roomType`;
       const accomRoomOptionsFieldId = `${accommodationField.id}_roomOptions`;
+      const accomFreeOptionFieldId = `${accommodationField.id}_free`;
+      isFreeAccommodation = formData[accomFreeOptionFieldId] || false;
       selectedAccomDates = formData[accomDateFieldId] || [];
       selectedRoomType = formData[accomRoomTypeFieldId] || '';
       const roomOptions = formData[accomRoomOptionsFieldId] || {};
@@ -262,23 +274,26 @@ export async function POST(req) {
           peopleCount = parseInt(roomOptions.count) || 1;
         }
 
-        // 총 숙박비 계산
+        // 총 숙박비 계산 (isFreeAccommodation이 false일 때만)
         let totalAccommodationAmount = 0;
-        if (roomTypeOption?.type === 'gender') {
-          // 30인실: 인원 수 × 1박 요금 × 박수
-          totalAccommodationAmount = pricePerNight * peopleCount * totalNights;
-        } else {
-          // 2인실 등: 1박 요금 × 박수 (인원수 무관)
-          totalAccommodationAmount = pricePerNight * totalNights;
+        if (!isFreeAccommodation) {
+          if (roomTypeOption?.type === 'gender') {
+            // 30인실: 인원 수 × 1박 요금 × 박수
+            totalAccommodationAmount = pricePerNight * peopleCount * totalNights;
+          } else {
+            // 2인실 등: 1박 요금 × 박수 (인원수 무관)
+            totalAccommodationAmount = pricePerNight * totalNights;
+          }
         }
 
         participant.accommodationAmount = {
-          pricePerNight,
+          pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
           totalNights,
           peopleCount,
           total: totalAccommodationAmount,
           phase: isPhase1 ? 'phase1' : 'phase2',
         };
+        participant.isFreeAccommodation = isFreeAccommodation;
 
         // 기존 amount에 숙박비 추가
         if (participant.amount) {
@@ -339,7 +354,7 @@ export async function POST(req) {
 
       // 남자 인원 각각 문서로 저장
       for (const male of maleList) {
-        const individualAccomAmount = pricePerNight * selectedAccomDates.length;
+        const individualAccomAmount = isFreeAccommodation ? 0 : (pricePerNight * selectedAccomDates.length);
 
         const maleParticipant = {
           formId,
@@ -355,7 +370,7 @@ export async function POST(req) {
           accommodationDates: selectedAccomDates,
           roomType: selectedRoomType,
           accommodationAmount: {
-            pricePerNight,
+            pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
             totalNights: selectedAccomDates.length,
             peopleCount: 1,
             total: individualAccomAmount,
@@ -372,6 +387,7 @@ export async function POST(req) {
           roomName: null,
           roomAssignments: {},
           createdAt: Timestamp.now(),
+          isFreeAccommodation,
         };
 
         // 이름과 전화번호 추가
@@ -389,7 +405,7 @@ export async function POST(req) {
 
       // 여자 인원 각각 문서로 저장
       for (const female of femaleList) {
-        const individualAccomAmount = pricePerNight * selectedAccomDates.length;
+        const individualAccomAmount = isFreeAccommodation ? 0 : (pricePerNight * selectedAccomDates.length);
 
         const femaleParticipant = {
           formId,
@@ -405,7 +421,7 @@ export async function POST(req) {
           accommodationDates: selectedAccomDates,
           roomType: selectedRoomType,
           accommodationAmount: {
-            pricePerNight,
+            pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
             totalNights: selectedAccomDates.length,
             peopleCount: 1,
             total: individualAccomAmount,
@@ -422,6 +438,7 @@ export async function POST(req) {
           roomName: null,
           roomAssignments: {},
           createdAt: Timestamp.now(),
+          isFreeAccommodation,
         };
 
         // 이름과 전화번호 추가

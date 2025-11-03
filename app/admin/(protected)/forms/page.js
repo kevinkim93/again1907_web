@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function FormsManagementPage() {
@@ -16,7 +16,7 @@ export default function FormsManagementPage() {
   const [showNoticeEditor, setShowNoticeEditor] = useState(false);
   const [savingNotice, setSavingNotice] = useState(false);
 
-  const fetchForms = async () => {
+  const fetchForms = useCallback(async () => {
     setLoading(true);
     const res = await fetch('/api/admin/forms');
     const data = await res.json();
@@ -31,11 +31,11 @@ export default function FormsManagementPage() {
     setNoticeEnabled(settingsData.settings?.noticeEnabled || false);
 
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     fetchForms();
-  }, []);
+  }, [fetchForms]);
 
   const createForm = async () => {
     const name = prompt('새 폼 이름을 입력하세요:');

@@ -72,6 +72,7 @@ export default function RegisterPage() {
       if (field.type === 'payment-calculator') {
         currentFormFieldIds.add(`${field.id}_dates`);
         currentFormFieldIds.add(`${field.id}_mealOptions`);
+        currentFormFieldIds.add(`${field.id}_free`); // 무료 옵션 필드 추가
       }
 
       // accommodation-calculator의 날짜, 방 타입, 방 옵션 필드 추가
@@ -79,6 +80,7 @@ export default function RegisterPage() {
         currentFormFieldIds.add(`${field.id}_dates`);
         currentFormFieldIds.add(`${field.id}_roomType`);
         currentFormFieldIds.add(`${field.id}_roomOptions`);
+        currentFormFieldIds.add(`${field.id}_free`); // 무료 옵션 필드 추가
       }
 
       // date-of-birth의 임시 필드 추가

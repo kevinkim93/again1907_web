@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 
 const FIELD_TYPES = [
@@ -30,20 +30,20 @@ export default function FormEditorPage() {
   const [loading, setLoading] = useState(true);
   const [editingField, setEditingField] = useState(null); // 편집 중인 필드
 
-  const fetchForm = async () => {
+  const fetchForm = useCallback(async () => {
     setLoading(true);
     const res = await fetch('/api/admin/forms');
     const data = await res.json();
     const found = data.forms.find(f => f.id === formId);
     setForm(found || null);
     setLoading(false);
-  };
+  }, [formId]);
 
   useEffect(() => {
     if (formId) {
       fetchForm();
     }
-  }, [formId]);
+  }, [formId, fetchForm]);
 
   const updateFormMeta = async (updates) => {
     await fetch('/api/admin/forms', {

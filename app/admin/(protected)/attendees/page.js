@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export default function AttendeesPage() {
   const [forms, setForms] = useState([]);
@@ -12,31 +12,31 @@ export default function AttendeesPage() {
   const [groupFilter, setGroupFilter] = useState(''); // 그룹 ID 필터
 
   // 폼 목록 가져오기
-  const fetchForms = async () => {
+  const fetchForms = useCallback(async () => {
     const res = await fetch('/api/admin/forms');
     const data = await res.json();
     setForms(data.forms || []);
     if (data.forms?.length > 0 && !selectedFormId) {
       setSelectedFormId(data.forms[0].id);
     }
-  };
+  }, [selectedFormId]);
 
   // Settings 가져오기
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     const res = await fetch('/api/admin/settings');
     const data = await res.json();
     setSettings(data.settings);
-  };
+  }, []);
 
   // 방 목록 가져오기
-  const fetchRooms = async () => {
+  const fetchRooms = useCallback(async () => {
     const res = await fetch('/api/admin/rooms');
     const data = await res.json();
     setRooms(data.rooms || []);
-  };
+  }, []);
 
   // 선택된 폼의 참가자 가져오기
-  const fetchParticipants = async (formId) => {
+  const fetchParticipants = useCallback(async (formId) => {
     if (!formId) return;
 
     const collectionName = `participants_${formId}`;
@@ -65,7 +65,7 @@ export default function AttendeesPage() {
     }
 
     setParticipants(data.participants || []);
-  };
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -76,13 +76,13 @@ export default function AttendeesPage() {
       setLoading(false);
     };
     init();
-  }, []);
+  }, [fetchForms, fetchSettings, fetchRooms]);
 
   useEffect(() => {
     if (selectedFormId) {
       fetchParticipants(selectedFormId);
     }
-  }, [selectedFormId]);
+  }, [selectedFormId, fetchParticipants]);
 
   // 참가자 삭제
   const deleteParticipant = async (participantId) => {

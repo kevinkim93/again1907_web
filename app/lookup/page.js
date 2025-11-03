@@ -71,7 +71,25 @@ export default function LookupPage() {
 
   const handleEdit = () => {
     const participant = registrations[selectedIndex];
-    setEditData(participant);
+
+    // isFreePayment, isFreeAccommodation 값을 field_xxx_free 형태로 변환
+    const editDataWithFreeFields = { ...participant };
+
+    // payment-calculator 필드의 _free 값 설정
+    const paymentField = participant.formFields?.find(f => f.type === 'payment-calculator');
+    if (paymentField) {
+      const freeFieldId = `${paymentField.id}_free`;
+      editDataWithFreeFields[freeFieldId] = participant.isFreePayment || false;
+    }
+
+    // accommodation-calculator 필드의 _free 값 설정
+    const accommodationField = participant.formFields?.find(f => f.type === 'accommodation-calculator');
+    if (accommodationField) {
+      const freeFieldId = `${accommodationField.id}_free`;
+      editDataWithFreeFields[freeFieldId] = participant.isFreeAccommodation || false;
+    }
+
+    setEditData(editDataWithFreeFields);
     setEditMode(true);
   };
 
@@ -118,6 +136,7 @@ export default function LookupPage() {
         if (field.type === 'payment-calculator') {
           currentFormFieldIds.add(`${field.id}_dates`);
           currentFormFieldIds.add(`${field.id}_mealOptions`);
+          currentFormFieldIds.add(`${field.id}_free`); // 무료 옵션 필드 추가
         }
 
         // accommodation-calculator의 날짜와 방 타입 필드 추가
@@ -125,6 +144,7 @@ export default function LookupPage() {
           currentFormFieldIds.add(`${field.id}_dates`);
           currentFormFieldIds.add(`${field.id}_roomType`);
           currentFormFieldIds.add(`${field.id}_roomOptions`);
+          currentFormFieldIds.add(`${field.id}_free`); // 무료 옵션 필드 추가
         }
 
         // date-of-birth의 임시 필드 추가
@@ -330,7 +350,8 @@ export default function LookupPage() {
                           'registrationPhase', 'accommodationDates', 'roomType',
                           'accommodationAmount', 'groupId', 'representativeId',
                           'groupPosition', 'isRepresentative', 'representativeName',
-                          'totalGroupMembers', 'gender', 'age', 'representativeIncluded', 'updatedAt'
+                          'totalGroupMembers', 'gender', 'age', 'representativeIncluded', 'updatedAt',
+                          'isFreePayment', 'isFreeAccommodation'
                         ];
 
                         // 추가 인원 필드 제외
@@ -343,7 +364,8 @@ export default function LookupPage() {
                                !key.endsWith('_dates') &&
                                !key.endsWith('_roomType') &&
                                !key.endsWith('_mealOptions') &&
-                               !key.endsWith('_roomOptions');
+                               !key.endsWith('_roomOptions') &&
+                               !key.endsWith('_free');
                       })
                       .map(([key, value]) => {
                         if (!value || (typeof value === 'object' && Object.keys(value).length === 0)) return null;
@@ -490,31 +512,37 @@ export default function LookupPage() {
                     )}
 
                     {/* 금액 안내 */}
-                    {participant.amount && participant.amount.total > 0 && (
+                    {participant.amount && (
                       <div className="col-span-3 mt-4 pt-4 border-t border-gray-200">
                         <p className="font-semibold text-gray-700 mb-3">금액 안내</p>
                         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2 text-sm">
                           <div className="font-bold text-blue-600 text-lg">
-                            총 금액: {participant.amount.total?.toLocaleString() || 0}원
+                            총 금액: {
+                              participant.amount.total === 0 && (participant.isFreePayment || participant.isFreeAccommodation)
+                                ? '무료'
+                                : `${participant.amount.total?.toLocaleString() || 0}원`
+                            }
                           </div>
 
-                          <div className="mt-4 pt-3 border-t border-gray-300">
-                            <p className="font-semibold text-gray-700 mb-2">입금 계좌</p>
-                            <p className="font-medium text-black sm:text-gray-900">752601-04-331363 (국민은행)</p>
-                            <p className="text-xs text-gray-600">예금주: 황금종교회(어게인1907평양대부흥)</p>
-                            <p className="text-xs text-gray-500 mt-2">
-                              * 입금자명은 ‘전화번호 뒷자리+성명’으로 부탁드립니다.
-                            </p>
-                            <p className="text-xs text-gray-500 mt-2">
-                              * 결제 상태는 입금 확인 후 변경 되며 2~3일 정도 소요됩니다.
-
-                            </p>
-                            {participant.representativeName && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                * 대표 등록자({participant.representativeName})가 입금하면 함께 입금 완료 처리됩니다.
+                          {participant.amount.total > 0 && (
+                            <div className="mt-4 pt-3 border-t border-gray-300">
+                              <p className="font-semibold text-gray-700 mb-2">입금 계좌</p>
+                              <p className="font-medium text-black sm:text-gray-900">752601-04-331363 (국민은행)</p>
+                              <p className="text-xs text-gray-600">예금주: 황금종교회(어게인1907평양대부흥)</p>
+                              <p className="text-xs text-gray-500 mt-2">
+                                * 입금자명은 &apos;전화번호 뒷자리+성명&apos;으로 부탁드립니다.
                               </p>
-                            )}
-                          </div>
+                              <p className="text-xs text-gray-500 mt-2">
+                                * 결제 상태는 입금 확인 후 변경 되며 2~3일 정도 소요됩니다.
+
+                              </p>
+                              {participant.representativeName && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  * 대표 등록자({participant.representativeName})가 입금하면 함께 입금 완료 처리됩니다.
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}

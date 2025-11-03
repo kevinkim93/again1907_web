@@ -7,6 +7,17 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
   // 무료 체크박스 필드 ID
   const freeOptionFieldId = `${field.id}_free`;
   const isFree = formData[freeOptionFieldId] || false;
+
+  // 디버깅: isFree 값 확인
+  console.log('🟢 AccommodationCalculator isFree check:', {
+    fieldId: field.id,
+    freeOptionFieldId,
+    isFreeValue: formData[freeOptionFieldId],
+    isFree,
+    allFormDataKeys: Object.keys(formData),
+    freeFieldsInFormData: Object.keys(formData).filter(k => k.includes('_free'))
+  });
+
   // 날짜 선택 필드 ID
   const dateFieldId = `${field.id}_dates`;
   // 방 타입 선택 필드 ID
@@ -176,6 +187,16 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
   // 무료 체크박스 필드 ID
   const freeOptionFieldId = `${field.id}_free`;
   const isFree = formData[freeOptionFieldId] || false;
+
+  // 디버깅: isFree 값 확인
+  console.log('🔵 PaymentCalculator isFree check:', {
+    fieldId: field.id,
+    freeOptionFieldId,
+    isFreeValue: formData[freeOptionFieldId],
+    isFree,
+    allFormDataKeys: Object.keys(formData),
+    freeFieldsInFormData: Object.keys(formData).filter(k => k.includes('_free'))
+  });
   // 생년월일 필드 찾기 (대표자 나이 확인)
   const dobField = formSchema.fields.find(f => f.type === 'date-of-birth');
 
@@ -417,11 +438,15 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
           if (field.type === 'payment-calculator') {
             const dateFieldId = `${field.id}_dates`;
             const mealOptionsFieldId = `${field.id}_mealOptions`;
+            const freeFieldId = `${field.id}_free`;
             if (initialData[dateFieldId]) {
               autoFilledData[dateFieldId] = initialData[dateFieldId];
             }
             if (initialData[mealOptionsFieldId]) {
               autoFilledData[mealOptionsFieldId] = initialData[mealOptionsFieldId];
+            }
+            if (initialData[freeFieldId] !== undefined) {
+              autoFilledData[freeFieldId] = initialData[freeFieldId];
             }
           }
 
@@ -430,6 +455,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             const accomDateFieldId = `${field.id}_dates`;
             const accomRoomTypeFieldId = `${field.id}_roomType`;
             const accomRoomOptionsFieldId = `${field.id}_roomOptions`;
+            const accomFreeFieldId = `${field.id}_free`;
             if (initialData[accomDateFieldId]) {
               autoFilledData[accomDateFieldId] = initialData[accomDateFieldId];
             }
@@ -438,6 +464,9 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
             }
             if (initialData[accomRoomOptionsFieldId]) {
               autoFilledData[accomRoomOptionsFieldId] = initialData[accomRoomOptionsFieldId];
+            }
+            if (initialData[accomFreeFieldId] !== undefined) {
+              autoFilledData[accomFreeFieldId] = initialData[accomFreeFieldId];
             }
           }
 
@@ -552,6 +581,18 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
 
   const handleConfirmSubmit = () => {
     setShowConfirmModal(false);
+
+    // isFree 필드 확인을 위한 디버깅 로그
+    console.log('=== Form Submission Debug ===');
+    console.log('All formData keys:', Object.keys(formData));
+    const freeFields = Object.keys(formData).filter(key => key.includes('_free'));
+    console.log('Free option fields:', freeFields);
+    freeFields.forEach(key => {
+      console.log(`${key}:`, formData[key]);
+    });
+    console.log('Full formData (check for _free fields):', JSON.stringify(formData, null, 2));
+    console.log('=============================');
+
     onSubmit(formData);
   };
 
@@ -1553,16 +1594,6 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
   };
 
   // 확인 모달에 표시할 정보 추출
-  // 확인 모달에서 사용할 isFree 값 계산
-  let isFree = false;
-  formSchema?.fields?.forEach(field => {
-    if (field.type === 'payment-calculator' || field.type === 'accommodation-calculator') {
-      const freeOptionFieldId = `${field.id}_free`;
-      if (formData[freeOptionFieldId]) {
-        isFree = true;
-      }
-    }
-  });
   const getConfirmationInfo = () => {
     const info = {
       name: '',
@@ -1576,7 +1607,9 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
         nights: 0,
         people: 0,
         roomType: ''
-      }
+      },
+      isFreePayment: false,
+      isFreeAccommodation: false
     };
 
     formSchema.fields.forEach(field => {
@@ -1598,7 +1631,20 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
       // 참가비 계산
       if (field.type === 'payment-calculator') {
         const dateFieldId = `${field.id}_dates`;
+        const freeOptionFieldId = `${field.id}_free`;
+        const isFreePayment = formData[freeOptionFieldId] || false;
         const selectedDates = formData[dateFieldId] || [];
+
+        // isFreePayment 정보 저장
+        info.isFreePayment = isFreePayment;
+
+        console.log('🔴 getConfirmationInfo - Payment Calculation:', {
+          fieldId: field.id,
+          freeOptionFieldId,
+          isFreePayment,
+          selectedDates,
+          formDataKeys: Object.keys(formData)
+        });
 
         if (selectedDates.length > 0) {
           const totalDates = field.dateOptions?.length || 0;
@@ -1616,40 +1662,47 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
 
           const phase = isPhase1 ? field.pricing?.phase1 : field.pricing?.phase2;
 
-          // 대표자 + 추가 인원 계산
-          const dobField = formSchema.fields.find(f => f.type === 'date-of-birth');
-          let adult = 0, minor8plus = 0, minorUnder8 = 0;
+          // isFreePayment가 체크되지 않은 경우에만 금액 계산
+          if (!isFreePayment) {
+            // 대표자 + 추가 인원 계산
+            const dobField = formSchema.fields.find(f => f.type === 'date-of-birth');
+            let adult = 0, minor8plus = 0, minorUnder8 = 0;
 
-          if (dobField && formData[dobField.id]) {
-            const birthYear = new Date(formData[dobField.id]).getFullYear();
-            const age = new Date().getFullYear() - birthYear;
-            if (age >= 19) adult = 1;
-            else if (age >= 8) minor8plus = 1;
-            else minorUnder8 = 1;
-          }
-
-          adult += info.extraPeople.adult;
-          minor8plus += info.extraPeople.minor8plus;
-          minorUnder8 += info.extraPeople.minorUnder8;
-
-          if (isPartial) {
-            selectedDates.forEach(date => {
-              const datePrice = phase?.perDate?.[date];
-              if (datePrice) {
-                info.paymentAmount += (datePrice.adult || 0) * adult;
-                info.paymentAmount += (datePrice.minor8plus || 0) * minor8plus;
-                info.paymentAmount += (datePrice.minorUnder8 || 0) * minorUnder8;
-              }
-            });
-          } else {
-            const fullPrice = phase?.full;
-            if (fullPrice) {
-              info.paymentAmount = (
-                (fullPrice.adult || 0) * adult +
-                (fullPrice.minor8plus || 0) * minor8plus +
-                (fullPrice.minorUnder8 || 0) * minorUnder8
-              );
+            if (dobField && formData[dobField.id]) {
+              const birthYear = new Date(formData[dobField.id]).getFullYear();
+              const age = new Date().getFullYear() - birthYear;
+              if (age >= 19) adult = 1;
+              else if (age >= 8) minor8plus = 1;
+              else minorUnder8 = 1;
             }
+
+            adult += info.extraPeople.adult;
+            minor8plus += info.extraPeople.minor8plus;
+            minorUnder8 += info.extraPeople.minorUnder8;
+
+            if (isPartial) {
+              selectedDates.forEach(date => {
+                const datePrice = phase?.perDate?.[date];
+                if (datePrice) {
+                  info.paymentAmount += (datePrice.adult || 0) * adult;
+                  info.paymentAmount += (datePrice.minor8plus || 0) * minor8plus;
+                  info.paymentAmount += (datePrice.minorUnder8 || 0) * minorUnder8;
+                }
+              });
+            } else {
+              const fullPrice = phase?.full;
+              if (fullPrice) {
+                info.paymentAmount = (
+                  (fullPrice.adult || 0) * adult +
+                  (fullPrice.minor8plus || 0) * minor8plus +
+                  (fullPrice.minorUnder8 || 0) * minorUnder8
+                );
+              }
+            }
+
+            console.log('💰 Payment amount calculated:', info.paymentAmount);
+          } else {
+            console.log('⭕ Payment is FREE - amount set to 0');
           }
         }
       }
@@ -1658,6 +1711,11 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
         const accomDateFieldId = `${field.id}_dates`;
         const accomRoomTypeFieldId = `${field.id}_roomType`;
         const accomRoomOptionsFieldId = `${field.id}_roomOptions`;
+        const accomFreeOptionFieldId = `${field.id}_free`;
+        const isFreeAccommodation = formData[accomFreeOptionFieldId] || false;
+
+        // isFreeAccommodation 정보 저장
+        info.isFreeAccommodation = isFreeAccommodation;
 
         const selectedAccomDates = formData[accomDateFieldId] || [];
         const selectedRoomType = formData[accomRoomTypeFieldId] || '';
@@ -1675,17 +1733,27 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
           const roomTypeOption = field.roomTypeOptions?.[selectedRoomType];
           let peopleCount = 1;
 
-          if (roomTypeOption?.type === 'gender') {
-            const maleList = roomOptions.male || [];
-            const femaleList = roomOptions.female || [];
-            peopleCount = maleList.length + femaleList.length;
-            info.accommodationAmount = pricePerNight * peopleCount * totalNights;
+          // isFreeAccommodation이 체크되지 않은 경우에만 금액 계산
+          if (!isFreeAccommodation) {
+            if (roomTypeOption?.type === 'gender') {
+              const maleList = roomOptions.male || [];
+              const femaleList = roomOptions.female || [];
+              peopleCount = maleList.length + femaleList.length;
+              info.accommodationAmount = pricePerNight * peopleCount * totalNights;
+            } else {
+              info.accommodationAmount = pricePerNight * totalNights;
+            }
           } else {
-            info.accommodationAmount = pricePerNight * totalNights;
+            // isFree일 경우 peopleCount는 계산하되 금액은 0
+            if (roomTypeOption?.type === 'gender') {
+              const maleList = roomOptions.male || [];
+              const femaleList = roomOptions.female || [];
+              peopleCount = maleList.length + femaleList.length;
+            }
           }
 
           info.accommodationDetails = {
-            pricePerNight,
+            pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
             nights: totalNights,
             people: peopleCount,
             roomType: selectedRoomType
@@ -1763,36 +1831,44 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                 </div>
               )}
 
-              {confirmInfo.paymentAmount > 0 && (
+              {(confirmInfo.paymentAmount > 0 || confirmInfo.isFreePayment) && (
                 <div className="flex justify-between border-b pb-2">
                   <span className="font-medium text-gray-700">참가비</span>
-                  <span className="text-gray-900">{confirmInfo.paymentAmount.toLocaleString()}원</span>
+                  <span className="text-gray-900">
+                    {confirmInfo.isFreePayment ? '무료' : `${confirmInfo.paymentAmount.toLocaleString()}원`}
+                  </span>
                 </div>
               )}
 
-              {confirmInfo.accommodationAmount > 0 && (
+              {(confirmInfo.accommodationAmount > 0 || confirmInfo.isFreeAccommodation) && (
                 <div className="border-b pb-2">
                   <div className="flex justify-between mb-1">
                     <span className="font-medium text-gray-700">숙박비</span>
-                    <span className="text-gray-900">{confirmInfo.accommodationAmount.toLocaleString()}원</span>
+                    <span className="text-gray-900">
+                      {confirmInfo.isFreeAccommodation ? '무료' : `${confirmInfo.accommodationAmount.toLocaleString()}원`}
+                    </span>
                   </div>
-                  <div className="text-sm text-gray-900 space-y-1 ml-4">
-                    <div>방 타입: {confirmInfo.accommodationDetails.roomType}</div>
-                    <div>1박 요금: {isFree?0:confirmInfo.accommodationDetails.pricePerNight.toLocaleString()}원</div>
-                    <div>숙박 일수: {confirmInfo.accommodationDetails.nights}박</div>
-                    {confirmInfo.accommodationDetails.people > 1 && (
-                      <div>인원: {confirmInfo.accommodationDetails.people}명</div>
-                    )}
-                  </div>
+                  {confirmInfo.accommodationDetails.roomType && (
+                    <div className="text-sm text-gray-900 space-y-1 ml-4">
+                      <div>방 타입: {confirmInfo.accommodationDetails.roomType}</div>
+                      <div>1박 요금: {confirmInfo.isFreeAccommodation ? '무료' : `${confirmInfo.accommodationDetails.pricePerNight.toLocaleString()}원`}</div>
+                      <div>숙박 일수: {confirmInfo.accommodationDetails.nights}박</div>
+                      {confirmInfo.accommodationDetails.people > 1 && (
+                        <div>인원: {confirmInfo.accommodationDetails.people}명</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {confirmInfo.totalAmount > 0 && (
-                <div className="flex justify-between pt-2">
-                  <span className="font-bold text-gray-900 text-lg">총 금액</span>
-                  <span className="font-bold text-blue-600 text-lg">{isFree?0:confirmInfo.totalAmount.toLocaleString()}원</span>
-                </div>
-              )}
+              <div className="flex justify-between pt-2">
+                <span className="font-bold text-gray-900 text-lg">총 금액</span>
+                <span className="font-bold text-blue-600 text-lg">
+                  {confirmInfo.totalAmount === 0 && (confirmInfo.isFreePayment || confirmInfo.isFreeAccommodation)
+                    ? '무료'
+                    : `${confirmInfo.totalAmount.toLocaleString()}원`}
+                </span>
+              </div>
             </div>
 
             <div className="flex gap-3">

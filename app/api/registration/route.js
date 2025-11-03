@@ -55,6 +55,9 @@ export async function PUT(request) {
       updatedAt: new Date().toISOString(),
     };
 
+    // amount 초기화 (무료에서 유료로 변경될 때를 대비)
+    updatedData.amount = null;
+
     // === 금액 재계산 로직 (register API와 동일) ===
 
     const calculateAgeGroup = (dob) => {
@@ -109,6 +112,8 @@ export async function PUT(request) {
     const paymentField = form.fields.find(f => f.type === 'payment-calculator');
     if (paymentField) {
       const dateFieldId = `${paymentField.id}_dates`;
+      const freeOptionFieldId = `${paymentField.id}_free`;
+      const isFreePayment = updatedData[freeOptionFieldId] || false;
       const selectedDates = updatedData[dateFieldId] || [];
       const totalDates = paymentField.dateOptions?.length || 0;
       const isPartial = selectedDates.length > 0 && selectedDates.length < totalDates;
@@ -142,31 +147,35 @@ export async function PUT(request) {
         const minor8plusCount = updatedData.extraCounts?.minor8plus || 0;
         const minorUnder8Count = updatedData.extraCounts?.minorUnder8 || 0;
 
-        if (isPartial) {
-          // 부분 참석: 날짜별 개별 가격 합산
-          selectedDates.forEach(date => {
-            const datePrice = phase?.perDate?.[date];
-            if (datePrice) {
-              paymentAmount += (datePrice.adult || 0) * adultCount;
-              paymentAmount += (datePrice.minor8plus || 0) * minor8plusCount;
-              paymentAmount += (datePrice.minorUnder8 || 0) * minorUnder8Count;
+        // isFreePayment가 false일 때만 금액 계산
+        if (!isFreePayment) {
+          if (isPartial) {
+            // 부분 참석: 날짜별 개별 가격 합산
+            selectedDates.forEach(date => {
+              const datePrice = phase?.perDate?.[date];
+              if (datePrice) {
+                paymentAmount += (datePrice.adult || 0) * adultCount;
+                paymentAmount += (datePrice.minor8plus || 0) * minor8plusCount;
+                paymentAmount += (datePrice.minorUnder8 || 0) * minorUnder8Count;
+              }
+            });
+          } else {
+            // 전체 참석: 전체 참석 가격 사용
+            const fullPrice = phase?.full;
+            if (fullPrice) {
+              paymentAmount = (
+                (fullPrice.adult || 0) * adultCount +
+                (fullPrice.minor8plus || 0) * minor8plusCount +
+                (fullPrice.minorUnder8 || 0) * minorUnder8Count
+              );
             }
-          });
-        } else {
-          // 전체 참석: 전체 참석 가격 사용
-          const fullPrice = phase?.full;
-          if (fullPrice) {
-            paymentAmount = (
-              (fullPrice.adult || 0) * adultCount +
-              (fullPrice.minor8plus || 0) * minor8plusCount +
-              (fullPrice.minorUnder8 || 0) * minorUnder8Count
-            );
           }
         }
 
         updatedData.isPartial = isPartial;
         updatedData.partialDates = isPartial ? selectedDates : [];
         updatedData.registrationPhase = isPhase1 ? 'phase1' : 'phase2';
+        updatedData.isFreePayment = isFreePayment;
       }
     }
 
@@ -176,6 +185,8 @@ export async function PUT(request) {
       const accomDateFieldId = `${accommodationField.id}_dates`;
       const accomRoomTypeFieldId = `${accommodationField.id}_roomType`;
       const accomRoomOptionsFieldId = `${accommodationField.id}_roomOptions`;
+      const accomFreeOptionFieldId = `${accommodationField.id}_free`;
+      const isFreeAccommodation = updatedData[accomFreeOptionFieldId] || false;
       const selectedAccomDates = updatedData[accomDateFieldId] || [];
       const selectedRoomType = updatedData[accomRoomTypeFieldId] || '';
       const roomOptions = updatedData[accomRoomOptionsFieldId] || {};
@@ -205,28 +216,32 @@ export async function PUT(request) {
           peopleCount = parseInt(roomOptions.count) || 1;
         }
 
-        // 총 숙박비 계산
-        if (roomTypeOption?.type === 'gender') {
-          // 30인실: 인원 수 × 1박 요금 × 박수
-          accommodationAmount = pricePerNight * peopleCount * totalNights;
-        } else {
-          // 2인실 등: 1박 요금 × 박수
-          accommodationAmount = pricePerNight * totalNights;
+        // 총 숙박비 계산 (isFreeAccommodation이 false일 때만)
+        if (!isFreeAccommodation) {
+          if (roomTypeOption?.type === 'gender') {
+            // 30인실: 인원 수 × 1박 요금 × 박수
+            accommodationAmount = pricePerNight * peopleCount * totalNights;
+          } else {
+            // 2인실 등: 1박 요금 × 박수
+            accommodationAmount = pricePerNight * totalNights;
+          }
         }
 
         updatedData.accommodationAmount = {
-          pricePerNight,
+          pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
           totalNights,
           peopleCount,
           total: accommodationAmount,
           phase: isPhase1 ? 'phase1' : 'phase2',
         };
+        updatedData.isFreeAccommodation = isFreeAccommodation;
       }
     }
 
     // 최종 금액 설정 (참가비 + 숙박비)
     const totalAmount = paymentAmount + accommodationAmount;
-    if (totalAmount > 0) {
+    // paymentField나 accommodationField가 있으면 항상 amount 설정
+    if (paymentField || accommodationField) {
       updatedData.amount = {
         first: totalAmount,
         second: 0,
