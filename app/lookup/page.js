@@ -226,7 +226,7 @@ export default function LookupPage() {
 
   return (
     <section className="max-w-3xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold text-center mb-8">등록 현황 조회</h1>
+      <h1 className="text-3xl font-bold text-center mb-8 text-black sm:text-gray-900">등록 현황 조회</h1>
 
       {/* 입력 폼 */}
       <form
@@ -243,7 +243,7 @@ export default function LookupPage() {
             value={form.name}
             onChange={onChange}
             required
-            className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 text-black sm:text-gray-900"
             placeholder="이름을 입력하세요"
           />
         </div>
@@ -257,7 +257,7 @@ export default function LookupPage() {
             value={form.phone}
             onChange={onChange}
             required
-            className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 text-black sm:text-gray-900"
             placeholder="예: 010-1234-5678"
           />
         </div>
@@ -500,7 +500,7 @@ export default function LookupPage() {
 
                           <div className="mt-4 pt-3 border-t border-gray-300">
                             <p className="font-semibold text-gray-700 mb-2">입금 계좌</p>
-                            <p className="font-medium">752601-04-331363 (국민은행)</p>
+                            <p className="font-medium text-black sm:text-gray-900">752601-04-331363 (국민은행)</p>
                             <p className="text-xs text-gray-600">예금주: 황금종교회(어게인1907평양대부흥)</p>
                             <p className="text-xs text-gray-500 mt-2">
                               * 입금자명은 ‘전화번호 뒷자리+성명’으로 부탁드립니다.
