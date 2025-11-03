@@ -376,7 +376,7 @@ export default function RegisterPage() {
                   }}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-3 rounded-lg transition shadow-sm"
                 >
-                  {completedFormType === 'payment' ? '숙박 등록하기' : '마이페이지'}
+                  {completedFormType === 'payment' ? '숙박 등록하기' : '등록 조회하기'}
                 </button>
               </div>
             </div>
