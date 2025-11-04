@@ -44,6 +44,40 @@ export default async function AdminDashboard() {
     totalPeople: form.participants.reduce((sum, p) => sum + (p.totalPeople || 1), 0),
   }));
 
+  const registerForm = formsWithParticipants.find(f =>
+    f.fields?.some(field => field.type === 'payment-calculator')
+  );
+  
+  // 날짜별 실제 식사 인원 계산
+  const mealStats = {}; // { "1월 26일 (Day1)": { breakfast: 0, lunch: 0, dinner: 0 }, ... }
+
+  registerForm?.participants.forEach(p => {
+    const totalPeople = p.totalPeople || 1;
+    const mealOptions = p.field_1760378499472_mealOptions || {}; // 필드 이름은 실제 ID로 변경 필요
+    const dates = p.field_1760378499472_dates || p.partialDates || [];
+    const under8 = p.extraCounts.minorUnder8 || 0
+    dates.forEach(date => {
+      if (!mealStats[date]) {
+        mealStats[date] = { breakfast: 0, lunch: 0, dinner: 0 };
+      }
+
+      const mealOption = mealOptions[date] || {};
+
+      // 기본적으로 하루 세 끼 다 먹는다고 가정하고,
+      // 조건에 따라 빼줌
+      if (!mealOption.fasting) {
+        mealStats[date].lunch += totalPeople;
+        mealStats[date].dinner += totalPeople;
+
+        if (!mealOption.noBreakfast) {
+          mealStats[date].breakfast += totalPeople;
+        }
+      }
+      mealStats[date].breakfast = mealStats[date].breakfast-under8 < 0?0 : mealStats[date].breakfast-under8
+      mealStats[date].lunch = mealStats[date].lunch-under8 < 0?0 : mealStats[date].lunch-under8
+      mealStats[date].dinner = mealStats[date].dinner-under8 < 0?0 : mealStats[date].dinner-under8
+    });
+  });
   // 2. 방 배정 현황 통계
   // 숙박 등록 폼 찾기
   const accommodationForm = formsWithParticipants.find(f =>
@@ -298,6 +332,40 @@ export default async function AdminDashboard() {
               </div>
             )}
           </div>
+          {/* 4. 날짜별 실제 식사 인원 */}
+          <div className="bg-white rounded-xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">🍽️ 날짜별 실제 식사 인원</h2>
+            {Object.keys(mealStats).length === 0 ? (
+              <p className="text-gray-500">식사 데이터가 없습니다.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border p-3 text-left font-medium text-gray-700">날짜</th>
+                      <th className="border p-3 text-center font-medium text-gray-700">아침</th>
+                      <th className="border p-3 text-center font-medium text-gray-700">점심</th>
+                      <th className="border p-3 text-center font-medium text-gray-700">저녁</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.keys(mealStats).sort().map(date => {
+                      const m = mealStats[date];
+                      return (
+                        <tr key={date} className="hover:bg-gray-50">
+                          <td className="border p-3 font-medium text-gray-700">{date}</td>
+                          <td className="border p-3 text-center text-blue-600 font-semibold">{m.breakfast}</td>
+                          <td className="border p-3 text-center text-green-600 font-semibold">{m.lunch}</td>
+                          <td className="border p-3 text-center text-orange-600 font-semibold">{m.dinner}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
         </div>
       </main>
     </div>
