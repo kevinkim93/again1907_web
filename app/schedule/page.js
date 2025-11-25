@@ -108,7 +108,7 @@ export default function SchedulePage() {
                           <div>
                             <div className="font-semibold">{session.title}</div>
                             {session.detail && (
-                              <div className="text-xs text-gray-400 mt-1 whitespace-pre-line">
+                              <div className="text-xs text-yellow-200 mt-1 whitespace-pre-line">
                                 {session.detail}
                               </div>
                             )}
