@@ -1930,13 +1930,13 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
             {/* 헤더 */}
             <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
-              <h2 className="text-xl font-bold text-white">⚠️ 개인실 신청 조건</h2>
+              <h2 className="text-xl font-bold text-white">⚠️ 가족실 신청 조건</h2>
             </div>
 
             {/* 내용 */}
             <div className="px-6 py-6">
               <p className="text-gray-800 text-base leading-relaxed mb-4">
-                개인실은 다음 조건 중 하나를 충족할 때만 신청 가능합니다:
+                가족실은 다음 두 가지 조건을 충족할 때만 신청 가능합니다:
               </p>
 
               <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 mb-4">
@@ -1953,8 +1953,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               </div>
 
               <p className="text-gray-700 text-sm">
-                현재 조건을 충족하지 않습니다.<br/>
-                그래도 개인실을 신청하시겠습니까?
+                가족실을 신청하시겠습니까?
               </p>
             </div>
 
