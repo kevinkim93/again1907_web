@@ -29,6 +29,52 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
   const selectedRoomType = formData[roomTypeFieldId] || '';
   const roomOptions = formData[roomOptionsFieldId] || {};
 
+  // 현재 날짜가 1차 등록 마감일 이전인지 확인
+  const now = new Date();
+  const phase1Deadline = field.phase1Deadline ? new Date(field.phase1Deadline) : null;
+  const isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+
+  const phase = isPhase1 ? field.accommodationPricing?.phase1 : field.accommodationPricing?.phase2;
+  const pricePerNight = phase?.[selectedRoomType] || 0;
+
+  const totalNights = selectedDates.length;
+
+  // 방 타입별 인원 수 계산
+  const roomTypeOption = field.roomTypeOptions?.[selectedRoomType];
+  let peopleCount = 1; // 기본값: 1명
+  let maleCount = 0;
+  let femaleCount = 0;
+
+  if (roomTypeOption?.type === 'gender') {
+    // 단체실: 배열 기반 남자 + 여자 인원
+    const maleList = roomOptions.male || [];
+    const femaleList = roomOptions.female || [];
+
+    maleCount = maleList.length;
+    femaleCount = femaleList.length;
+    peopleCount = maleCount + femaleCount;
+  } else if (roomTypeOption?.type === 'count') {
+    // 2인실 같은 경우: 선택한 인원 수 (가격 계산에는 영향 없음)
+    peopleCount = parseInt(roomOptions.count) || 1;
+  }
+
+  // 총 금액 계산: 30인실은 인원당 가격, 그 외는 방당 가격
+  let totalAmount = 0;
+
+  if (roomTypeOption?.type === 'gender') {
+    // 30인실: 인원 수 × 1박 요금 × 박수
+    totalAmount = pricePerNight * peopleCount * totalNights;
+  } else {
+    // 2인실 등: 1박 요금 × 박수 (인원수 무관)
+    totalAmount = pricePerNight * totalNights;
+  }
+  totalAmount = isFree ? 0 : totalAmount;
+
+  // 계산된 금액을 formData에 저장 - 최상단에 배치
+  useEffect(() => {
+    const amountFieldId = `${field.id}_totalAmount`;
+    handleChange(amountFieldId, totalAmount);
+  }, [totalAmount, field.id]);
 
   if (!field.dateOptions || field.dateOptions.length === 0) {
     return (
@@ -71,47 +117,6 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
       </div>
     );
   }
-
-  // 현재 날짜가 1차 등록 마감일 이전인지 확인
-  const now = new Date();
-  const phase1Deadline = field.phase1Deadline ? new Date(field.phase1Deadline) : null;
-  const isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
-
-  const phase = isPhase1 ? field.accommodationPricing.phase1 : field.accommodationPricing.phase2;
-  const pricePerNight = phase?.[selectedRoomType] || 0;
-
-  const totalNights = selectedDates.length;
-
-  // 방 타입별 인원 수 계산
-  const roomTypeOption = field.roomTypeOptions?.[selectedRoomType];
-  let peopleCount = 1; // 기본값: 1명
-  let maleCount = 0;
-  let femaleCount = 0;
-
-  if (roomTypeOption?.type === 'gender') {
-    // 단체실: 배열 기반 남자 + 여자 인원
-    const maleList = roomOptions.male || [];
-    const femaleList = roomOptions.female || [];
-
-    maleCount = maleList.length;
-    femaleCount = femaleList.length;
-    peopleCount = maleCount + femaleCount;
-  } else if (roomTypeOption?.type === 'count') {
-    // 2인실 같은 경우: 선택한 인원 수 (가격 계산에는 영향 없음)
-    peopleCount = parseInt(roomOptions.count) || 1;
-  }
-
-  // 총 금액 계산: 30인실은 인원당 가격, 그 외는 방당 가격
-  let totalAmount = 0;
-
-  if (roomTypeOption?.type === 'gender') {
-    // 30인실: 인원 수 × 1박 요금 × 박수
-    totalAmount = pricePerNight * peopleCount * totalNights;
-  } else {
-    // 2인실 등: 1박 요금 × 박수 (인원수 무관)
-    totalAmount = pricePerNight * totalNights;
-  }
-  totalAmount = isFree?0:totalAmount
 
   return (
     <div className="bg-green-50 border border-green-300 rounded-lg p-4">
@@ -207,6 +212,33 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
   // people-count 필드 찾기
   const peopleField = formSchema.fields.find(f => f.type === 'people-count');
 
+  const selectedDates = dateField ? (formData[dateField.id] || []) : [];
+  const totalDates = field.dateOptions?.length || 0;
+  const isPartial = selectedDates.length < totalDates;
+
+  // 1차/2차 가격 활성화 여부 확인
+  const phase1Enabled = field.enablePhase1 !== false;
+  const phase2Enabled = field.enablePhase2 !== false;
+
+  // 현재 날짜가 1차 등록 마감일 이전인지 확인
+  const now = new Date();
+  const phase1Deadline = field.phase1Deadline ? new Date(field.phase1Deadline) : null;
+  let isPhase1 = false;
+
+  // 1차만 활성화된 경우
+  if (phase1Enabled && !phase2Enabled) {
+    isPhase1 = true;
+  }
+  // 2차만 활성화된 경우
+  else if (!phase1Enabled && phase2Enabled) {
+    isPhase1 = false;
+  }
+  // 둘 다 활성화된 경우
+  else if (phase1Enabled && phase2Enabled) {
+    isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+  }
+
+  const phase = isPhase1 ? field.pricing?.phase1 : field.pricing?.phase2;
 
   const calculateAgeGroup = (dob) => {
     if (!dob) return null;
@@ -218,6 +250,62 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
     if (age >= 8) return 'minor8plus';
     return 'minorUnder8';
   };
+
+  // 대표자 본인만 기본으로 포함
+  let adult = 0;
+  let minor8plus = 0;
+  let minorUnder8 = 0;
+
+  // 대표자 나이 확인하여 해당 그룹에 추가
+  if (dobField && formData[dobField.id]) {
+    const representativeAgeGroup = calculateAgeGroup(formData[dobField.id]);
+    if (representativeAgeGroup === 'adult') adult = 1;
+    else if (representativeAgeGroup === 'minor8plus') minor8plus = 1;
+    else if (representativeAgeGroup === 'minorUnder8') minorUnder8 = 1;
+  }
+
+  // 추가 인원이 있으면 합산
+  if (peopleField && formData[peopleField.id]) {
+    const peopleData = formData[peopleField.id];
+    adult += peopleData.adult || 0;
+    minor8plus += peopleData.minor8plus || 0;
+    minorUnder8 += peopleData.minorUnder8 || 0;
+  }
+
+  const totalPeople = adult + minor8plus + minorUnder8;
+
+  // 가격 계산
+  let totalAmount = 0;
+  let priceDetails = { adult: 0, minor8plus: 0, minorUnder8: 0 };
+
+  if (isPartial && selectedDates.length > 0) {
+    // 부분 참석: 날짜별 개별 가격 합산
+    selectedDates.forEach(date => {
+      const datePrice = phase?.perDate?.[date];
+      if (datePrice) {
+        priceDetails.adult += (datePrice.adult || 0) * adult;
+        priceDetails.minor8plus += (datePrice.minor8plus || 0) * minor8plus;
+        priceDetails.minorUnder8 += (datePrice.minorUnder8 || 0) * minorUnder8;
+      }
+    });
+    totalAmount = priceDetails.adult + priceDetails.minor8plus + priceDetails.minorUnder8;
+  } else if (selectedDates.length > 0) {
+    // 전체 참석: 전체 참석 가격 사용
+    const fullPrice = phase?.full;
+    if (fullPrice) {
+      priceDetails.adult = (fullPrice.adult || 0) * adult;
+      priceDetails.minor8plus = (fullPrice.minor8plus || 0) * minor8plus;
+      priceDetails.minorUnder8 = (fullPrice.minorUnder8 || 0) * minorUnder8;
+      totalAmount = priceDetails.adult + priceDetails.minor8plus + priceDetails.minorUnder8;
+    }
+  }
+  totalAmount = isFree ? 0 : totalAmount;
+
+  // 계산된 금액을 formData에 저장 - 최상단에 배치
+  useEffect(() => {
+    const amountFieldId = `${field.id}_totalAmount`;
+    handleChange(amountFieldId, totalAmount);
+  }, [totalAmount, field.id]);
 
   // 생년월일이 완전히 입력되지 않았으면 안내 메시지
   if (!dobField || !formData[dobField.id]) {
@@ -244,8 +332,6 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
     );
   }
 
-  const selectedDates = dateField ? (formData[dateField.id] || []) : [];
-
   // 날짜가 선택되지 않았으면 안내 메시지
   if (selectedDates.length === 0) {
     return (
@@ -255,97 +341,14 @@ function PaymentCalculator({ formData, formSchema, settings, field, handleChange
     );
   }
 
-  const totalDates = field.dateOptions.length;
-  const isPartial = selectedDates.length < totalDates;
-
-  // 1차/2차 가격 활성화 여부 확인
-  const phase1Enabled = field.enablePhase1 !== false;
-  const phase2Enabled = field.enablePhase2 !== false;
-
-  // 현재 날짜가 1차 등록 마감일 이전인지 확인
-  const now = new Date();
-  const phase1Deadline = field.phase1Deadline ? new Date(field.phase1Deadline) : null;
-  let isPhase1 = false;
-
-  // 1차만 활성화된 경우
-  if (phase1Enabled && !phase2Enabled) {
-    isPhase1 = true;
-  }
-  // 2차만 활성화된 경우
-  else if (!phase1Enabled && phase2Enabled) {
-    isPhase1 = false;
-  }
-  // 둘 다 활성화된 경우
-  else if (phase1Enabled && phase2Enabled) {
-    isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
-  }
   // 둘 다 비활성화된 경우
-  else {
+  if (!phase1Enabled && !phase2Enabled) {
     return (
       <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
         <p className="text-sm text-black sm:text-gray-900">가격 정보가 설정되지 않았습니다.</p>
       </div>
     );
   }
-
-  const phase = isPhase1 ? field.pricing.phase1 : field.pricing.phase2;
-
-  // 대표자 본인만 기본으로 포함
-  let adult = 0;
-  let minor8plus = 0;
-  let minorUnder8 = 0;
-
-  // 대표자 나이 확인하여 해당 그룹에 추가
-  const representativeAgeGroup = calculateAgeGroup(formData[dobField.id]);
-  if (representativeAgeGroup === 'adult') adult = 1;
-  else if (representativeAgeGroup === 'minor8plus') minor8plus = 1;
-  else if (representativeAgeGroup === 'minorUnder8') minorUnder8 = 1;
-
-  // 추가 인원이 있으면 합산
-  if (peopleField && formData[peopleField.id]) {
-    const peopleData = formData[peopleField.id];
-    adult += peopleData.adult || 0;
-    minor8plus += peopleData.minor8plus || 0;
-    minorUnder8 += peopleData.minorUnder8 || 0;
-  }
-
-  const totalPeople = adult + minor8plus + minorUnder8;
-
-  // 가격 계산
-  let totalAmount = 0;
-  let priceDetails = { adult: 0, minor8plus: 0, minorUnder8: 0 };
-
-
-  if (isPartial) {
-    // 부분 참석: 날짜별 개별 가격 합산
-    selectedDates.forEach(date => {
-      const datePrice = phase?.perDate?.[date];
-      if (datePrice) {
-        priceDetails.adult += (datePrice.adult || 0) * adult;
-        priceDetails.minor8plus += (datePrice.minor8plus || 0) * minor8plus;
-        priceDetails.minorUnder8 += (datePrice.minorUnder8 || 0) * minorUnder8;
-      }
-    });
-    totalAmount = priceDetails.adult + priceDetails.minor8plus + priceDetails.minorUnder8;
-  } else {
-    // 전체 참석: 전체 참석 가격 사용
-    const fullPrice = phase?.full;
-    if (fullPrice) {
-      priceDetails.adult = (fullPrice.adult || 0) * adult;
-      priceDetails.minor8plus = (fullPrice.minor8plus || 0) * minor8plus;
-      priceDetails.minorUnder8 = (fullPrice.minorUnder8 || 0) * minorUnder8;
-      totalAmount = priceDetails.adult + priceDetails.minor8plus + priceDetails.minorUnder8;
-    }
-  }
-  totalAmount=isFree?0:totalAmount
-
-  // if (totalAmount === 0) {
-  //   return (
-  //     <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
-  //       <p className="text-sm text-black sm:text-gray-600">가격 정보가 설정되지 않았습니다.</p>
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="bg-blue-50 border border-blue-300 rounded-lg p-4">
@@ -420,6 +423,8 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showPrivateRoomModal, setShowPrivateRoomModal] = useState(false);
+  const [pendingRoomSelection, setPendingRoomSelection] = useState(null);
 
   // initialData가 있으면 해당 필드에 자동으로 채우기
   useEffect(() => {
@@ -1124,18 +1129,48 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               <div>
                 <label className="block text-sm font-medium mb-2 text-black sm:text-gray-900">방 타입 선택</label>
                 <div className="space-y-2 ">
-                  {accomRoomTypes.map(roomType => (
-                    <label key={roomType} className="flex items-center gap-2 text-black sm:text-gray-900">
-                      <input
-                        type="radio"
-                        name={accomRoomTypeFieldId}
-                        value={roomType}
-                        checked={formData[accomRoomTypeFieldId] === roomType}
-                        onChange={(e) => handleChange(accomRoomTypeFieldId, e.target.value)}
-                      />
-                      <span>{roomType}</span>
-                    </label>
-                  ))}
+                  {accomRoomTypes.map(roomType => {
+                    const currentRoomTypeOption = field.roomTypeOptions?.[roomType];
+                    const isPrivateRoom = currentRoomTypeOption?.type === 'count';
+
+                    return (
+                      <label key={roomType} className="flex items-center gap-2 text-black sm:text-gray-900">
+                        <input
+                          type="radio"
+                          name={accomRoomTypeFieldId}
+                          value={roomType}
+                          checked={formData[accomRoomTypeFieldId] === roomType}
+                          onChange={(e) => {
+                            // 개인실을 선택할 때 조건 확인
+                            if (isPrivateRoom) {
+                              // people-count 필드 찾기
+                              const peopleCountField = formSchema.fields.find(f => f.type === 'people-count');
+                              const peopleData = peopleCountField ? (formData[peopleCountField.id] || {}) : {};
+
+                              // 대표자 포함 총 인원 계산
+                              const totalPeople = 1 + (peopleData.adult || 0) + (peopleData.minor8plus || 0) + (peopleData.minorUnder8 || 0);
+
+                              // 4세 미만 영유아 포함 여부 (minorUnder8 사용)
+                              const hasInfant = (peopleData.minorUnder8 || 0) > 0;
+
+                              // 조건: 3인 이상 OR 4세 미만 영유아 포함
+                              const meetsCondition = totalPeople >= 3 || hasInfant;
+
+                              if (!meetsCondition) {
+                                // 모달 표시
+                                setPendingRoomSelection({ fieldId: accomRoomTypeFieldId, value: e.target.value });
+                                setShowPrivateRoomModal(true);
+                                return;
+                              }
+                            }
+
+                            handleChange(accomRoomTypeFieldId, e.target.value);
+                          }}
+                        />
+                        <span>{roomType}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1884,6 +1919,70 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
               >
                 확인
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 개인실 조건 확인 모달 */}
+      {showPrivateRoomModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            {/* 헤더 */}
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
+              <h2 className="text-xl font-bold text-white">⚠️ 개인실 신청 조건</h2>
+            </div>
+
+            {/* 내용 */}
+            <div className="px-6 py-6">
+              <p className="text-gray-800 text-base leading-relaxed mb-4">
+                개인실은 다음 조건 중 하나를 충족할 때만 신청 가능합니다:
+              </p>
+
+              <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-4 mb-4">
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-600 font-bold mt-0.5">1.</span>
+                    <span className="text-gray-800 font-medium">3인 이상일 때</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-orange-600 font-bold mt-0.5">2.</span>
+                    <span className="text-gray-800 font-medium">4세 미만 영유아 포함일 때</span>
+                  </li>
+                </ul>
+              </div>
+
+              <p className="text-gray-700 text-sm">
+                현재 조건을 충족하지 않습니다.<br/>
+                그래도 개인실을 신청하시겠습니까?
+              </p>
+            </div>
+
+            {/* 하단 버튼 */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowPrivateRoomModal(false);
+                    setPendingRoomSelection(null);
+                  }}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-3 rounded-lg transition"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={() => {
+                    if (pendingRoomSelection) {
+                      handleChange(pendingRoomSelection.fieldId, pendingRoomSelection.value);
+                    }
+                    setShowPrivateRoomModal(false);
+                    setPendingRoomSelection(null);
+                  }}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold px-4 py-3 rounded-lg transition shadow-sm"
+                >
+                  신청하기
+                </button>
+              </div>
             </div>
           </div>
         </div>

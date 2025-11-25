@@ -15,6 +15,7 @@ export default function RegisterPage() {
   const [showNextStepModal, setShowNextStepModal] = useState(false);
   const [completedFormType, setCompletedFormType] = useState('');
   const [savedUserInfo, setSavedUserInfo] = useState(null);
+  const [calculatedAmount, setCalculatedAmount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -62,6 +63,21 @@ export default function RegisterPage() {
   const handleSubmit = async (formData) => {
     setSubmitting(true);
     const currentForm = forms[activeTab];
+
+    // 금액 가져오기 (payment-calculator 또는 accommodation-calculator 필드가 있는 경우)
+    const paymentField = currentForm.fields.find(f => f.type === 'payment-calculator');
+    const accommodationField = currentForm.fields.find(f => f.type === 'accommodation-calculator');
+    let totalAmount = 0;
+
+    if (paymentField) {
+      const amountFieldId = `${paymentField.id}_totalAmount`;
+      totalAmount = formData[amountFieldId] || 0;
+    } else if (accommodationField) {
+      const amountFieldId = `${accommodationField.id}_totalAmount`;
+      totalAmount = formData[amountFieldId] || 0;
+    }
+
+    setCalculatedAmount(totalAmount);
 
     // 현재 폼의 필드 ID 목록 생성
     const currentFormFieldIds = new Set();
@@ -334,6 +350,34 @@ export default function RegisterPage() {
                   ? '예배 및 식사 등록이 완료되었습니다!'
                   : '숙박 등록이 완료되었습니다!'}
               </p>
+
+              {/* 가격 및 계좌번호 안내 */}
+              {calculatedAmount > 0 && (
+                <div className="mb-4 bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
+                  <h3 className="font-bold text-blue-900 mb-3 text-lg">💳 입금 안내</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center py-2 border-b border-blue-200">
+                      <span className="text-gray-700 font-medium">결제 금액</span>
+                      <span className="text-blue-900 font-bold text-xl">{calculatedAmount.toLocaleString()}원</span>
+                    </div>
+                    <div className="pt-2 space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-gray-700 font-medium">은행</span>
+                        <span className="text-gray-900 font-semibold">국민은행</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700 font-medium">계좌번호</span>
+                        <span className="text-gray-900 font-mono font-semibold">752601-04-331363</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-700 font-medium">예금주</span>
+                        <span className="text-gray-900 font-semibold">황금종교회(어게인1907평양대부흥)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <p className="text-gray-600 text-sm">
                 {completedFormType === 'payment'
                   ? '숙박 등록을 계속 진행하시겠습니까?'

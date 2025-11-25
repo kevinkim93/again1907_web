@@ -142,7 +142,7 @@ export default function SchedulePage() {
                       {s.time} — {s.title}
                     </div>
                     {s.detail && (
-                      <div className="text-xs text-gray-400 mt-1 whitespace-pre-line">
+                      <div className="text-gray-200 mt-1 whitespace-pre-line">
                         {s.detail}
                       </div>
                     )}
