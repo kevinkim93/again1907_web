@@ -370,8 +370,40 @@ export default function AttendeesPage() {
       <div className="bg-white shadow rounded-lg p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">
-            {currentForm?.name} 참가자 목록 ({filteredParticipants.length}명)
-            {groupFilter && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
+            {(() => {
+              // 전체 인원 합계 계산
+              const totalPeople = filteredParticipants.reduce((sum, p) => {
+                return sum + (p.totalPeople || 1);
+              }, 0);
+
+              return (
+                <>
+                  {currentForm?.name} 참가자 목록 ({filteredParticipants.length}건 / 총 
+                  {groupFilter && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
+                </>
+              );
+            })()}
+            {hasAccommodation && (() => {
+              // 숙박 인원 합계 계산
+              const accommodationField = currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
+              if (!accommodationField) return null;
+
+              const roomOptionsFieldId = `${accommodationField.id}_roomOptions`;
+              const totalAccommodationPeople = filteredParticipants.reduce((sum, p) => {
+                // 숙박 날짜가 있는 참가자만 카운트
+                const hasAccommodationDates = p.accommodationDates && p.accommodationDates.length > 0;
+                if (!hasAccommodationDates) return sum;
+
+                const count = parseInt(p[roomOptionsFieldId]?.count) || 1;
+                return sum + count;
+              }, 0);
+
+              return (
+                <span className="text-xl font-semibold">
+                   &nbsp; {totalAccommodationPeople}명)
+                </span>
+              );
+            })()}
           </h2>
           {hasAccommodation && filteredParticipants.length > 0 && (
             <button
@@ -398,6 +430,7 @@ export default function AttendeesPage() {
                   ))}
                   <th className="border p-2">등록일</th>
                   <th className="border p-2">결제상태</th>
+                  {hasAccommodation && <th className="border p-2">숙박 인원</th>}
                   {hasAccommodation && <th className="border p-2">방 배정</th>}
                   <th className="border p-2">액션</th>
                 </tr>
@@ -462,6 +495,27 @@ export default function AttendeesPage() {
                         {participant.paymentStatus === 'paid' ? '납부완료' : '미납'}
                       </button>
                     </td>
+                    {hasAccommodation && (
+                      <td className="border p-2">
+                        {(() => {
+                          const accommodationField = currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
+                          if (!accommodationField) return '-';
+
+                          // 숙박 날짜가 없으면 '-' 표시
+                          const hasAccommodationDates = participant.accommodationDates && participant.accommodationDates.length > 0;
+                          if (!hasAccommodationDates) return '-';
+
+                          const roomOptionsFieldId = `${accommodationField.id}_roomOptions`;
+                          const peopleCount = parseInt(participant[roomOptionsFieldId]?.count) || 1;
+
+                          return (
+                            <span className="font-medium text-blue-600">
+                              {peopleCount}명
+                            </span>
+                          );
+                        })()}
+                      </td>
+                    )}
                     {hasAccommodation && (
                       <td className="border p-2">
                         {participant.roomNumber ? (
@@ -685,15 +739,19 @@ function renderFieldValue(field, value, participant) {
       );
 
     case 'accommodation-calculator':
-      // 숙박 날짜, 방 타입, 숙박비 표시
+      // 숙박 날짜, 방 타입, 인원수, 숙박비 표시
       const accomDates = participant.accommodationDates;
       const roomType = participant.roomType || '-';
       const accomAmount = participant.accommodationAmount?.total
         ? `${participant.accommodationAmount.total.toLocaleString()}원`
         : '-';
 
+      // 인원수 가져오기
+      const roomOptionsFieldId = `${field.id}_roomOptions`;
+      const peopleCount = participant[roomOptionsFieldId]?.count || '-';
+
       if (!Array.isArray(accomDates) || accomDates.length === 0) {
-        return `${roomType} / ${accomAmount}`;
+        return `${roomType} / ${peopleCount}명 / ${accomAmount}`;
       }
 
       return (
@@ -702,7 +760,7 @@ function renderFieldValue(field, value, participant) {
             <div key={idx}>{date}</div>
           ))}
           <div className="font-semibold mt-1 pt-1 border-t">
-            {roomType} / {accomAmount}
+            {roomType} / {peopleCount}명 / {accomAmount}
           </div>
         </div>
       );
