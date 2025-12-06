@@ -10,6 +10,9 @@ export default function AttendeesPage() {
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState([]);
   const [groupFilter, setGroupFilter] = useState(''); // 그룹 ID 필터
+  const [nameFilter, setNameFilter] = useState(''); // 이름 필터
+  const [paymentFilter, setPaymentFilter] = useState(''); // 결제상태 필터 (all/paid/unpaid)
+  const [dateFilter, setDateFilter] = useState(''); // 등록일자 필터
 
   // 폼 목록 가져오기
   const fetchForms = useCallback(async () => {
@@ -285,10 +288,43 @@ export default function AttendeesPage() {
       .map(p => p.groupId)
   )).sort();
 
+  // 등록일자 목록 추출 (중복 제거)
+  const registrationDates = Array.from(new Set(
+    participants
+      .filter(p => p.registeredAt)
+      .map(p => p.registeredAt)
+  )).sort().reverse(); // 최신 날짜가 위로
+
   // 필터링된 참가자 목록
-  const filteredParticipants = groupFilter
-    ? participants.filter(p => p.groupId === groupFilter)
-    : participants;
+  let filteredParticipants = participants;
+
+  // 그룹 필터
+  if (groupFilter) {
+    filteredParticipants = filteredParticipants.filter(p => p.groupId === groupFilter);
+  }
+
+  // 이름 필터
+  if (nameFilter) {
+    const nameField = currentForm?.fields?.find(f =>
+      f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명'))
+    );
+    if (nameField) {
+      filteredParticipants = filteredParticipants.filter(p => {
+        const name = p[nameField.id] || '';
+        return name.toLowerCase().includes(nameFilter.toLowerCase());
+      });
+    }
+  }
+
+  // 결제상태 필터
+  if (paymentFilter) {
+    filteredParticipants = filteredParticipants.filter(p => p.paymentStatus === paymentFilter);
+  }
+
+  // 등록일자 필터
+  if (dateFilter) {
+    filteredParticipants = filteredParticipants.filter(p => p.registeredAt === dateFilter);
+  }
 
   // 방 번호로 그룹화 (중복 제거)
   const roomNumbersSet = new Set();
@@ -309,7 +345,11 @@ export default function AttendeesPage() {
           value={selectedFormId}
           onChange={(e) => {
             setSelectedFormId(e.target.value);
-            setGroupFilter(''); // 폼 변경시 그룹 필터 초기화
+            // 폼 변경시 모든 필터 초기화
+            setGroupFilter('');
+            setNameFilter('');
+            setPaymentFilter('');
+            setDateFilter('');
           }}
           className="w-full max-w-md border border-gray-300 rounded-md p-2"
         >
@@ -365,6 +405,122 @@ export default function AttendeesPage() {
           </div>
         </div>
       )}
+
+      {/* 추가 필터 (이름, 결제상태, 등록일자) */}
+      <div className="mb-6 bg-white shadow rounded-lg p-4">
+        <label className="block text-sm font-medium mb-3">필터</label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 이름 필터 */}
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">이름 검색</label>
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={nameFilter}
+                onChange={(e) => setNameFilter(e.target.value)}
+                placeholder="이름 입력..."
+                className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
+              />
+              {nameFilter && (
+                <button
+                  onClick={() => setNameFilter('')}
+                  className="px-2 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 결제상태 필터 */}
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">결제상태</label>
+            <div className="flex gap-2 items-center">
+              <select
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
+              >
+                <option value="">전체</option>
+                <option value="paid">납부완료</option>
+                <option value="unpaid">미납</option>
+              </select>
+              {paymentFilter && (
+                <button
+                  onClick={() => setPaymentFilter('')}
+                  className="px-2 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 등록일자 필터 */}
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">등록일자</label>
+            <div className="flex gap-2 items-center">
+              <select
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
+              >
+                <option value="">전체</option>
+                {registrationDates.map(date => (
+                  <option key={date} value={date}>
+                    {date}
+                  </option>
+                ))}
+              </select>
+              {dateFilter && (
+                <button
+                  onClick={() => setDateFilter('')}
+                  className="px-2 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 활성 필터 표시 */}
+        {(nameFilter || paymentFilter || dateFilter) && (
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-xs text-gray-600">활성 필터:</span>
+              {nameFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                  이름: {nameFilter}
+                  <button onClick={() => setNameFilter('')} className="hover:text-blue-900">✕</button>
+                </span>
+              )}
+              {paymentFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                  결제: {paymentFilter === 'paid' ? '납부완료' : '미납'}
+                  <button onClick={() => setPaymentFilter('')} className="hover:text-blue-900">✕</button>
+                </span>
+              )}
+              {dateFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                  등록일: {dateFilter}
+                  <button onClick={() => setDateFilter('')} className="hover:text-blue-900">✕</button>
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  setNameFilter('');
+                  setPaymentFilter('');
+                  setDateFilter('');
+                }}
+                className="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
+              >
+                모든 필터 해제
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* 참가자 목록 */}
       <div className="bg-white shadow rounded-lg p-6">
