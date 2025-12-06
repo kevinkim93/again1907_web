@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 
 export default function AttendeesPage() {
   const [forms, setForms] = useState([]);
@@ -326,6 +327,164 @@ export default function AttendeesPage() {
     filteredParticipants = filteredParticipants.filter(p => p.registeredAt === dateFilter);
   }
 
+  // 엑셀용 값 포맷팅
+  const formatExcelValue = (field, value, participant) => {
+    if (value === null || value === undefined) {
+      return '-';
+    }
+
+    switch (field.type) {
+      case 'checkbox':
+        return value ? '✓' : '✗';
+
+      case 'checkbox-multiple':
+      case 'select-multiple':
+        return Array.isArray(value) ? value.join(', ') : value;
+
+      case 'checkbox-dates':
+        const dateFieldId = `${field.id}_dates`;
+        const attendanceDates = participant[dateFieldId];
+        if (Array.isArray(attendanceDates) && attendanceDates.length > 0) {
+          return attendanceDates.join(', ');
+        }
+        return '-';
+
+      case 'people-count':
+        const totalPeople = participant.totalPeople || 0;
+        const totalAdult = participant.extraCounts?.adult || 0;
+        const totalMinor8plus = participant.extraCounts?.minor8plus || 0;
+        const totalMinorUnder8 = participant.extraCounts?.minorUnder8 || 0;
+        return `총 ${totalPeople}명 (성인 ${totalAdult}, 8세↑ ${totalMinor8plus}, 8세↓ ${totalMinorUnder8})`;
+
+      case 'date-of-birth':
+        if (!value) return '-';
+        const birthYear = new Date(value).getFullYear();
+        const thisYear = new Date().getFullYear();
+        const age = thisYear - birthYear;
+        return `${value} (만 ${age}세)`;
+
+      case 'payment-calculator':
+        const paymentDateFieldId = `${field.id}_dates`;
+        const paymentDates = participant[paymentDateFieldId];
+        const amountDisplay = participant.amount?.total
+          ? `${participant.amount.total.toLocaleString()}원`
+          : '-';
+
+        if (!Array.isArray(paymentDates) || paymentDates.length === 0) {
+          return amountDisplay;
+        }
+
+        return `${paymentDates.join(', ')}\n${amountDisplay}`;
+
+      case 'accommodation-calculator':
+        const accomDates = participant.accommodationDates;
+        const roomType = participant.roomType || '-';
+        const accomAmount = participant.accommodationAmount?.total
+          ? `${participant.accommodationAmount.total.toLocaleString()}원`
+          : '-';
+
+        const roomOptionsFieldId = `${field.id}_roomOptions`;
+        const peopleCount = participant[roomOptionsFieldId]?.count || '-';
+
+        if (!Array.isArray(accomDates) || accomDates.length === 0) {
+          return `${roomType} / ${peopleCount}명 / ${accomAmount}`;
+        }
+
+        return `${accomDates.join(', ')}\n${roomType} / ${peopleCount}명 / ${accomAmount}`;
+
+      default:
+        return value.toString();
+    }
+  };
+
+  // 엑셀 다운로드
+  const downloadExcel = () => {
+    if (!currentForm || filteredParticipants.length === 0) {
+      alert('다운로드할 데이터가 없습니다.');
+      return;
+    }
+
+    // 엑셀 데이터 생성
+    const excelData = filteredParticipants.map((participant, index) => {
+      const row = {
+        '번호': index + 1,
+      };
+
+      // 그룹 정보
+      if (participant.groupId) {
+        const groupMembers = participants.filter(p => p.groupId === participant.groupId);
+        const representative = groupMembers.find(p => p.isRepresentative);
+        const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
+        const repName = representative?.[nameField?.id] || '알 수 없음';
+        row['그룹'] = participant.isRepresentative ? `대표자 (${repName})` : `구성원 (${repName})`;
+      } else {
+        row['그룹'] = '-';
+      }
+
+      // 폼 필드 데이터
+      currentForm.fields.forEach(field => {
+        const value = participant[field.id];
+        row[field.label] = formatExcelValue(field, value, participant);
+      });
+
+      // 등록일
+      row['등록일'] = participant.registeredAt || '-';
+
+      // 결제상태
+      row['결제상태'] = participant.paymentStatus === 'paid' ? '납부완료' : '미납';
+
+      // 숙박 인원 (숙박이 있는 경우)
+      if (hasAccommodation) {
+        const accommodationField = currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
+        if (accommodationField) {
+          const hasAccommodationDates = participant.accommodationDates && participant.accommodationDates.length > 0;
+          if (hasAccommodationDates) {
+            const roomOptionsFieldId = `${accommodationField.id}_roomOptions`;
+            const peopleCount = parseInt(participant[roomOptionsFieldId]?.count) || 1;
+            row['숙박 인원'] = `${peopleCount}명`;
+          } else {
+            row['숙박 인원'] = '-';
+          }
+        }
+
+        // 방 배정
+        if (participant.roomNumber) {
+          row['방 배정'] = `${participant.roomNumber}호`;
+        } else {
+          row['방 배정'] = '미배정';
+        }
+      }
+
+      return row;
+    });
+
+    // 워크북 생성
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '참가자 목록');
+
+    // 열 너비 자동 조정
+    const maxWidths = {};
+    excelData.forEach(row => {
+      Object.keys(row).forEach(key => {
+        const value = String(row[key] || '');
+        const width = Math.max(
+          key.length,
+          ...value.split('\n').map(line => line.length)
+        );
+        maxWidths[key] = Math.max(maxWidths[key] || 10, width);
+      });
+    });
+
+    worksheet['!cols'] = Object.keys(excelData[0] || {}).map(key => ({
+      wch: Math.min(maxWidths[key] * 1.2, 50)
+    }));
+
+    // 파일 다운로드
+    const fileName = `${currentForm.name}_참가자목록_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
   // 방 번호로 그룹화 (중복 제거)
   const roomNumbersSet = new Set();
   rooms.forEach(room => {
@@ -531,10 +690,11 @@ export default function AttendeesPage() {
               const totalPeople = filteredParticipants.reduce((sum, p) => {
                 return sum + (p.totalPeople || 1);
               }, 0);
-
+              const accommodationField = currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
               return (
                 <>
-                  {currentForm?.name} 참가자 목록 ({filteredParticipants.length}건 / 총 
+                  {currentForm?.name} 참가자 목록 ({filteredParticipants.length}건 / 총
+                  {!accommodationField && <span className="text-xl font-semibold">&nbsp; {totalPeople}명)</span>}
                   {groupFilter && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
                 </>
               );
@@ -561,14 +721,24 @@ export default function AttendeesPage() {
               );
             })()}
           </h2>
-          {hasAccommodation && filteredParticipants.length > 0 && (
-            <button
-              onClick={goToRoomAssignment}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm font-medium"
-            >
-              방 배정 관리
-            </button>
-          )}
+          <div className="flex gap-2">
+            {filteredParticipants.length > 0 && (
+              <button
+                onClick={downloadExcel}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium"
+              >
+                엑셀 다운로드
+              </button>
+            )}
+            {hasAccommodation && filteredParticipants.length > 0 && (
+              <button
+                onClick={goToRoomAssignment}
+                className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm font-medium"
+              >
+                방 배정 관리
+              </button>
+            )}
+          </div>
         </div>
 
         {filteredParticipants.length === 0 ? (
