@@ -101,7 +101,7 @@ export default function HomePage() {
         </section>
 
         {/* Full-screen Image Section 3 */}
-        {/* <section
+        <section
           ref={(el) => (imageRefs.current[2] = el)}
           className=" relative w-full h-full overflow-hidden"
         >
@@ -110,7 +110,7 @@ export default function HomePage() {
             alt="Again1907 소개 3"
             className="w-full h-full object-cover"
           />
-        </section> */}
+        </section>
 
       </main>
     </>
