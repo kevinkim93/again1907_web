@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 // 숙박비 계산 컴포넌트
 function AccommodationCalculator({ formData, formSchema, settings, field, handleChange }) {
@@ -425,6 +425,7 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPrivateRoomModal, setShowPrivateRoomModal] = useState(false);
   const [pendingRoomSelection, setPendingRoomSelection] = useState(null);
+  const accommodationDefaultInitializedRef = useRef(false);
 
   // initialData가 있으면 해당 필드에 자동으로 채우기
   useEffect(() => {
@@ -504,6 +505,46 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
     }
   }, [initialData, formSchema]);
 
+  // 숙박 폼 기본 방 타입 자동 선택 (단체실 우선)
+  useEffect(() => {
+    if (!formSchema || accommodationDefaultInitializedRef.current) return;
+
+    const accommodationField = formSchema.fields?.find(f => f.type === 'accommodation-calculator');
+    if (!accommodationField) return;
+
+    const accomRoomTypeFieldId = `${accommodationField.id}_roomType`;
+
+    setFormData(prev => {
+      // 이미 선택된 방 타입이 있으면 건너뜀
+      if (prev[accomRoomTypeFieldId]) {
+        accommodationDefaultInitializedRef.current = true;
+        return prev;
+      }
+
+      const roomTypes = accommodationField.roomTypes || [];
+      if (!roomTypes.length) {
+        accommodationDefaultInitializedRef.current = true;
+        return prev;
+      }
+
+      // "단체"가 포함된 방 타입을 우선 선택, 없으면 첫 번째 옵션 선택
+      const defaultRoomType =
+        roomTypes.find(rt => typeof rt === 'string' && rt.includes('단체')) ||
+        roomTypes[0];
+
+      if (!defaultRoomType) {
+        accommodationDefaultInitializedRef.current = true;
+        return prev;
+      }
+
+      accommodationDefaultInitializedRef.current = true;
+      return {
+        ...prev,
+        [accomRoomTypeFieldId]: defaultRoomType
+      };
+    });
+  }, [formSchema]);
+
   // 필드 값 변경 핸들러
   const handleChange = (fieldId, value) => {
     setFormData(prev => ({ ...prev, [fieldId]: value }));
@@ -558,6 +599,15 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
         const selectedDates = formData[dateFieldId] || [];
         if (selectedDates.length === 0) {
           newErrors[field.id] = '참석 날짜를 하나 이상 선택해주세요.';
+        }
+      }
+
+      // accommodation-calculator 필드는 날짜 선택 필수
+      if (field.type === 'accommodation-calculator') {
+        const accomDateFieldId = `${field.id}_dates`;
+        const selectedAccomDates = formData[accomDateFieldId] || [];
+        if (selectedAccomDates.length === 0) {
+          newErrors[field.id] = '숙박 날짜를 하나 이상 선택해주세요.';
         }
       }
 
