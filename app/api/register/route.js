@@ -278,8 +278,8 @@ export async function POST(req) {
         let totalAccommodationAmount = 0;
         if (!isFreeAccommodation) {
           if (roomTypeOption?.type === 'gender') {
-            // 30인실: 인원 수 × 1박 요금 × 박수
-            totalAccommodationAmount = pricePerNight * peopleCount * totalNights;
+            // 단체실: 대표자도 1인 금액만 내기 (개별 인원과 동일)
+            totalAccommodationAmount = pricePerNight * totalNights;
           } else {
             // 2인실 등: 1박 요금 × 박수 (인원수 무관)
             totalAccommodationAmount = pricePerNight * totalNights;
