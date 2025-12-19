@@ -54,8 +54,9 @@ function AccommodationCalculator({ formData, formSchema, settings, field, handle
     femaleCount = femaleList.length;
     peopleCount = maleCount + femaleCount;
   } else if (roomTypeOption?.type === 'count') {
-    // 2인실 같은 경우: 선택한 인원 수 (가격 계산에는 영향 없음)
-    peopleCount = parseInt(roomOptions.count) || 1;
+    // 가족실: people 배열 사용 (성별 구분 없음)
+    const peopleList = roomOptions.people || [];
+    peopleCount = peopleList.length;
   }
 
   // 총 금액 계산: 30인실은 인원당 가격, 그 외는 방당 가격
@@ -1637,23 +1638,207 @@ export default function DynamicForm({ formSchema, settings, onSubmit, submitButt
                   );
                 })()}
 
-                {roomTypeOption.type === 'count' && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1 text-black sm:text-gray-900">함께 숙박할 인원 (본인 포함)</label>
-                    <select
-                      value={formData[accomRoomOptionsFieldId]?.count || '1'}
-                      onChange={(e) => handleChange(accomRoomOptionsFieldId, {
-                        count: e.target.value
-                      })}
-                      className="w-full border border-gray-300 rounded-md p-2 text-black sm:text-gray-900"
-                    >
-                      <option value="1">1명 (본인만)</option>
-                      <option value="2">2명</option>
-                      <option value="3">3명</option>
-                      <option value="4">4명</option>
-                    </select>
-                  </div>
-                )}
+                {roomTypeOption.type === 'count' && (() => {
+                  const currentData = formData[accomRoomOptionsFieldId] || { people: [] };
+                  const peopleList = currentData.people || [];
+
+                  // 대표자 정보 가져오기
+                  const nameField = formSchema.fields.find(f => f.type === 'text' && f.label.includes('이름'));
+                  const telField = formSchema.fields.find(f => f.type === 'tel');
+                  const dobField = formSchema.fields.find(f => f.label.includes('나이'));
+                  const representativeName = formData[nameField?.id] || '대표자';
+                  const representativeTel = formData[telField?.id] || '';
+                  const representativeAge = formData[dobField?.id]
+                    ? String(formData[dobField.id])
+                    : '';
+
+                  // 대표자(본인) 찾기
+                  const representativeIndex = peopleList.findIndex(p => p.isRepresentative);
+                  const hasRepresentative = representativeIndex >= 0;
+
+                  // 대표자가 없으면 기본적으로 추가 (무조건 포함)
+                  if (!hasRepresentative && nameField && formData[nameField.id]) {
+                    const newData = formData[accomRoomOptionsFieldId] || { people: [] };
+                    // 다음 렌더링 사이클에서 추가 (무한 루프 방지)
+                    setTimeout(() => {
+                      handleChange(accomRoomOptionsFieldId, {
+                        ...newData,
+                        people: [{
+                          name: representativeName,
+                          age: representativeAge,
+                          phone: representativeTel,
+                          isRepresentative: true
+                        }, ...(newData.people || [])],
+                        representativeName,
+                        representativeTel
+                      });
+                    }, 0);
+                  }
+
+                  // 대표자 정보가 변경되었는지 확인하고 자동 업데이트
+                  if (hasRepresentative) {
+                    const currentRepresentative = peopleList[representativeIndex];
+
+                    // 정보가 다르면 업데이트
+                    if (currentRepresentative && (
+                      currentRepresentative.name !== representativeName ||
+                      currentRepresentative.phone !== representativeTel ||
+                      String(currentRepresentative.age || '') !== String(representativeAge)
+                    )) {
+                      const newPeopleList = [...peopleList];
+                      newPeopleList[representativeIndex] = {
+                        ...newPeopleList[representativeIndex],
+                        name: representativeName,
+                        age: representativeAge,
+                        phone: representativeTel,
+                        isRepresentative: true
+                      };
+
+                      // 다음 렌더링 사이클에서 업데이트 (무한 루프 방지)
+                      setTimeout(() => {
+                        handleChange(accomRoomOptionsFieldId, {
+                          ...currentData,
+                          people: newPeopleList,
+                          representativeName,
+                          representativeTel
+                        });
+                      }, 0);
+                    }
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      {/* 함께 숙박할 인원 */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-medium text-black sm:text-gray-900">함께 숙박할 인원</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const currentData = formData[accomRoomOptionsFieldId] || { people: [] };
+                              const peopleList = currentData.people || [];
+
+                              handleChange(accomRoomOptionsFieldId, {
+                                ...currentData,
+                                people: [...peopleList, { name: '', age: '', phone: '', isRepresentative: false }]
+                              });
+                            }}
+                            className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                          >
+                            + 추가
+                          </button>
+                        </div>
+                        <div className="space-y-2">
+                          {peopleList.map((person, idx) => {
+                            const isRep = person.isRepresentative;
+                            return (
+                              <div key={idx} className={`border rounded p-3 ${isRep ? 'bg-blue-50 border-blue-300' : 'bg-white border-gray-300'}`}>
+                                {/* 모바일: 헤더와 삭제 버튼 */}
+                                <div className="flex sm:hidden items-center justify-between mb-2">
+                                  <span className="text-sm font-medium text-black sm:text-gray-700">
+                                    {isRep ? '본인' : `인원 ${idx}`}
+                                  </span>
+                                  {!isRep && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const currentData = formData[accomRoomOptionsFieldId] || { people: [] };
+                                        const peopleList = [...(currentData.people || [])];
+                                        peopleList.splice(idx, 1);
+                                        handleChange(accomRoomOptionsFieldId, {
+                                          ...currentData,
+                                          people: peopleList
+                                        });
+                                      }}
+                                      className="text-red-600 hover:text-red-800 text-sm"
+                                    >
+                                      삭제
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* PC: 가로 배치, 모바일: 세로 배치 */}
+                                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                                  <span className="hidden sm:inline text-sm text-gray-900 min-w-[60px]">
+                                    {isRep ? '본인' : `${idx}.`}
+                                  </span>
+                                  <input
+                                    type="text"
+                                    placeholder="이름"
+                                    value={person.name || ''}
+                                    readOnly={isRep}
+                                    onChange={(e) => {
+                                      if (isRep) return;
+                                      const currentData = formData[accomRoomOptionsFieldId] || { people: [] };
+                                      const peopleList = [...(currentData.people || [])];
+                                      peopleList[idx] = { ...peopleList[idx], name: e.target.value };
+                                      handleChange(accomRoomOptionsFieldId, {
+                                        ...currentData,
+                                        people: peopleList
+                                      });
+                                    }}
+                                    className={`w-full sm:flex-1 text-black sm:text-gray-900 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                  />
+                                  <input
+                                    type="number"
+                                    placeholder="나이"
+                                    value={person.age || ''}
+                                    readOnly={isRep}
+                                    onChange={(e) => {
+                                      if (isRep) return;
+                                      const currentData = formData[accomRoomOptionsFieldId] || { people: [] };
+                                      const peopleList = [...(currentData.people || [])];
+                                      peopleList[idx] = { ...peopleList[idx], age: e.target.value };
+                                      handleChange(accomRoomOptionsFieldId, {
+                                        ...currentData,
+                                        people: peopleList
+                                      });
+                                    }}
+                                    className={`w-full sm:w-20 text-black sm:text-gray-900 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                  />
+                                  <input
+                                    type="tel"
+                                    placeholder="전화번호 (예: 010-1234-5678)"
+                                    value={person.phone || ''}
+                                    readOnly={isRep}
+                                    onChange={(e) => {
+                                      if (isRep) return;
+                                      const currentData = formData[accomRoomOptionsFieldId] || { people: [] };
+                                      const peopleList = [...(currentData.people || [])];
+                                      peopleList[idx] = { ...peopleList[idx], phone: e.target.value };
+                                      handleChange(accomRoomOptionsFieldId, {
+                                        ...currentData,
+                                        people: peopleList
+                                      });
+                                    }}
+                                    className={`w-full sm:flex-1 text-black sm:text-gray-900 border rounded px-3 py-2 text-sm ${isRep ? 'bg-gray-100 cursor-not-allowed' : 'border-gray-300'}`}
+                                  />
+                                  {!isRep && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const currentData = formData[accomRoomOptionsFieldId] || { people: [] };
+                                        const peopleList = [...(currentData.people || [])];
+                                        peopleList.splice(idx, 1);
+                                        handleChange(accomRoomOptionsFieldId, {
+                                          ...currentData,
+                                          people: peopleList
+                                        });
+                                      }}
+                                      className="hidden sm:block text-red-600 hover:text-red-800 text-sm px-2 whitespace-nowrap"
+                                    >
+                                      삭제
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

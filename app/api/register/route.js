@@ -270,8 +270,9 @@ export async function POST(req) {
 
           peopleCount = maleList.length + femaleList.length;
         } else if (roomTypeOption?.type === 'count') {
-          // 2인실 등: 선택한 인원 수
-          peopleCount = parseInt(roomOptions.count) || 1;
+          // 가족실: people 배열 사용 (성별 구분 없음)
+          const peopleList = roomOptions.people || [];
+          peopleCount = peopleList.length;
         }
 
         // 총 숙박비 계산 (isFreeAccommodation이 false일 때만)
@@ -316,16 +317,28 @@ export async function POST(req) {
     // 10. formId별 컬렉션에 저장
     const collectionName = `participants_${formId}`;
 
-    // 10-1. 만약 단체실 등 gender type 방이라면, 각 인원을 개별 문서로 저장
-    if (roomTypeOption?.type === 'gender' && accommodationField) {
+    // 10-1. 만약 단체실(gender) 또는 가족실(count) type 방이라면, 각 인원을 개별 문서로 저장
+    if ((roomTypeOption?.type === 'gender' || roomTypeOption?.type === 'count') && accommodationField) {
       const accomRoomOptionsFieldId = `${accommodationField.id}_roomOptions`;
       const roomOptions = formData[accomRoomOptionsFieldId] || {};
-      const maleList = (roomOptions.male || []).filter(p => !p.isRepresentative);
-      const femaleList = (roomOptions.female || []).filter(p => !p.isRepresentative);
+      const isPrivateRoom = roomTypeOption?.type === 'count';
 
-      // 대표자 확인
-      const allPeople = [...(roomOptions.male || []), ...(roomOptions.female || [])];
-      const representativePerson = allPeople.find(p => p.isRepresentative);
+      let allPeople = [];
+      let representativePerson = null;
+
+      if (isPrivateRoom) {
+        // 가족실: people 배열 사용
+        const peopleList = roomOptions.people || [];
+        allPeople = peopleList;
+        representativePerson = peopleList.find(p => p.isRepresentative);
+      } else {
+        // 단체실: male/female 배열 사용
+        const maleList = (roomOptions.male || []).filter(p => !p.isRepresentative);
+        const femaleList = (roomOptions.female || []).filter(p => !p.isRepresentative);
+        allPeople = [...(roomOptions.male || []), ...(roomOptions.female || [])];
+        representativePerson = allPeople.find(p => p.isRepresentative);
+      }
+
       const representativeIncluded = !!representativePerson;
 
       // 대표자 이름 가져오기
@@ -335,9 +348,18 @@ export async function POST(req) {
       // 그룹 ID 생성
       const groupId = `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // 총 그룹 인원: 남자 + 여자 (대표자 제외) + 대표자(1명)
-      let totalGroupMembers = maleList.length + femaleList.length;
-      if (representativeIncluded) totalGroupMembers += 1;
+      // 총 그룹 인원 계산
+      let totalGroupMembers = 0;
+      if (isPrivateRoom) {
+        // 가족실: people 배열 길이
+        totalGroupMembers = allPeople.length;
+      } else {
+        // 단체실: 남자 + 여자 (대표자 제외) + 대표자(1명)
+        const maleList = (roomOptions.male || []).filter(p => !p.isRepresentative);
+        const femaleList = (roomOptions.female || []).filter(p => !p.isRepresentative);
+        totalGroupMembers = maleList.length + femaleList.length;
+        if (representativeIncluded) totalGroupMembers += 1;
+      }
 
       // 대표자 문서에 그룹 정보 추가
       participant.groupId = groupId;
@@ -352,106 +374,167 @@ export async function POST(req) {
       let position = 1;
       const createdDocs = [representativeDocRef.id];
 
-      // 남자 인원 각각 문서로 저장
-      for (const male of maleList) {
-        const individualAccomAmount = isFreeAccommodation ? 0 : (pricePerNight * selectedAccomDates.length);
+      if (isPrivateRoom) {
+        // 가족실: people 배열 처리
+        const peopleList = roomOptions.people || [];
+        for (const person of peopleList) {
+          // 본인(대표자)은 이미 저장했으므로 스킵
+          if (person.isRepresentative) continue;
 
-        const maleParticipant = {
-          formId,
-          formName,
-          groupId,
-          isRepresentative: false,
-          representativeName,
-          representativeId: representativeDocRef.id,
-          totalGroupMembers,
-          groupPosition: position++,
-          gender: 'male',
-          age: male.age || null,
-          accommodationDates: selectedAccomDates,
-          roomType: selectedRoomType,
-          accommodationAmount: {
-            pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
-            totalNights: selectedAccomDates.length,
-            peopleCount: 1,
-            total: individualAccomAmount,
-            phase: isPhase1 ? 'phase1' : 'phase2',
-          },
-          amount: {
-            first: 0,
-            second: 0,
-            total: individualAccomAmount,
-          },
-          paymentStatus: 'unpaid',
-          registeredAt,
-          roomId: null,
-          roomName: null,
-          roomAssignments: {},
-          createdAt: Timestamp.now(),
-          isFreeAccommodation,
-        };
+          // 추가 인원은 0원
+          const individualAccomAmount = 0;
 
-        // 이름과 전화번호 추가
-        if (nameField?.id) {
-          maleParticipant[nameField.id] = `${male.name} - 등록:${representativeName}`;
+          const additionalParticipant = {
+            formId,
+            formName,
+            groupId,
+            isRepresentative: false,
+            representativeName,
+            representativeId: representativeDocRef.id,
+            totalGroupMembers,
+            groupPosition: position++,
+            age: person.age || null,
+            accommodationDates: selectedAccomDates,
+            roomType: selectedRoomType,
+            accommodationAmount: {
+              pricePerNight: 0,
+              totalNights: selectedAccomDates.length,
+              peopleCount: 1,
+              total: individualAccomAmount,
+              phase: isPhase1 ? 'phase1' : 'phase2',
+            },
+            amount: {
+              first: 0,
+              second: 0,
+              total: individualAccomAmount,
+            },
+            paymentStatus: 'unpaid',
+            registeredAt,
+            roomId: null,
+            roomName: null,
+            roomAssignments: {},
+            createdAt: Timestamp.now(),
+            isFreeAccommodation: false,
+          };
+
+          // 이름과 전화번호 추가
+          if (nameField?.id) {
+            additionalParticipant[nameField.id] = `${person.name} - 등록:${representativeName}`;
+          }
+          const phoneField = form.fields.find(f => f.type === 'tel');
+          if (phoneField?.id && person.phone) {
+            additionalParticipant[phoneField.id] = person.phone;
+          }
+
+          const additionalDocRef = await adminDb.collection(collectionName).add(additionalParticipant);
+          createdDocs.push(additionalDocRef.id);
         }
-        const phoneField = form.fields.find(f => f.type === 'tel');
-        if (phoneField?.id && male.phone) {
-          maleParticipant[phoneField.id] = male.phone;
+      } else {
+        // 단체실: male/female 배열 처리
+        const maleList = (roomOptions.male || []).filter(p => !p.isRepresentative);
+        const femaleList = (roomOptions.female || []).filter(p => !p.isRepresentative);
+
+        // 남자 인원 각각 문서로 저장
+        for (const male of maleList) {
+          const individualAccomAmount = isFreeAccommodation ? 0 : (pricePerNight * selectedAccomDates.length);
+
+          const maleParticipant = {
+            formId,
+            formName,
+            groupId,
+            isRepresentative: false,
+            representativeName,
+            representativeId: representativeDocRef.id,
+            totalGroupMembers,
+            groupPosition: position++,
+            gender: 'male',
+            age: male.age || null,
+            accommodationDates: selectedAccomDates,
+            roomType: selectedRoomType,
+            accommodationAmount: {
+              pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
+              totalNights: selectedAccomDates.length,
+              peopleCount: 1,
+              total: individualAccomAmount,
+              phase: isPhase1 ? 'phase1' : 'phase2',
+            },
+            amount: {
+              first: 0,
+              second: 0,
+              total: individualAccomAmount,
+            },
+            paymentStatus: 'unpaid',
+            registeredAt,
+            roomId: null,
+            roomName: null,
+            roomAssignments: {},
+            createdAt: Timestamp.now(),
+            isFreeAccommodation,
+          };
+
+          // 이름과 전화번호 추가
+          if (nameField?.id) {
+            maleParticipant[nameField.id] = `${male.name} - 등록:${representativeName}`;
+          }
+          const phoneField = form.fields.find(f => f.type === 'tel');
+          if (phoneField?.id && male.phone) {
+            maleParticipant[phoneField.id] = male.phone;
+          }
+
+          const maleDocRef = await adminDb.collection(collectionName).add(maleParticipant);
+          createdDocs.push(maleDocRef.id);
         }
 
-        const maleDocRef = await adminDb.collection(collectionName).add(maleParticipant);
-        createdDocs.push(maleDocRef.id);
-      }
+        // 여자 인원 각각 문서로 저장
+        for (const female of femaleList) {
+          const individualAccomAmount = isFreeAccommodation ? 0 : (pricePerNight * selectedAccomDates.length);
 
-      // 여자 인원 각각 문서로 저장
-      for (const female of femaleList) {
-        const individualAccomAmount = isFreeAccommodation ? 0 : (pricePerNight * selectedAccomDates.length);
+          const femaleParticipant = {
+            formId,
+            formName,
+            groupId,
+            isRepresentative: false,
+            representativeName,
+            representativeId: representativeDocRef.id,
+            totalGroupMembers,
+            groupPosition: position++,
+            gender: 'female',
+            age: female.age || null,
+            accommodationDates: selectedAccomDates,
+            roomType: selectedRoomType,
+            accommodationAmount: {
+              pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
+              totalNights: selectedAccomDates.length,
+              peopleCount: 1,
+              total: individualAccomAmount,
+              phase: isPhase1 ? 'phase1' : 'phase2',
+            },
+            amount: {
+              first: 0,
+              second: 0,
+              total: individualAccomAmount,
+            },
+            paymentStatus: 'unpaid',
+            registeredAt,
+            roomId: null,
+            roomName: null,
+            roomAssignments: {},
+            createdAt: Timestamp.now(),
+            isFreeAccommodation,
+          };
 
-        const femaleParticipant = {
-          formId,
-          formName,
-          groupId,
-          isRepresentative: false,
-          representativeName,
-          representativeId: representativeDocRef.id,
-          totalGroupMembers,
-          groupPosition: position++,
-          gender: 'female',
-          age: female.age || null,
-          accommodationDates: selectedAccomDates,
-          roomType: selectedRoomType,
-          accommodationAmount: {
-            pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
-            totalNights: selectedAccomDates.length,
-            peopleCount: 1,
-            total: individualAccomAmount,
-            phase: isPhase1 ? 'phase1' : 'phase2',
-          },
-          amount: {
-            first: 0,
-            second: 0,
-            total: individualAccomAmount,
-          },
-          paymentStatus: 'unpaid',
-          registeredAt,
-          roomId: null,
-          roomName: null,
-          roomAssignments: {},
-          createdAt: Timestamp.now(),
-          isFreeAccommodation,
-        };
+          // 이름과 전화번호 추가
+          if (nameField?.id) {
+            femaleParticipant[nameField.id] = `${female.name} - 등록:${representativeName}`;
+          }
+          const phoneField = form.fields.find(f => f.type === 'tel');
+          if (phoneField?.id && female.phone) {
+            femaleParticipant[phoneField.id] = female.phone;
+          }
 
-        // 이름과 전화번호 추가
-        if (nameField?.id) {
-          femaleParticipant[nameField.id] = `${female.name} - 등록:${representativeName}`;
+          const femaleDocRef = await adminDb.collection(collectionName).add(femaleParticipant);
+          createdDocs.push(femaleDocRef.id);
         }
-        const phoneField = form.fields.find(f => f.type === 'tel');
-        if (phoneField?.id && female.phone) {
-          femaleParticipant[phoneField.id] = female.phone;
-        }
-
-        const femaleDocRef = await adminDb.collection(collectionName).add(femaleParticipant);
-        createdDocs.push(femaleDocRef.id);
       }
 
       return NextResponse.json({
