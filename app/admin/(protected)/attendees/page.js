@@ -14,6 +14,7 @@ export default function AttendeesPage() {
   const [nameFilter, setNameFilter] = useState(''); // 이름 필터
   const [paymentFilter, setPaymentFilter] = useState(''); // 결제상태 필터 (all/paid/unpaid)
   const [dateFilter, setDateFilter] = useState(''); // 등록일자 필터
+  const [roomTypeFilter, setRoomTypeFilter] = useState(''); // 방 타입 필터 (가족실/단체실)
 
   // 폼 목록 가져오기
   const fetchForms = useCallback(async () => {
@@ -296,6 +297,13 @@ export default function AttendeesPage() {
       .map(p => p.registeredAt)
   )).sort().reverse(); // 최신 날짜가 위로
 
+  // 방 타입 목록 추출 (중복 제거)
+  const roomTypes = Array.from(new Set(
+    participants
+      .filter(p => p.roomType)
+      .map(p => p.roomType)
+  )).sort();
+
   // 필터링된 참가자 목록
   let filteredParticipants = participants;
 
@@ -325,6 +333,11 @@ export default function AttendeesPage() {
   // 등록일자 필터
   if (dateFilter) {
     filteredParticipants = filteredParticipants.filter(p => p.registeredAt === dateFilter);
+  }
+
+  // 방 타입 필터
+  if (roomTypeFilter) {
+    filteredParticipants = filteredParticipants.filter(p => p.roomType === roomTypeFilter);
   }
 
   // 엑셀용 값 포맷팅
@@ -509,6 +522,7 @@ export default function AttendeesPage() {
             setNameFilter('');
             setPaymentFilter('');
             setDateFilter('');
+            setRoomTypeFilter('');
           }}
           className="w-full max-w-md border border-gray-300 rounded-md p-2"
         >
@@ -565,10 +579,10 @@ export default function AttendeesPage() {
         </div>
       )}
 
-      {/* 추가 필터 (이름, 결제상태, 등록일자) */}
+      {/* 추가 필터 (이름, 결제상태, 등록일자, 방 타입) */}
       <div className="mb-6 bg-white shadow rounded-lg p-4">
         <label className="block text-sm font-medium mb-3">필터</label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* 이름 필터 */}
           <div>
             <label className="block text-xs text-gray-600 mb-1">이름 검색</label>
@@ -641,10 +655,39 @@ export default function AttendeesPage() {
               )}
             </div>
           </div>
+
+          {/* 방 타입 필터 (숙박이 있는 경우만 표시) */}
+          {hasAccommodation && roomTypes.length > 0 && (
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">방 타입</label>
+              <div className="flex gap-2 items-center">
+                <select
+                  value={roomTypeFilter}
+                  onChange={(e) => setRoomTypeFilter(e.target.value)}
+                  className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
+                >
+                  <option value="">전체</option>
+                  {roomTypes.map(roomType => (
+                    <option key={roomType} value={roomType}>
+                      {roomType}
+                    </option>
+                  ))}
+                </select>
+                {roomTypeFilter && (
+                  <button
+                    onClick={() => setRoomTypeFilter('')}
+                    className="px-2 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 활성 필터 표시 */}
-        {(nameFilter || paymentFilter || dateFilter) && (
+        {(nameFilter || paymentFilter || dateFilter || roomTypeFilter) && (
           <div className="mt-3 pt-3 border-t border-gray-200">
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-xs text-gray-600">활성 필터:</span>
@@ -666,11 +709,18 @@ export default function AttendeesPage() {
                   <button onClick={() => setDateFilter('')} className="hover:text-blue-900">✕</button>
                 </span>
               )}
+              {roomTypeFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                  방 타입: {roomTypeFilter}
+                  <button onClick={() => setRoomTypeFilter('')} className="hover:text-blue-900">✕</button>
+                </span>
+              )}
               <button
                 onClick={() => {
                   setNameFilter('');
                   setPaymentFilter('');
                   setDateFilter('');
+                  setRoomTypeFilter('');
                 }}
                 className="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
               >
