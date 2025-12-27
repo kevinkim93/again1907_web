@@ -15,6 +15,9 @@ export default function AttendeesPage() {
   const [paymentFilter, setPaymentFilter] = useState(''); // 결제상태 필터 (all/paid/unpaid)
   const [dateFilter, setDateFilter] = useState(''); // 등록일자 필터
   const [roomTypeFilter, setRoomTypeFilter] = useState(''); // 방 타입 필터 (가족실/단체실)
+  const [hideFullRooms, setHideFullRooms] = useState(false); // 만실 방 숨기기
+  const [roomSortOption, setRoomSortOption] = useState('roomNumber'); // 방 정렬 옵션 (roomNumber/mostSpace/leastSpace)
+  const [roomAssignmentCapacityFilter, setRoomAssignmentCapacityFilter] = useState(''); // 방 배정 칼럼의 방 타입 필터 (2인실/4인실/6인실/30인실)
 
   // 폼 목록 가져오기
   const fetchForms = useCallback(async () => {
@@ -504,7 +507,104 @@ export default function AttendeesPage() {
     const roomNum = room.roomNumber || room.name?.replace(/[^\d]/g, '');
     if (roomNum) roomNumbersSet.add(roomNum);
   });
-  const uniqueRoomNumbers = Array.from(roomNumbersSet).sort((a, b) => parseInt(a) - parseInt(b));
+  let uniqueRoomNumbers = Array.from(roomNumbersSet).sort((a, b) => parseInt(a) - parseInt(b));
+
+  // 날짜별로 표준 형식으로 변환하는 함수
+  const parseKoreanDateUtil = (dateStr) => {
+    const matchWithYear = dateStr.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+    if (matchWithYear) {
+      return `${matchWithYear[1]}-${matchWithYear[2].padStart(2, '0')}-${matchWithYear[3].padStart(2, '0')}`;
+    }
+    const matchWithoutYear = dateStr.match(/(\d{1,2})월\s*(\d{1,2})일/);
+    if (matchWithoutYear) {
+      return `2026-${matchWithoutYear[1].padStart(2, '0')}-${matchWithoutYear[2].padStart(2, '0')}`;
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr;
+    }
+    return null;
+  };
+
+  // 방별 최대 점유율 계산 함수 (모든 날짜 중 가장 많이 찬 날짜 기준)
+  const calculateMaxRoomOccupancy = (roomNum) => {
+    // 해당 방 번호의 모든 날짜별 방 찾기
+    const roomsForNumber = rooms.filter(r =>
+      r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum
+    );
+
+    if (roomsForNumber.length === 0) {
+      return { capacity: 0, maxOccupancy: 0, availableSpace: 0 };
+    }
+
+    const capacity = roomsForNumber[0].capacity;
+    let maxOccupancy = 0;
+
+    // 각 날짜별로 점유율 계산하여 최대값 찾기
+    roomsForNumber.forEach(roomOnDate => {
+      const participantsInRoomOnDate = participants.filter(p => {
+        if (!p.roomAssignments || typeof p.roomAssignments !== 'object') {
+          return false;
+        }
+
+        const hasAssignment = Object.keys(p.roomAssignments).length > 0;
+        if (!hasAssignment) return false;
+
+        for (const dateKey in p.roomAssignments) {
+          const assignment = p.roomAssignments[dateKey];
+          if (assignment.roomId === roomOnDate.id ||
+              (assignment.standardDate === roomOnDate.date && p.roomNumber === roomNum)) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      const occupancy = participantsInRoomOnDate.reduce((sum, p) => sum + (p.totalPeople || 1), 0);
+      maxOccupancy = Math.max(maxOccupancy, occupancy);
+    });
+
+    return { capacity, maxOccupancy, availableSpace: capacity - maxOccupancy };
+  };
+
+  // 방 필터링 (만실 방 숨기기)
+  if (hideFullRooms) {
+    uniqueRoomNumbers = uniqueRoomNumbers.filter(roomNum => {
+      const { availableSpace } = calculateMaxRoomOccupancy(roomNum);
+      return availableSpace > 0;
+    });
+  }
+
+  // 방 필터링 (방 타입별)
+  if (roomAssignmentCapacityFilter) {
+    uniqueRoomNumbers = uniqueRoomNumbers.filter(roomNum => {
+      const sampleRoom = rooms.find(r =>
+        r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum
+      );
+      if (!sampleRoom) return false;
+
+      return sampleRoom.capacity === parseInt(roomAssignmentCapacityFilter);
+    });
+  }
+
+  // 방 정렬
+  if (roomSortOption === 'mostSpace') {
+    // 여유 공간 많은 순
+    uniqueRoomNumbers = uniqueRoomNumbers.sort((a, b) => {
+      const spaceA = calculateMaxRoomOccupancy(a).availableSpace;
+      const spaceB = calculateMaxRoomOccupancy(b).availableSpace;
+      return spaceB - spaceA;
+    });
+  } else if (roomSortOption === 'leastSpace') {
+    // 여유 공간 적은 순
+    uniqueRoomNumbers = uniqueRoomNumbers.sort((a, b) => {
+      const spaceA = calculateMaxRoomOccupancy(a).availableSpace;
+      const spaceB = calculateMaxRoomOccupancy(b).availableSpace;
+      return spaceA - spaceB;
+    });
+  } else {
+    // 방 번호 순 (기본값)
+    uniqueRoomNumbers = uniqueRoomNumbers.sort((a, b) => parseInt(a) - parseInt(b));
+  }
 
   return (
     <main className="p-6">
@@ -807,7 +907,47 @@ export default function AttendeesPage() {
                   <th className="border p-2">등록일</th>
                   <th className="border p-2">결제상태</th>
                   {hasAccommodation && <th className="border p-2">숙박 인원</th>}
-                  {hasAccommodation && <th className="border p-2">방 배정</th>}
+                  {hasAccommodation && (
+                    <th className="border p-2">
+                      <div className="flex flex-col gap-2">
+                        <div>방 배정</div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="flex items-center gap-1.5 text-xs font-normal cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={hideFullRooms}
+                              onChange={(e) => setHideFullRooms(e.target.checked)}
+                              className="w-3 h-3"
+                            />
+                            <span>만실 방 숨기기</span>
+                          </label>
+                          <select
+                            value={roomAssignmentCapacityFilter}
+                            onChange={(e) => setRoomAssignmentCapacityFilter(e.target.value)}
+                            className="text-xs border border-gray-300 rounded px-1 py-0.5"
+                          >
+                            <option value="">모든 방 타입</option>
+                            {Array.from(new Set(rooms.map(r => r.capacity)))
+                              .sort((a, b) => a - b)
+                              .map(capacity => (
+                                <option key={capacity} value={capacity}>
+                                  {capacity}인실
+                                </option>
+                              ))}
+                          </select>
+                          <select
+                            value={roomSortOption}
+                            onChange={(e) => setRoomSortOption(e.target.value)}
+                            className="text-xs border border-gray-300 rounded px-1 py-0.5"
+                          >
+                            <option value="roomNumber">방 번호 순</option>
+                            <option value="mostSpace">여유 많은 순</option>
+                            <option value="leastSpace">여유 적은 순</option>
+                          </select>
+                        </div>
+                      </div>
+                    </th>
+                  )}
                   <th className="border p-2">액션</th>
                 </tr>
               </thead>
