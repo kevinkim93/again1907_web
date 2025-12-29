@@ -19,6 +19,17 @@ export default function AttendeesPage() {
   const [roomSortOption, setRoomSortOption] = useState('roomNumber'); // 방 정렬 옵션 (roomNumber/mostSpace/leastSpace)
   const [roomAssignmentCapacityFilter, setRoomAssignmentCapacityFilter] = useState(''); // 방 배정 칼럼의 방 타입 필터 (2인실/4인실/6인실/30인실)
 
+  // 실제 적용된 필터 (검색 버튼 클릭 시 적용)
+  const [appliedNameFilter, setAppliedNameFilter] = useState('');
+  const [appliedPaymentFilter, setAppliedPaymentFilter] = useState('');
+  const [appliedGroupFilter, setAppliedGroupFilter] = useState('');
+  const [appliedRoomTypeFilter, setAppliedRoomTypeFilter] = useState('');
+
+  // 페이지네이션 상태
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const [pageSize, setPageSize] = useState(10);
+
   // 폼 목록 가져오기
   const fetchForms = useCallback(async () => {
     const res = await fetch('/api/admin/forms');
@@ -43,15 +54,53 @@ export default function AttendeesPage() {
     setRooms(data.rooms || []);
   }, []);
 
+  // 검색 버튼 클릭 핸들러
+  const handleSearch = () => {
+    setAppliedNameFilter(nameFilter);
+    setAppliedPaymentFilter(paymentFilter);
+    setAppliedGroupFilter(groupFilter);
+    setAppliedRoomTypeFilter(roomTypeFilter);
+    fetchParticipants(selectedFormId, 1);
+  };
+
+  // 필터 초기화 핸들러
+  const handleResetFilters = () => {
+    setNameFilter('');
+    setPaymentFilter('');
+    setGroupFilter('');
+    setRoomTypeFilter('');
+    setAppliedNameFilter('');
+    setAppliedPaymentFilter('');
+    setAppliedGroupFilter('');
+    setAppliedRoomTypeFilter('');
+    fetchParticipants(selectedFormId, 1);
+  };
+
   // 선택된 폼의 참가자 가져오기
-  const fetchParticipants = useCallback(async (formId) => {
+  const fetchParticipants = useCallback(async (formId, page = 1) => {
     if (!formId) return;
 
+    setLoading(true);
     const collectionName = `participants_${formId}`;
-    const res = await fetch(`/api/admin/participants?collectionName=${collectionName}`);
+
+    // URL 파라미터 구성
+    const params = new URLSearchParams({
+      collectionName,
+      page: page.toString(),
+      limit: pageSize.toString()
+    });
+
+    // 적용된 필터 파라미터 추가 (검색 버튼을 누른 후의 값)
+    if (appliedPaymentFilter) params.append('paymentStatus', appliedPaymentFilter);
+    if (appliedGroupFilter) params.append('groupId', appliedGroupFilter);
+    if (appliedRoomTypeFilter) params.append('roomType', appliedRoomTypeFilter);
+    if (appliedNameFilter) params.append('searchName', appliedNameFilter);
+
+    const res = await fetch(`/api/admin/participants?${params.toString()}`);
     const data = await res.json();
 
     console.log('🔍 Attendees Page - Fetched participants:', data.participants?.length);
+    console.log('📄 Pagination:', data.pagination);
 
     // roomNumber가 있는 참가자 확인
     const withRoomNumber = data.participants?.filter(p => p.roomNumber) || [];
@@ -73,7 +122,10 @@ export default function AttendeesPage() {
     }
 
     setParticipants(data.participants || []);
-  }, []);
+    setPagination(data.pagination || null);
+    setCurrentPage(page);
+    setLoading(false);
+  }, [pageSize, appliedPaymentFilter, appliedGroupFilter, appliedRoomTypeFilter, appliedNameFilter]);
 
   useEffect(() => {
     const init = async () => {
@@ -86,10 +138,10 @@ export default function AttendeesPage() {
     init();
   }, [fetchForms, fetchSettings, fetchRooms]);
 
+  // 폼 변경 시 첫 페이지 로드
   useEffect(() => {
-    if (selectedFormId) {
-      fetchParticipants(selectedFormId);
-    }
+    if (!selectedFormId) return;
+    fetchParticipants(selectedFormId, 1);
   }, [selectedFormId, fetchParticipants]);
 
   // 참가자 삭제
@@ -286,19 +338,12 @@ export default function AttendeesPage() {
   // 현재 폼에 accommodation-calculator가 있는지 확인
   const hasAccommodation = currentForm?.fields?.some(f => f.type === 'accommodation-calculator');
 
-  // 그룹 ID 목록 추출 (중복 제거)
+  // 그룹 ID 목록 추출 (중복 제거) - 현재 페이지 데이터에서만
   const groupIds = Array.from(new Set(
     participants
       .filter(p => p.groupId)
       .map(p => p.groupId)
   )).sort();
-
-  // 등록일자 목록 추출 (중복 제거)
-  const registrationDates = Array.from(new Set(
-    participants
-      .filter(p => p.registeredAt)
-      .map(p => p.registeredAt)
-  )).sort().reverse(); // 최신 날짜가 위로
 
   // 방 타입 목록 추출 (중복 제거)
   const roomTypes = Array.from(new Set(
@@ -307,41 +352,8 @@ export default function AttendeesPage() {
       .map(p => p.roomType)
   )).sort();
 
-  // 필터링된 참가자 목록
-  let filteredParticipants = participants;
-
-  // 그룹 필터
-  if (groupFilter) {
-    filteredParticipants = filteredParticipants.filter(p => p.groupId === groupFilter);
-  }
-
-  // 이름 필터
-  if (nameFilter) {
-    const nameField = currentForm?.fields?.find(f =>
-      f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명'))
-    );
-    if (nameField) {
-      filteredParticipants = filteredParticipants.filter(p => {
-        const name = p[nameField.id] || '';
-        return name.toLowerCase().includes(nameFilter.toLowerCase());
-      });
-    }
-  }
-
-  // 결제상태 필터
-  if (paymentFilter) {
-    filteredParticipants = filteredParticipants.filter(p => p.paymentStatus === paymentFilter);
-  }
-
-  // 등록일자 필터
-  if (dateFilter) {
-    filteredParticipants = filteredParticipants.filter(p => p.registeredAt === dateFilter);
-  }
-
-  // 방 타입 필터
-  if (roomTypeFilter) {
-    filteredParticipants = filteredParticipants.filter(p => p.roomType === roomTypeFilter);
-  }
+  // 서버에서 필터링된 데이터를 받으므로 클라이언트 필터링 불필요
+  const filteredParticipants = participants;
 
   // 엑셀용 값 포맷팅
   const formatExcelValue = (field, value, participant) => {
@@ -617,12 +629,12 @@ export default function AttendeesPage() {
           value={selectedFormId}
           onChange={(e) => {
             setSelectedFormId(e.target.value);
-            // 폼 변경시 모든 필터 초기화
+            // 폼 변경시 모든 필터 및 페이지 초기화
             setGroupFilter('');
             setNameFilter('');
             setPaymentFilter('');
-            setDateFilter('');
             setRoomTypeFilter('');
+            setCurrentPage(1);
           }}
           className="w-full max-w-md border border-gray-300 rounded-md p-2"
         >
@@ -679,157 +691,147 @@ export default function AttendeesPage() {
         </div>
       )}
 
-      {/* 추가 필터 (이름, 결제상태, 등록일자, 방 타입) */}
+      {/* 추가 필터 (이름, 결제상태, 방 타입) */}
       <div className="mb-6 bg-white shadow rounded-lg p-4">
         <label className="block text-sm font-medium mb-3">필터</label>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* 이름 필터 */}
           <div>
             <label className="block text-xs text-gray-600 mb-1">이름 검색</label>
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
-                value={nameFilter}
-                onChange={(e) => setNameFilter(e.target.value)}
-                placeholder="이름 입력..."
-                className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
-              />
-              {nameFilter && (
-                <button
-                  onClick={() => setNameFilter('')}
-                  className="px-2 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            <input
+              type="text"
+              value={nameFilter}
+              onChange={(e) => setNameFilter(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="이름 입력..."
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+            />
           </div>
 
           {/* 결제상태 필터 */}
           <div>
             <label className="block text-xs text-gray-600 mb-1">결제상태</label>
-            <div className="flex gap-2 items-center">
-              <select
-                value={paymentFilter}
-                onChange={(e) => setPaymentFilter(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
-              >
-                <option value="">전체</option>
-                <option value="paid">납부완료</option>
-                <option value="unpaid">미납</option>
-              </select>
-              {paymentFilter && (
-                <button
-                  onClick={() => setPaymentFilter('')}
-                  className="px-2 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* 등록일자 필터 */}
-          <div>
-            <label className="block text-xs text-gray-600 mb-1">등록일자</label>
-            <div className="flex gap-2 items-center">
-              <select
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
-              >
-                <option value="">전체</option>
-                {registrationDates.map(date => (
-                  <option key={date} value={date}>
-                    {date}
-                  </option>
-                ))}
-              </select>
-              {dateFilter && (
-                <button
-                  onClick={() => setDateFilter('')}
-                  className="px-2 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+            <select
+              value={paymentFilter}
+              onChange={(e) => setPaymentFilter(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+            >
+              <option value="">전체</option>
+              <option value="paid">납부완료</option>
+              <option value="unpaid">미납</option>
+            </select>
           </div>
 
           {/* 방 타입 필터 (숙박이 있는 경우만 표시) */}
           {hasAccommodation && roomTypes.length > 0 && (
             <div>
               <label className="block text-xs text-gray-600 mb-1">방 타입</label>
-              <div className="flex gap-2 items-center">
-                <select
-                  value={roomTypeFilter}
-                  onChange={(e) => setRoomTypeFilter(e.target.value)}
-                  className="flex-1 border border-gray-300 rounded-md p-2 text-sm"
-                >
-                  <option value="">전체</option>
-                  {roomTypes.map(roomType => (
-                    <option key={roomType} value={roomType}>
-                      {roomType}
-                    </option>
-                  ))}
-                </select>
-                {roomTypeFilter && (
-                  <button
-                    onClick={() => setRoomTypeFilter('')}
-                    className="px-2 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-xs"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
+              <select
+                value={roomTypeFilter}
+                onChange={(e) => setRoomTypeFilter(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 text-sm"
+              >
+                <option value="">전체</option>
+                {roomTypes.map(roomType => (
+                  <option key={roomType} value={roomType}>
+                    {roomType}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
         </div>
 
-        {/* 활성 필터 표시 */}
-        {(nameFilter || paymentFilter || dateFilter || roomTypeFilter) && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
+        {/* 검색 및 초기화 버튼 */}
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={handleSearch}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium"
+          >
+            검색
+          </button>
+          <button
+            onClick={handleResetFilters}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+          >
+            초기화
+          </button>
+        </div>
+
+        {/* 적용된 필터 표시 */}
+        {(appliedNameFilter || appliedPaymentFilter || appliedRoomTypeFilter) && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-xs text-gray-600">활성 필터:</span>
-              {nameFilter && (
+              <span className="text-xs text-gray-600 font-medium">적용된 필터:</span>
+              {appliedNameFilter && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                  이름: {nameFilter}
-                  <button onClick={() => setNameFilter('')} className="hover:text-blue-900">✕</button>
+                  이름: {appliedNameFilter}
                 </span>
               )}
-              {paymentFilter && (
+              {appliedPaymentFilter && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                  결제: {paymentFilter === 'paid' ? '납부완료' : '미납'}
-                  <button onClick={() => setPaymentFilter('')} className="hover:text-blue-900">✕</button>
+                  결제: {appliedPaymentFilter === 'paid' ? '납부완료' : '미납'}
                 </span>
               )}
-              {dateFilter && (
+              {appliedRoomTypeFilter && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                  등록일: {dateFilter}
-                  <button onClick={() => setDateFilter('')} className="hover:text-blue-900">✕</button>
+                  방 타입: {appliedRoomTypeFilter}
                 </span>
               )}
-              {roomTypeFilter && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                  방 타입: {roomTypeFilter}
-                  <button onClick={() => setRoomTypeFilter('')} className="hover:text-blue-900">✕</button>
-                </span>
-              )}
-              <button
-                onClick={() => {
-                  setNameFilter('');
-                  setPaymentFilter('');
-                  setDateFilter('');
-                  setRoomTypeFilter('');
-                }}
-                className="ml-2 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-xs"
-              >
-                모든 필터 해제
-              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* 페이지네이션 컨트롤 */}
+      {pagination && (pagination.hasNext || pagination.hasPrev) && (
+        <div className="mb-6 bg-white shadow rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              페이지 {pagination.page} (현재 {filteredParticipants.length}건 표시)
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => fetchParticipants(selectedFormId, 1)}
+                disabled={!pagination.hasPrev}
+                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                처음
+              </button>
+              <button
+                onClick={() => fetchParticipants(selectedFormId, currentPage - 1)}
+                disabled={!pagination.hasPrev}
+                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                이전
+              </button>
+              <span className="px-3 py-1 text-sm font-medium">
+                페이지 {pagination.page}
+              </span>
+              <button
+                onClick={() => fetchParticipants(selectedFormId, currentPage + 1)}
+                disabled={!pagination.hasNext}
+                className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                다음
+              </button>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(parseInt(e.target.value));
+                  fetchParticipants(selectedFormId, 1);
+                }}
+                className="ml-4 px-2 py-1 border rounded text-sm"
+              >
+                <option value="10">10개씩</option>
+                <option value="20">20개씩</option>
+                <option value="50">50개씩</option>
+                <option value="100">100개씩</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 참가자 목록 */}
       <div className="bg-white shadow rounded-lg p-6">
@@ -843,9 +845,9 @@ export default function AttendeesPage() {
               const accommodationField = currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
               return (
                 <>
-                  {currentForm?.name} 참가자 목록 ({filteredParticipants.length}건 / 총
-                  {!accommodationField && <span className="text-xl font-semibold">&nbsp; {totalPeople}명)</span>}
-                  {groupFilter && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
+                  {currentForm?.name} 참가자 목록 (현재 페이지: {filteredParticipants.length}건)
+                  {!accommodationField && <span className="text-xl font-semibold">&nbsp;</span>}
+                  {(groupFilter || paymentFilter || nameFilter || roomTypeFilter) && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
                 </>
               );
             })()}
