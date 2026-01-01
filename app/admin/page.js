@@ -49,33 +49,35 @@ export default async function AdminDashboard() {
   );
   
   // 날짜별 실제 식사 인원 계산
-  const mealStats = {}; // { "1월 26일 (Day1)": { breakfast: 0, lunch: 0, dinner: 0 }, ... }
+  const mealStats = {}; // { "1월 26일 (Day1)": { breakfast: 0, lunch: 0, dinner: 0, fasting: 0, noBreakfast: 0 }, ... }
 
   registerForm?.participants.forEach(p => {
     const totalPeople = p.totalPeople || 1;
     const mealOptions = p.field_1760378499472_mealOptions || {}; // 필드 이름은 실제 ID로 변경 필요
     const dates = p.field_1760378499472_dates || p.partialDates || [];
-    const under8 = p.extraCounts.minorUnder8 || 0
+
     dates.forEach(date => {
       if (!mealStats[date]) {
-        mealStats[date] = { breakfast: 0, lunch: 0, dinner: 0 };
+        mealStats[date] = { breakfast: 0, lunch: 0, dinner: 0, fasting: 0, noBreakfast: 0 };
       }
 
       const mealOption = mealOptions[date] || {};
 
-      // 기본적으로 하루 세 끼 다 먹는다고 가정하고,
-      // 조건에 따라 빼줌
-      if (!mealOption.fasting) {
+      // 금식 여부
+      if (mealOption.fasting) {
+        mealStats[date].fasting += totalPeople;
+      } else {
+        // 금식 아닌 경우 점심/저녁은 무조건 포함
         mealStats[date].lunch += totalPeople;
         mealStats[date].dinner += totalPeople;
 
-        if (!mealOption.noBreakfast) {
+        // 조식 미신청 체크
+        if (mealOption.noBreakfast) {
+          mealStats[date].noBreakfast += totalPeople;
+        } else {
           mealStats[date].breakfast += totalPeople;
         }
       }
-      mealStats[date].breakfast = mealStats[date].breakfast-under8 < 0?0 : mealStats[date].breakfast-under8
-      mealStats[date].lunch = mealStats[date].lunch-under8 < 0?0 : mealStats[date].lunch-under8
-      mealStats[date].dinner = mealStats[date].dinner-under8 < 0?0 : mealStats[date].dinner-under8
     });
   });
   // 2. 방 배정 현황 통계
@@ -131,10 +133,15 @@ export default async function AdminDashboard() {
     delete dateRoomStats[date].assignedRoomIds; // 불필요한 Set 제거
   });
 
-  // 3. 날짜별 폼별 등록 인원 집계
+  // 3. 날짜별 폼별 등록 인원 집계 (건수 + 실제 인원수)
   const dateFormStats = {};
   formsWithParticipants.forEach(form => {
     form.participants.forEach(participant => {
+      // 그룹 구성원(대표자 아님)은 건수/인원 계산에서 제외 (대표자만 카운트)
+      if (participant.groupId && !participant.isRepresentative) {
+        return;
+      }
+
       // payment-calculator의 날짜 필드 찾기
       const paymentField = form.fields?.find(f => f.type === 'payment-calculator');
       const paymentDateFieldId = paymentField ? `${paymentField.id}_dates` : null;
@@ -149,15 +156,21 @@ export default async function AdminDashboard() {
                     participant.partialDates ||
                     [];
 
+      // 그룹 대표자인 경우 totalGroupMembers 사용, 아니면 totalPeople 사용
+      const totalPeople = participant.isRepresentative && participant.totalGroupMembers
+        ? participant.totalGroupMembers
+        : (participant.totalPeople || 1);
+
       if (Array.isArray(dates) && dates.length > 0) {
         dates.forEach(date => {
           if (!dateFormStats[date]) {
             dateFormStats[date] = {};
           }
           if (!dateFormStats[date][form.name]) {
-            dateFormStats[date][form.name] = 0;
+            dateFormStats[date][form.name] = { count: 0, people: 0 };
           }
-          dateFormStats[date][form.name] += 1;
+          dateFormStats[date][form.name].count += 1;
+          dateFormStats[date][form.name].people += totalPeople;
         });
       }
     });
@@ -292,7 +305,7 @@ export default async function AdminDashboard() {
 
           {/* 3. 날짜별 폼별 등록 인원 */}
           <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">📅 날짜별 폼별 등록 인원</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">📅 날짜별 폼별 등록 현황</h2>
             {Object.keys(dateFormStats).length === 0 ? (
               <p className="text-gray-500">날짜별 데이터가 없습니다.</p>
             ) : (
@@ -306,24 +319,29 @@ export default async function AdminDashboard() {
                           {form.name}
                         </th>
                       ))}
-                      <th className="border p-3 text-center font-medium text-gray-700 bg-blue-50">합계</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Object.keys(dateFormStats).sort().map(date => {
                       const dateData = dateFormStats[date];
-                      const totalForDate = Object.values(dateData).reduce((sum, count) => sum + count, 0);
                       return (
                         <tr key={date} className="hover:bg-gray-50">
                           <td className="border p-3 font-medium text-gray-700">{date}</td>
-                          {forms.map(form => (
-                            <td key={form.id} className="border p-3 text-center">
-                              {dateData[form.name] || 0}
-                            </td>
-                          ))}
-                          <td className="border p-3 text-center font-bold text-blue-600 bg-blue-50">
-                            {totalForDate}
-                          </td>
+                          {forms.map(form => {
+                            const stat = dateData[form.name];
+                            return (
+                              <td key={form.id} className="border p-3 text-center">
+                                {stat ? (
+                                  <div>
+                                    <div className="font-semibold text-blue-600">{stat.people}명</div>
+                                    <div className="text-xs text-gray-500">({stat.count}건)</div>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </td>
+                            );
+                          })}
                         </tr>
                       );
                     })}
@@ -346,22 +364,41 @@ export default async function AdminDashboard() {
                       <th className="border p-3 text-center font-medium text-gray-700">아침</th>
                       <th className="border p-3 text-center font-medium text-gray-700">점심</th>
                       <th className="border p-3 text-center font-medium text-gray-700">저녁</th>
+                      <th className="border p-3 text-center font-medium text-gray-700 bg-gray-50">금식</th>
+                      <th className="border p-3 text-center font-medium text-gray-700 bg-gray-50">조식 미신청</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Object.keys(mealStats).sort().map(date => {
                       const m = mealStats[date];
+                      const totalParticipants = m.breakfast + m.noBreakfast + m.fasting;
                       return (
                         <tr key={date} className="hover:bg-gray-50">
                           <td className="border p-3 font-medium text-gray-700">{date}</td>
-                          <td className="border p-3 text-center text-blue-600 font-semibold">{m.breakfast}</td>
-                          <td className="border p-3 text-center text-green-600 font-semibold">{m.lunch}</td>
-                          <td className="border p-3 text-center text-orange-600 font-semibold">{m.dinner}</td>
+                          <td className="border p-3 text-center">
+                            <div className="font-semibold text-blue-600">{m.breakfast}명</div>
+                          </td>
+                          <td className="border p-3 text-center">
+                            <div className="font-semibold text-green-600">{m.lunch}명</div>
+                          </td>
+                          <td className="border p-3 text-center">
+                            <div className="font-semibold text-orange-600">{m.dinner}명</div>
+                          </td>
+                          <td className="border p-3 text-center bg-gray-50">
+                            <div className="text-gray-600">{m.fasting}명</div>
+                          </td>
+                          <td className="border p-3 text-center bg-gray-50">
+                            <div className="text-gray-600">{m.noBreakfast}명</div>
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+                <div className="mt-3 text-sm text-gray-600">
+                  <p>※ 총 참가 인원 = 아침 + 조식 미신청 + 금식</p>
+                  <p>※ 점심/저녁 = 금식하지 않는 모든 인원</p>
+                </div>
               </div>
             )}
           </div>
