@@ -29,6 +29,7 @@ export default function FormEditorPage() {
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editingField, setEditingField] = useState(null); // 편집 중인 필드
+  const [recalculating, setRecalculating] = useState(false); // 가격 재계산 중
 
   const fetchForm = useCallback(async () => {
     setLoading(true);
@@ -102,6 +103,34 @@ export default function FormEditorPage() {
     await updateFormMeta({ fields });
   };
 
+  const recalculatePrices = async () => {
+    if (!confirm('모든 참가자의 가격을 현재 폼 설정에 맞춰 재계산하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.')) {
+      return;
+    }
+
+    setRecalculating(true);
+    try {
+      const res = await fetch('/api/admin/recalculate-prices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formId }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(`✅ 성공!\n\n${data.updated}명의 참가자 가격이 재계산되었습니다.\n(총 ${data.total}명 중 ${data.updated}명 업데이트)`);
+      } else {
+        alert(`❌ 실패: ${data.message || '알 수 없는 오류'}`);
+      }
+    } catch (error) {
+      console.error('Price recalculation error:', error);
+      alert('❌ 가격 재계산 중 오류가 발생했습니다.');
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   if (loading) {
     return <main className="p-6"><p>로딩 중...</p></main>;
   }
@@ -112,12 +141,29 @@ export default function FormEditorPage() {
 
   return (
     <main className="p-6 max-w-6xl mx-auto">
-      <button
-        onClick={() => router.push('/admin/forms')}
-        className="mb-4 text-blue-600 hover:text-blue-800"
-      >
-        ← 목록으로
-      </button>
+      <div className="flex justify-between items-center mb-4">
+        <button
+          onClick={() => router.push('/admin/forms')}
+          className="text-blue-600 hover:text-blue-800"
+        >
+          ← 목록으로
+        </button>
+
+        <button
+          onClick={recalculatePrices}
+          disabled={recalculating}
+          className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          {recalculating ? (
+            <>
+              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+              재계산 중...
+            </>
+          ) : (
+            '💰 가격 재계산'
+          )}
+        </button>
+      </div>
 
       <div className="bg-white shadow rounded-lg p-6 mb-6">
         <h1 className="text-2xl font-bold mb-4">폼 편집: {form.name}</h1>

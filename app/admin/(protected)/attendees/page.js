@@ -426,21 +426,44 @@ export default function AttendeesPage() {
   };
 
   // 엑셀 다운로드
-  const downloadExcel = () => {
-    if (!currentForm || filteredParticipants.length === 0) {
+  const downloadExcel = async () => {
+    if (!currentForm) {
+      alert('다운로드할 데이터가 없습니다.');
+      return;
+    }
+
+    // 전체 참가자 데이터 가져오기 (페이지네이션 없이)
+    const collectionName = `participants_${selectedFormId}`;
+    const params = new URLSearchParams({
+      collectionName,
+      page: '1',
+      limit: '10000' // 충분히 큰 숫자로 전체 데이터 가져오기
+    });
+
+    // 적용된 필터만 추가
+    if (appliedPaymentFilter) params.append('paymentStatus', appliedPaymentFilter);
+    if (appliedGroupFilter) params.append('groupId', appliedGroupFilter);
+    if (appliedRoomTypeFilter) params.append('roomType', appliedRoomTypeFilter);
+    if (appliedNameFilter) params.append('searchName', appliedNameFilter);
+
+    const res = await fetch(`/api/admin/participants?${params.toString()}`);
+    const data = await res.json();
+    const allParticipants = data.participants || [];
+
+    if (allParticipants.length === 0) {
       alert('다운로드할 데이터가 없습니다.');
       return;
     }
 
     // 엑셀 데이터 생성
-    const excelData = filteredParticipants.map((participant, index) => {
+    const excelData = allParticipants.map((participant, index) => {
       const row = {
         '번호': index + 1,
       };
 
       // 그룹 정보
       if (participant.groupId) {
-        const groupMembers = participants.filter(p => p.groupId === participant.groupId);
+        const groupMembers = allParticipants.filter(p => p.groupId === participant.groupId);
         const representative = groupMembers.find(p => p.isRepresentative);
         const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
         const repName = representative?.[nameField?.id] || '알 수 없음';
@@ -454,6 +477,42 @@ export default function AttendeesPage() {
         const value = participant[field.id];
         row[field.label] = formatExcelValue(field, value, participant);
       });
+
+      // 참석 날짜 (payment-calculator 또는 accommodation-calculator)
+      const paymentField = currentForm?.fields?.find(f => f.type === 'payment-calculator');
+      const accomField = currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
+
+      if (paymentField) {
+        const paymentDateFieldId = `${paymentField.id}_dates`;
+        const paymentDates = participant[paymentDateFieldId];
+        row['참석 날짜'] = Array.isArray(paymentDates) && paymentDates.length > 0
+          ? paymentDates.join(', ')
+          : '-';
+      }
+
+      if (accomField) {
+        const accomDates = participant.accommodationDates;
+        row['숙박 날짜'] = Array.isArray(accomDates) && accomDates.length > 0
+          ? accomDates.join(', ')
+          : '-';
+      }
+
+      // 가격 정보
+      const participationFee = participant.amount?.total || 0;
+      const accommodationFee = participant.accommodationAmount?.total || 0;
+      const totalAmount = participationFee + accommodationFee;
+
+      if (paymentField) {
+        row['참가비'] = participationFee > 0 ? `${participationFee.toLocaleString()}원` : '-';
+      }
+
+      if (accomField) {
+        row['숙박비'] = accommodationFee > 0 ? `${accommodationFee.toLocaleString()}원` : '-';
+      }
+
+      if (paymentField || accomField) {
+        row['총 금액'] = totalAmount > 0 ? `${totalAmount.toLocaleString()}원` : '-';
+      }
 
       // 등록일
       row['등록일'] = participant.registeredAt || '-';
