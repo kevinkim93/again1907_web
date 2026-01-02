@@ -251,6 +251,165 @@ export async function PUT(request) {
 
     console.log('업데이트할 데이터:', updatedData);
 
+    // === 그룹 등록 처리 (단체실/가족실) ===
+    if (accommodationField) {
+      const accomRoomTypeFieldId = `${accommodationField.id}_roomType`;
+      const accomRoomOptionsFieldId = `${accommodationField.id}_roomOptions`;
+      const selectedRoomType = updatedData[accomRoomTypeFieldId] || '';
+      const roomOptions = updatedData[accomRoomOptionsFieldId] || {};
+      const roomTypeOption = accommodationField.roomTypeOptions?.[selectedRoomType];
+
+      // 단체실(gender) 또는 가족실(count) 타입인 경우
+      if (roomTypeOption?.type === 'gender' || roomTypeOption?.type === 'count') {
+        // 기존 그룹 구성원 문서 찾기 및 삭제
+        if (existingData.groupId) {
+          const existingGroupMembers = await db
+            .collection(collectionName)
+            .where('groupId', '==', existingData.groupId)
+            .where('isRepresentative', '==', false)
+            .get();
+
+          const batch = db.batch();
+          existingGroupMembers.docs.forEach(doc => {
+            batch.delete(doc.ref);
+          });
+          await batch.commit();
+          console.log(`삭제된 기존 그룹 구성원: ${existingGroupMembers.size}명`);
+        }
+
+        // 새 그룹 ID 생성 (기존 것이 있으면 재사용, 없으면 신규 생성)
+        const groupId = existingData.groupId || `group_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+        // 총 그룹 인원 계산
+        let totalGroupMembers = 1; // 대표자 포함
+        let newMembers = [];
+
+        if (roomTypeOption?.type === 'gender') {
+          // 단체실: 남자 + 여자 (대표자 제외)
+          const maleList = (roomOptions.male || []).filter(p => !p.isRepresentative);
+          const femaleList = (roomOptions.female || []).filter(p => !p.isRepresentative);
+
+          newMembers = [
+            ...maleList.map(person => ({ ...person, gender: 'male' })),
+            ...femaleList.map(person => ({ ...person, gender: 'female' }))
+          ];
+
+          // 대표자 포함 여부 확인
+          const allPeople = [...(roomOptions.male || []), ...(roomOptions.female || [])];
+          const representativeIncluded = allPeople.some(p => p.isRepresentative);
+          totalGroupMembers = newMembers.length + (representativeIncluded ? 1 : 0);
+        } else if (roomTypeOption?.type === 'count') {
+          // 가족실: people 배열 (대표자 제외)
+          const allPeople = roomOptions.people || [];
+          const representativeIncluded = allPeople.some(p => p.isRepresentative);
+
+          newMembers = allPeople.filter(p => !p.isRepresentative);
+          totalGroupMembers = allPeople.length;
+        }
+
+        // 대표자 문서에 그룹 정보 추가
+        updatedData.groupId = groupId;
+        updatedData.isRepresentative = true;
+        updatedData.representativeName = updatedData[form.fields.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')))?.id] || '';
+        updatedData.totalGroupMembers = totalGroupMembers;
+        updatedData.groupPosition = 0;
+
+        // 그룹 구성원 문서 생성
+        const batch = db.batch();
+        let position = 1;
+
+        const accomDateFieldId = `${accommodationField.id}_dates`;
+        const accomFreeOptionFieldId = `${accommodationField.id}_free`;
+        const selectedAccomDates = updatedData[accomDateFieldId] || [];
+        const isFreeAccommodation = updatedData[accomFreeOptionFieldId] || false;
+
+        // 숙박비 계산
+        const now = new Date();
+        const phase1Deadline = accommodationField.phase1Deadline ? new Date(accommodationField.phase1Deadline) : null;
+        const isPhase1 = phase1Deadline ? now <= phase1Deadline : true;
+        const phase = isPhase1 ? accommodationField.accommodationPricing?.phase1 : accommodationField.accommodationPricing?.phase2;
+        const pricePerNight = phase?.[selectedRoomType] || 0;
+        const totalNights = selectedAccomDates.length;
+
+        for (const member of newMembers) {
+          const memberRef = db.collection(collectionName).doc();
+
+          let individualAccomAmount = 0;
+          if (roomTypeOption?.type === 'gender') {
+            // 단체실: 1인당 금액
+            individualAccomAmount = isFreeAccommodation ? 0 : (pricePerNight * totalNights);
+          } else if (roomTypeOption?.type === 'count') {
+            // 가족실: 구성원은 0원 (대표자가 전액 부담)
+            individualAccomAmount = 0;
+          }
+
+          const memberData = {
+            formId: existingData.formId,
+            formName: existingData.formName || '',
+            registeredAt: existingData.registeredAt || new Date().toISOString(),
+            paymentStatus: 'unpaid',
+            groupId,
+            representativeId: id,
+            representativeName: updatedData.representativeName,
+            isRepresentative: false,
+            groupPosition: position++,
+            totalGroupMembers,
+
+            // 구성원 정보
+            [form.fields.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')))?.id]: member.name || '',
+            [form.fields.find(f => f.type === 'tel')?.id]: member.phone || '',
+
+            // 생년월일 (있는 경우)
+            ...(member.birthdate && {
+              [form.fields.find(f => f.type === 'date-of-birth')?.id]: member.birthdate
+            }),
+
+            // 성별 (단체실인 경우)
+            ...(member.gender && { gender: member.gender }),
+
+            // 나이 (있는 경우)
+            ...(member.age && { age: member.age }),
+
+            // 숙박 정보
+            accommodationDates: selectedAccomDates,
+            roomType: selectedRoomType,
+            accommodationAmount: {
+              pricePerNight: isFreeAccommodation ? 0 : pricePerNight,
+              totalNights,
+              peopleCount: 1,
+              total: individualAccomAmount,
+              phase: isPhase1 ? 'phase1' : 'phase2',
+            },
+            isFreeAccommodation,
+
+            // 금액 정보
+            amount: {
+              first: individualAccomAmount,
+              second: 0,
+              total: individualAccomAmount,
+            },
+
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+
+          batch.set(memberRef, memberData);
+        }
+
+        await batch.commit();
+        console.log(`생성된 새 그룹 구성원: ${newMembers.length}명`);
+      } else {
+        // 일반 등록인 경우 그룹 정보 제거
+        if (existingData.groupId) {
+          updatedData.groupId = null;
+          updatedData.isRepresentative = false;
+          updatedData.representativeName = null;
+          updatedData.totalGroupMembers = null;
+          updatedData.groupPosition = null;
+        }
+      }
+    }
+
     await docRef.update(updatedData);
 
     console.log('업데이트 완료');

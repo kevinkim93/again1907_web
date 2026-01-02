@@ -51,10 +51,21 @@ export async function GET(req) {
 
     let participants = allSnap.docs.map(doc => {
       const data = doc.data();
+
+      // createdAt 변환: Firestore Timestamp 또는 문자열 처리
+      let createdAtValue = null;
+      if (data.createdAt) {
+        if (typeof data.createdAt === 'string') {
+          createdAtValue = data.createdAt;
+        } else if (data.createdAt.toDate && typeof data.createdAt.toDate === 'function') {
+          createdAtValue = data.createdAt.toDate().toISOString();
+        }
+      }
+
       return {
         id: doc.id,
         ...data,
-        createdAt: data.createdAt?.toDate()?.toISOString() || data.createdAt || null,
+        createdAt: createdAtValue,
         roomAssignments: data.roomAssignments || {},
       };
     });
