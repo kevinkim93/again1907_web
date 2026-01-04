@@ -79,18 +79,14 @@ export async function GET(req) {
       return dateB - dateA; // 최신순
     });
 
-    // 이름 검색 필터링
+    // 이름 검색 필터링 (name, representativeName 필드만 검색)
     if (searchName) {
       console.log('  ✅ Applying name search filter:', searchName);
       const searchLower = searchName.toLowerCase();
       participants = participants.filter(p => {
-        const searchableFields = [
-          p.name,
-          p.representativeName,
-          ...Object.values(p).filter(val => typeof val === 'string')
-        ];
+        const searchableFields = [p.name, p.representativeName].filter(Boolean);
         return searchableFields.some(field =>
-          field && field.toLowerCase().includes(searchLower)
+          field.toLowerCase().includes(searchLower)
         );
       });
     }
