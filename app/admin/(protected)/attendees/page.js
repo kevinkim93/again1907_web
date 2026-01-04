@@ -2,13 +2,15 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
+import SkeletonTable from './components/SkeletonTable';
 
 export default function AttendeesPage() {
   const [forms, setForms] = useState([]);
   const [selectedFormId, setSelectedFormId] = useState('');
   const [participants, setParticipants] = useState([]);
   const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isFormsLoading, setIsFormsLoading] = useState(true); // 폼 목록 로딩
+  const [isParticipantsLoading, setIsParticipantsLoading] = useState(false); // 데이터 로딩
   const [rooms, setRooms] = useState([]);
   const [groupFilter, setGroupFilter] = useState(''); // 그룹 ID 필터
   const nameInputRef = useRef(null); // 이름 필터 ref (uncontrolled)
@@ -79,7 +81,7 @@ export default function AttendeesPage() {
   const fetchParticipants = useCallback(async (formId, page = 1) => {
     if (!formId) return;
 
-    setLoading(true);
+    setIsParticipantsLoading(true);
     const collectionName = `participants_${formId}`;
 
     // URL 파라미터 구성
@@ -98,44 +100,24 @@ export default function AttendeesPage() {
     const res = await fetch(`/api/admin/participants?${params.toString()}`);
     const data = await res.json();
 
-    console.log('🔍 Attendees Page - Fetched participants:', data.participants?.length);
-    console.log('📄 Pagination:', data.pagination);
-
-    // roomNumber가 있는 참가자 확인
-    const withRoomNumber = data.participants?.filter(p => p.roomNumber) || [];
-    console.log('🚪 Participants with roomNumber:', withRoomNumber.length);
-
-    // roomAssignments가 있는 참가자 확인
-    const withAssignments = data.participants?.filter(p => p.roomAssignments && Object.keys(p.roomAssignments).length > 0) || [];
-    console.log('🏠 Participants with room assignments:', withAssignments.length);
-
-    if (withRoomNumber.length > 0) {
-      console.log('📋 Sample participant with roomNumber:', {
-        id: withRoomNumber[0].id,
-        roomNumber: withRoomNumber[0].roomNumber,
-        roomId: withRoomNumber[0].roomId,
-        roomName: withRoomNumber[0].roomName,
-        roomAssignments: withRoomNumber[0].roomAssignments,
-        accommodationDates: withRoomNumber[0].accommodationDates
-      });
-    }
-
     setParticipants(data.participants || []);
     setPagination(data.pagination || null);
     setCurrentPage(page);
-    setLoading(false);
+    setIsParticipantsLoading(false);
   }, [pageSize, appliedPaymentFilter, appliedGroupFilter, appliedRoomTypeFilter, appliedNameFilter]);
 
+  // 최초 진입 시 1회만 실행
   useEffect(() => {
     const init = async () => {
-      setLoading(true);
+      setIsFormsLoading(true);
       await fetchForms();
       await fetchSettings();
       await fetchRooms();
-      setLoading(false);
+      setIsFormsLoading(false);
     };
     init();
-  }, [fetchForms, fetchSettings, fetchRooms]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 최초 1회만 실행
 
   // 폼 변경 시 첫 페이지 로드
   useEffect(() => {
@@ -316,14 +298,22 @@ export default function AttendeesPage() {
     window.location.href = '/admin/rooms';
   };
 
-  if (loading) {
+  // 최초 로딩 중 (폼 목록만 로딩 중일 때)
+  if (isFormsLoading) {
     return (
       <main className="p-6">
-        <p>로딩 중...</p>
+        <h1 className="text-2xl font-bold mb-4">인원 관리</h1>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">폼 목록을 불러오는 중...</p>
+          </div>
+        </div>
       </main>
     );
   }
 
+  // 폼이 없는 경우
   if (forms.length === 0) {
     return (
       <main className="p-6">
@@ -900,9 +890,12 @@ export default function AttendeesPage() {
       )}
 
       {/* 참가자 목록 */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">
+      {isParticipantsLoading ? (
+        <SkeletonTable />
+      ) : (
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">
             {(() => {
               // 전체 인원 합계 계산
               const totalPeople = filteredParticipants.reduce((sum, p) => {
@@ -1240,7 +1233,8 @@ export default function AttendeesPage() {
             </table>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </main>
   );
 }
