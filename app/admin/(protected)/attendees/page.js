@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
 
 export default function AttendeesPage() {
@@ -11,9 +11,8 @@ export default function AttendeesPage() {
   const [loading, setLoading] = useState(true);
   const [rooms, setRooms] = useState([]);
   const [groupFilter, setGroupFilter] = useState(''); // 그룹 ID 필터
-  const [nameFilter, setNameFilter] = useState(''); // 이름 필터
+  const nameInputRef = useRef(null); // 이름 필터 ref (uncontrolled)
   const [paymentFilter, setPaymentFilter] = useState(''); // 결제상태 필터 (all/paid/unpaid)
-  const [dateFilter, setDateFilter] = useState(''); // 등록일자 필터
   const [roomTypeFilter, setRoomTypeFilter] = useState(''); // 방 타입 필터 (가족실/단체실)
   const [hideFullRooms, setHideFullRooms] = useState(false); // 만실 방 숨기기
   const [roomSortOption, setRoomSortOption] = useState('roomNumber'); // 방 정렬 옵션 (roomNumber/mostSpace/leastSpace)
@@ -56,7 +55,7 @@ export default function AttendeesPage() {
 
   // 검색 버튼 클릭 핸들러
   const handleSearch = () => {
-    setAppliedNameFilter(nameFilter);
+    setAppliedNameFilter(nameInputRef.current?.value || '');
     setAppliedPaymentFilter(paymentFilter);
     setAppliedGroupFilter(groupFilter);
     setAppliedRoomTypeFilter(roomTypeFilter);
@@ -65,7 +64,7 @@ export default function AttendeesPage() {
 
   // 필터 초기화 핸들러
   const handleResetFilters = () => {
-    setNameFilter('');
+    if (nameInputRef.current) nameInputRef.current.value = '';
     setPaymentFilter('');
     setGroupFilter('');
     setRoomTypeFilter('');
@@ -699,7 +698,7 @@ export default function AttendeesPage() {
             setSelectedFormId(e.target.value);
             // 폼 변경시 모든 필터 및 페이지 초기화
             setGroupFilter('');
-            setNameFilter('');
+            if (nameInputRef.current) nameInputRef.current.value = '';
             setPaymentFilter('');
             setRoomTypeFilter('');
             setCurrentPage(1);
@@ -768,8 +767,7 @@ export default function AttendeesPage() {
             <label className="block text-xs text-gray-600 mb-1">이름 검색</label>
             <input
               type="text"
-              value={nameFilter}
-              onChange={(e) => setNameFilter(e.target.value)}
+              ref={nameInputRef}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="이름 입력..."
               className="w-full border border-gray-300 rounded-md p-2 text-sm"
@@ -915,7 +913,7 @@ export default function AttendeesPage() {
                 <>
                   {currentForm?.name} 참가자 목록 (현재 페이지: {filteredParticipants.length}건)
                   {!accommodationField && <span className="text-xl font-semibold">&nbsp;</span>}
-                  {(groupFilter || paymentFilter || nameFilter || roomTypeFilter) && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
+                  {(groupFilter || paymentFilter || appliedNameFilter || roomTypeFilter) && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
                 </>
               );
             })()}

@@ -23,30 +23,24 @@ export async function GET(req) {
   }
 
   try {
-    console.log('🔍 API Request:', { page, limit, paymentStatus, searchName, groupId, roomType });
-
     // 기본 쿼리 (정렬 없이 시작)
     let query = adminDb.collection(collectionName);
 
     // 서버 사이드 필터링 적용 (Firestore where 사용)
     // 이름 검색을 제외한 나머지 필터들만 서버에서 처리
     if (paymentStatus) {
-      console.log('  ✅ Applying paymentStatus filter (server):', paymentStatus);
       query = query.where('paymentStatus', '==', paymentStatus);
     }
 
     if (groupId) {
-      console.log('  ✅ Applying groupId filter (server):', groupId);
       query = query.where('groupId', '==', groupId);
     }
 
     if (roomType) {
-      console.log('  ✅ Applying roomType filter (server):', roomType);
       query = query.where('roomType', '==', roomType);
     }
 
     // 모든 데이터 가져오기
-    console.log('  📥 Fetching all documents...');
     const allSnap = await query.get();
 
     let participants = allSnap.docs.map(doc => {
@@ -70,8 +64,6 @@ export async function GET(req) {
       };
     });
 
-    console.log('📊 Total documents:', participants.length);
-
     // 클라이언트 측에서 최신순 정렬
     participants.sort((a, b) => {
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -79,31 +71,26 @@ export async function GET(req) {
       return dateB - dateA; // 최신순
     });
 
-    // 이름 검색 필터링 (name, representativeName 필드만 검색)
+    // 이름 검색 필터링
     if (searchName) {
-      console.log('  ✅ Applying name search filter:', searchName);
       const searchLower = searchName.toLowerCase();
       participants = participants.filter(p => {
-        const searchableFields = [p.name, p.representativeName].filter(Boolean);
+        const searchableFields = [
+          p.name,
+          p.representativeName,
+          ...Object.values(p).filter(val => typeof val === 'string')
+        ];
         return searchableFields.some(field =>
-          field.toLowerCase().includes(searchLower)
+          field && field.toLowerCase().includes(searchLower)
         );
       });
     }
-
-    console.log('📊 After filtering:', participants.length);
 
     // 필터링된 결과에 페이지네이션 적용
     const totalFiltered = participants.length;
     const offset = (page - 1) * limit;
     const paginatedParticipants = participants.slice(offset, offset + limit);
     const hasMore = offset + limit < totalFiltered;
-
-    console.log('🔍 Pagination:');
-    console.log('  Current page:', page);
-    console.log('  Total filtered:', totalFiltered);
-    console.log('  Returned count:', paginatedParticipants.length);
-    console.log('  Has more:', hasMore);
 
     return NextResponse.json({
       participants: paginatedParticipants,
