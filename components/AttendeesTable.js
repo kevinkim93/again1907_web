@@ -132,12 +132,17 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
 
     // 미배정으로 변경하는 경우
     if (!roomNumber || roomNumber === '') {
-      await fetch('/api/admin/assign', {
+      const res = await fetch('/api/admin/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ collectionName, participantId, roomNumber: null }),
       });
-      window.location.reload();
+      const data = await res.json();
+      if (data.ok && data.participant) {
+        setParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
+        );
+      }
       return;
     }
 
@@ -178,14 +183,19 @@ export default function AttendeesTable({ rows, rooms, collectionName, settings }
       }
     }
 
-    await fetch('/api/admin/assign', {
+    const res = await fetch('/api/admin/assign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ collectionName, participantId, roomNumber }),
     });
 
-    // 전체 데이터 새로고침
-    window.location.reload();
+    // 로컬 상태 업데이트 (깜빡거림 방지)
+    const data = await res.json();
+    if (data.ok && data.participant) {
+      setParticipants(prev =>
+        prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
+      );
+    }
   };
 
   // 결제 상태 변경 (+ 입금 날짜 기록)

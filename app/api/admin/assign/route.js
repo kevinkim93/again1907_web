@@ -110,5 +110,10 @@ export async function POST(req) {
     roomNumber: roomNumber || null, // 방 번호도 저장
   });
 
-  return NextResponse.json({ ok: true });
+  // 업데이트된 participant 데이터 반환 (깜빡거림 방지를 위한 로컬 상태 업데이트용)
+  const updatedDoc = await adminDb.collection(collectionName).doc(participantId).get();
+  return NextResponse.json({
+    ok: true,
+    participant: { id: participantId, ...updatedDoc.data() }
+  });
 }

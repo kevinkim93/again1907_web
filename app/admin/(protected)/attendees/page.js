@@ -185,7 +185,7 @@ export default function AttendeesPage() {
     if (!roomNumber || roomNumber === null || roomNumber === '') {
       if (!confirm('방 배정을 해제하시겠습니까?')) return;
 
-      await fetch('/api/admin/assign', {
+      const res = await fetch('/api/admin/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -195,8 +195,13 @@ export default function AttendeesPage() {
         }),
       });
 
-      fetchParticipants(selectedFormId);
-      fetchRooms(); // 방 목록도 새로고침
+      // 로컬 상태 업데이트 (깜빡거림 방지)
+      const data = await res.json();
+      if (data.ok && data.participant) {
+        setParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
+        );
+      }
       return;
     }
 
@@ -289,7 +294,7 @@ export default function AttendeesPage() {
       }
     }
 
-    await fetch('/api/admin/assign', {
+    const res = await fetch('/api/admin/assign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -299,8 +304,12 @@ export default function AttendeesPage() {
       }),
     });
 
-    fetchParticipants(selectedFormId);
-    fetchRooms(); // 방 목록도 새로고침
+    const data = await res.json();
+    if (data.ok && data.participant) {
+      setParticipants(prev =>
+        prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
+      );
+    }
   };
 
   // 방 배정 페이지로 이동
