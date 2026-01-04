@@ -15,6 +15,7 @@ export async function GET(req) {
   // 필터링 파라미터
   const paymentStatus = searchParams.get('paymentStatus'); // 'paid', 'unpaid', null(전체)
   const searchName = searchParams.get('searchName');
+  const nameFieldId = searchParams.get('nameFieldId'); // 동적 폼의 이름 필드 ID
   const groupId = searchParams.get('groupId');
   const roomType = searchParams.get('roomType');
 
@@ -71,19 +72,43 @@ export async function GET(req) {
       return dateB - dateA; // 최신순
     });
 
-    // 이름 검색 필터링
+    // 이름 검색 필터링 (동적 필드 ID 지원)
     if (searchName) {
+      console.log('🔍 서버 검색 시작:', { searchName, nameFieldId });
       const searchLower = searchName.toLowerCase();
+      const beforeCount = participants.length;
+
       participants = participants.filter(p => {
-        const searchableFields = [
-          p.name,
-          p.representativeName,
-          ...Object.values(p).filter(val => typeof val === 'string')
-        ];
-        return searchableFields.some(field =>
+        const searchableFields = [];
+
+        // 동적 필드 ID로 저장된 이름 (예: field_123456: "박지현")
+        if (nameFieldId && p[nameFieldId]) {
+          // 그룹원의 경우 "이름 - 등록:대표자명" 형식에서 이름 부분만 추출
+          const nameValue = p[nameFieldId];
+          const actualName = nameValue.includes(' - 등록:')
+            ? nameValue.split(' - 등록:')[0]
+            : nameValue;
+          searchableFields.push(actualName);
+        }
+
+        // 그룹원의 대표자 이름 필드도 검색
+        if (p.representativeName) {
+          searchableFields.push(p.representativeName);
+        }
+
+        const match = searchableFields.some(field =>
           field && field.toLowerCase().includes(searchLower)
         );
+
+        // 첫 번째 매칭 항목만 로그
+        if (match && beforeCount === participants.length) {
+          console.log('✅ 첫 매칭:', { searchableFields, id: p.id });
+        }
+
+        return match;
       });
+
+      console.log('📊 필터 결과:', { beforeCount, afterCount: participants.length });
     }
 
     // 필터링된 결과에 페이지네이션 적용

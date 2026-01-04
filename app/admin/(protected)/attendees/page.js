@@ -55,26 +55,89 @@ export default function AttendeesPage() {
     setRooms(data.rooms || []);
   }, []);
 
-  // 검색 버튼 클릭 핸들러
-  const handleSearch = () => {
-    setAppliedNameFilter(nameInputRef.current?.value || '');
+  // 검색 버튼 클릭 핸들러 (상태 업데이트 문제 해결)
+  const handleSearch = async () => {
+    const nameValue = nameInputRef.current?.value || '';
+
+    // 상태 업데이트
+    setAppliedNameFilter(nameValue);
     setAppliedPaymentFilter(paymentFilter);
     setAppliedGroupFilter(groupFilter);
     setAppliedRoomTypeFilter(roomTypeFilter);
-    fetchParticipants(selectedFormId, 1);
+
+    // 상태에 의존하지 않고 직접 값으로 검색
+    if (!selectedFormId) return;
+
+    setIsParticipantsLoading(true);
+    const collectionName = `participants_${selectedFormId}`;
+
+    const params = new URLSearchParams({
+      collectionName,
+      page: '1',
+      limit: pageSize.toString()
+    });
+
+    if (paymentFilter) params.append('paymentStatus', paymentFilter);
+    if (groupFilter) params.append('groupId', groupFilter);
+    if (roomTypeFilter) params.append('roomType', roomTypeFilter);
+
+    // 이름 필터와 nameFieldId 추가
+    if (nameValue) {
+      params.append('searchName', nameValue);
+      const form = forms.find(f => f.id === selectedFormId);
+      const nameField = form?.fields?.find(f =>
+        f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명'))
+      );
+      if (nameField) {
+        params.append('nameFieldId', nameField.id);
+      }
+      console.log('🔍 검색 요청:', { searchName: nameValue, nameFieldId: nameField?.id });
+    }
+
+    const res = await fetch(`/api/admin/participants?${params.toString()}`);
+    const data = await res.json();
+
+    console.log('📊 검색 결과:', data.participants?.length, '건');
+    setParticipants(data.participants || []);
+    setPagination(data.pagination || null);
+    setCurrentPage(1);
+    setIsParticipantsLoading(false);
   };
 
-  // 필터 초기화 핸들러
-  const handleResetFilters = () => {
+  // 필터 초기화 핸들러 (상태 동기화 문제 해결)
+  const handleResetFilters = async () => {
+    // 1. UI 입력 필드 초기화
     if (nameInputRef.current) nameInputRef.current.value = '';
     setPaymentFilter('');
     setGroupFilter('');
     setRoomTypeFilter('');
+
+    // 2. 적용된 필터 상태 초기화
     setAppliedNameFilter('');
     setAppliedPaymentFilter('');
     setAppliedGroupFilter('');
     setAppliedRoomTypeFilter('');
-    fetchParticipants(selectedFormId, 1);
+
+    // 3. 필터 없이 직접 데이터 가져오기 (상태에 의존하지 않음)
+    if (!selectedFormId) return;
+
+    setIsParticipantsLoading(true);
+    const collectionName = `participants_${selectedFormId}`;
+
+    // 필터 없는 기본 파라미터만 사용
+    const params = new URLSearchParams({
+      collectionName,
+      page: '1',
+      limit: pageSize.toString()
+    });
+
+    const res = await fetch(`/api/admin/participants?${params.toString()}`);
+    const data = await res.json();
+
+    setParticipants(data.participants || []);
+    setPagination(data.pagination || null);
+    setCurrentPage(1);
+    setIsParticipantsLoading(false);
   };
 
   // 선택된 폼의 참가자 가져오기
@@ -95,7 +158,19 @@ export default function AttendeesPage() {
     if (appliedPaymentFilter) params.append('paymentStatus', appliedPaymentFilter);
     if (appliedGroupFilter) params.append('groupId', appliedGroupFilter);
     if (appliedRoomTypeFilter) params.append('roomType', appliedRoomTypeFilter);
-    if (appliedNameFilter) params.append('searchName', appliedNameFilter);
+
+    // 이름 필터와 함께 동적 필드 ID도 전송
+    if (appliedNameFilter) {
+      params.append('searchName', appliedNameFilter);
+      // 현재 폼에서 이름 필드 찾기
+      const form = forms.find(f => f.id === formId);
+      const nameField = form?.fields?.find(f =>
+        f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명'))
+      );
+      if (nameField) {
+        params.append('nameFieldId', nameField.id);
+      }
+    }
 
     const res = await fetch(`/api/admin/participants?${params.toString()}`);
     const data = await res.json();
@@ -104,7 +179,7 @@ export default function AttendeesPage() {
     setPagination(data.pagination || null);
     setCurrentPage(page);
     setIsParticipantsLoading(false);
-  }, [pageSize, appliedPaymentFilter, appliedGroupFilter, appliedRoomTypeFilter, appliedNameFilter]);
+  }, [pageSize, appliedPaymentFilter, appliedGroupFilter, appliedRoomTypeFilter, appliedNameFilter, forms]);
 
   // 최초 진입 시 1회만 실행
   useEffect(() => {
@@ -124,6 +199,53 @@ export default function AttendeesPage() {
     if (!selectedFormId) return;
     fetchParticipants(selectedFormId, 1);
   }, [selectedFormId, fetchParticipants]);
+
+  // 현재 선택된 폼 정보
+  const currentForm = forms.find(f => f.id === selectedFormId);
+
+  // 현재 폼에 accommodation-calculator 필드 찾기 (useMemo로 최적화)
+  const accommodationField = useMemo(() => {
+    return currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
+  }, [currentForm]);
+
+  // 그룹 ID 목록 추출 (중복 제거) - useMemo로 최적화
+  const groupIds = useMemo(() => {
+    return Array.from(new Set(
+      participants
+        .filter(p => p.groupId)
+        .map(p => p.groupId)
+    )).sort();
+  }, [participants]);
+
+  // 방 타입 목록 추출 (중복 제거) - useMemo로 최적화
+  const roomTypes = useMemo(() => {
+    return Array.from(new Set(
+      participants
+        .filter(p => p.roomType)
+        .map(p => p.roomType)
+    )).sort();
+  }, [participants]);
+
+  // 그룹 정보 맵 생성 (그룹 드롭다운 렌더링 최적화)
+  const groupInfoMap = useMemo(() => {
+    const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
+    const phoneField = currentForm?.fields?.find(f => f.type === 'tel');
+
+    return groupIds.reduce((acc, groupId) => {
+      const groupMembers = participants.filter(p => p.groupId === groupId);
+      const representative = groupMembers.find(p => p.isRepresentative);
+
+      const repName = representative?.[nameField?.id] || representative?.representativeName || '알 수 없음';
+      const repPhone = representative?.[phoneField?.id] || '';
+
+      acc[groupId] = {
+        label: repPhone ? `${repName} (${repPhone})` : repName,
+        memberCount: groupMembers.length
+      };
+
+      return acc;
+    }, {});
+  }, [groupIds, participants, currentForm]);
 
   // 참가자 삭제
   const deleteParticipant = async (participantId) => {
@@ -331,24 +453,7 @@ export default function AttendeesPage() {
     );
   }
 
-  const currentForm = forms.find(f => f.id === selectedFormId);
-
-  // 현재 폼에 accommodation-calculator가 있는지 확인
-  const hasAccommodation = currentForm?.fields?.some(f => f.type === 'accommodation-calculator');
-
-  // 그룹 ID 목록 추출 (중복 제거) - 현재 페이지 데이터에서만
-  const groupIds = Array.from(new Set(
-    participants
-      .filter(p => p.groupId)
-      .map(p => p.groupId)
-  )).sort();
-
-  // 방 타입 목록 추출 (중복 제거)
-  const roomTypes = Array.from(new Set(
-    participants
-      .filter(p => p.roomType)
-      .map(p => p.roomType)
-  )).sort();
+  const hasAccommodation = !!accommodationField;
 
   // 서버에서 필터링된 데이터를 받으므로 클라이언트 필터링 불필요
   const filteredParticipants = participants;
@@ -687,10 +792,16 @@ export default function AttendeesPage() {
           onChange={(e) => {
             setSelectedFormId(e.target.value);
             // 폼 변경시 모든 필터 및 페이지 초기화
+            // 1. UI 필터 초기화
             setGroupFilter('');
             if (nameInputRef.current) nameInputRef.current.value = '';
             setPaymentFilter('');
             setRoomTypeFilter('');
+            // 2. 적용된 필터 상태도 초기화 (중요!)
+            setAppliedNameFilter('');
+            setAppliedPaymentFilter('');
+            setAppliedGroupFilter('');
+            setAppliedRoomTypeFilter('');
             setCurrentPage(1);
           }}
           className="w-full max-w-md border border-gray-300 rounded-md p-2"
@@ -715,23 +826,10 @@ export default function AttendeesPage() {
             >
               <option value="">전체 보기 ({participants.length}명)</option>
               {groupIds.map(groupId => {
-                const groupMembers = participants.filter(p => p.groupId === groupId);
-                const representative = groupMembers.find(p => p.isRepresentative);
-
-                // 대표자의 이름과 전화번호 가져오기
-                const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
-                const phoneField = currentForm?.fields?.find(f => f.type === 'tel');
-
-                const repName = representative?.[nameField?.id] || representative?.representativeName || '알 수 없음';
-                const repPhone = representative?.[phoneField?.id] || '';
-
-                const groupLabel = repPhone
-                  ? `${repName} (${repPhone})`
-                  : repName;
-
+                const groupInfo = groupInfoMap[groupId];
                 return (
                   <option key={groupId} value={groupId}>
-                    그룹: {groupLabel} - {groupMembers.length}명
+                    그룹: {groupInfo.label} - {groupInfo.memberCount}명
                   </option>
                 );
               })}
