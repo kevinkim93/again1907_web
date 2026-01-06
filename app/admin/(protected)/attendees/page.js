@@ -7,10 +7,8 @@ import SkeletonTable from './components/SkeletonTable';
 export default function AttendeesPage() {
   const [forms, setForms] = useState([]);
   const [selectedFormId, setSelectedFormId] = useState('');
-  const [participants, setParticipants] = useState([]);
   const [settings, setSettings] = useState(null);
   const [isFormsLoading, setIsFormsLoading] = useState(true); // 폼 목록 로딩
-  const [isParticipantsLoading, setIsParticipantsLoading] = useState(false); // 데이터 로딩
   const [rooms, setRooms] = useState([]);
   const [groupFilter, setGroupFilter] = useState(''); // 그룹 ID 필터
   const nameInputRef = useRef(null); // 이름 필터 ref (uncontrolled)
@@ -26,9 +24,13 @@ export default function AttendeesPage() {
   const [appliedGroupFilter, setAppliedGroupFilter] = useState('');
   const [appliedRoomTypeFilter, setAppliedRoomTypeFilter] = useState('');
 
-  // 페이지네이션 상태
+  // 🚀 클라이언트 측 필터링 최적화: 전체 데이터 캐싱
+  const [allParticipants, setAllParticipants] = useState([]); // 전체 데이터 캐시
+  const [isDataLoaded, setIsDataLoaded] = useState(false); // 데이터 로드 완료 여부
+  const [isLoadingData, setIsLoadingData] = useState(false); // 데이터 로딩 중
+
+  // 페이지네이션 상태 (클라이언트 측)
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState(null);
   const [pageSize, setPageSize] = useState(10);
 
   // 폼 목록 가져오기
@@ -55,131 +57,76 @@ export default function AttendeesPage() {
     setRooms(data.rooms || []);
   }, []);
 
-  // 검색 버튼 클릭 핸들러 (상태 업데이트 문제 해결)
-  const handleSearch = async () => {
+  // 🚀 전체 참가자 데이터 가져오기 (클라이언트 측 필터링 최적화)
+  const fetchAllParticipants = useCallback(async (formId) => {
+    if (!formId) return;
+
+    console.log('🔄 전체 데이터 로드 시작:', formId);
+    setIsLoadingData(true);
+    const collectionName = `participants_${formId}`;
+
+    try {
+      const params = new URLSearchParams({
+        collectionName
+      });
+
+      // Firestore 인덱스 가능한 필터만 서버에서 적용 (성능 최적화)
+      // 이름 필터는 클라이언트에서 처리
+      if (appliedPaymentFilter) params.append('paymentStatus', appliedPaymentFilter);
+      if (appliedGroupFilter) params.append('groupId', appliedGroupFilter);
+      if (appliedRoomTypeFilter) params.append('roomType', appliedRoomTypeFilter);
+
+      const res = await fetch(`/api/admin/participants/all?${params.toString()}`);
+      const data = await res.json();
+
+      console.log('✅ 전체 데이터 로드 완료:', data.totalCount, '건');
+      setAllParticipants(data.participants || []);
+      setIsDataLoaded(true);
+    } catch (error) {
+      console.error('❌ 데이터 로드 실패:', error);
+      setAllParticipants([]);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [appliedPaymentFilter, appliedGroupFilter, appliedRoomTypeFilter]);
+
+  // 검색 버튼 클릭 핸들러 (클라이언트 측 필터링 - 즉시 응답)
+  const handleSearch = () => {
     const nameValue = nameInputRef.current?.value || '';
 
-    // 상태 업데이트
+    console.log('🔍 필터 적용:', { name: nameValue, payment: paymentFilter, group: groupFilter, room: roomTypeFilter });
+
+    // 필터 상태 업데이트 (useMemo 자동 재계산)
     setAppliedNameFilter(nameValue);
     setAppliedPaymentFilter(paymentFilter);
     setAppliedGroupFilter(groupFilter);
     setAppliedRoomTypeFilter(roomTypeFilter);
 
-    // 상태에 의존하지 않고 직접 값으로 검색
-    if (!selectedFormId) return;
-
-    setIsParticipantsLoading(true);
-    const collectionName = `participants_${selectedFormId}`;
-
-    const params = new URLSearchParams({
-      collectionName,
-      page: '1',
-      limit: pageSize.toString()
-    });
-
-    if (paymentFilter) params.append('paymentStatus', paymentFilter);
-    if (groupFilter) params.append('groupId', groupFilter);
-    if (roomTypeFilter) params.append('roomType', roomTypeFilter);
-
-    // 이름 필터와 nameFieldId 추가
-    if (nameValue) {
-      params.append('searchName', nameValue);
-      const form = forms.find(f => f.id === selectedFormId);
-      const nameField = form?.fields?.find(f =>
-        f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명'))
-      );
-      if (nameField) {
-        params.append('nameFieldId', nameField.id);
-      }
-      console.log('🔍 검색 요청:', { searchName: nameValue, nameFieldId: nameField?.id });
-    }
-
-    const res = await fetch(`/api/admin/participants?${params.toString()}`);
-    const data = await res.json();
-
-    console.log('📊 검색 결과:', data.participants?.length, '건');
-    setParticipants(data.participants || []);
-    setPagination(data.pagination || null);
+    // 첫 페이지로 이동
     setCurrentPage(1);
-    setIsParticipantsLoading(false);
+
+    // API 호출 없음 - 클라이언트 메모리에서 즉시 필터링!
   };
 
-  // 필터 초기화 핸들러 (상태 동기화 문제 해결)
-  const handleResetFilters = async () => {
-    // 1. UI 입력 필드 초기화
+  // 필터 초기화 핸들러
+  const handleResetFilters = () => {
+    // UI 입력 필드 초기화
     if (nameInputRef.current) nameInputRef.current.value = '';
     setPaymentFilter('');
     setGroupFilter('');
     setRoomTypeFilter('');
 
-    // 2. 적용된 필터 상태 초기화
+    // 적용된 필터 상태 초기화
     setAppliedNameFilter('');
     setAppliedPaymentFilter('');
     setAppliedGroupFilter('');
     setAppliedRoomTypeFilter('');
 
-    // 3. 필터 없이 직접 데이터 가져오기 (상태에 의존하지 않음)
-    if (!selectedFormId) return;
-
-    setIsParticipantsLoading(true);
-    const collectionName = `participants_${selectedFormId}`;
-
-    // 필터 없는 기본 파라미터만 사용
-    const params = new URLSearchParams({
-      collectionName,
-      page: '1',
-      limit: pageSize.toString()
-    });
-
-    const res = await fetch(`/api/admin/participants?${params.toString()}`);
-    const data = await res.json();
-
-    setParticipants(data.participants || []);
-    setPagination(data.pagination || null);
+    // 첫 페이지로 이동
     setCurrentPage(1);
-    setIsParticipantsLoading(false);
+
+    // API 호출 없음 - 필터만 제거하면 전체 데이터 표시
   };
-
-  // 선택된 폼의 참가자 가져오기
-  const fetchParticipants = useCallback(async (formId, page = 1) => {
-    if (!formId) return;
-
-    setIsParticipantsLoading(true);
-    const collectionName = `participants_${formId}`;
-
-    // URL 파라미터 구성
-    const params = new URLSearchParams({
-      collectionName,
-      page: page.toString(),
-      limit: pageSize.toString()
-    });
-
-    // 적용된 필터 파라미터 추가 (검색 버튼을 누른 후의 값)
-    if (appliedPaymentFilter) params.append('paymentStatus', appliedPaymentFilter);
-    if (appliedGroupFilter) params.append('groupId', appliedGroupFilter);
-    if (appliedRoomTypeFilter) params.append('roomType', appliedRoomTypeFilter);
-
-    // 이름 필터와 함께 동적 필드 ID도 전송
-    if (appliedNameFilter) {
-      params.append('searchName', appliedNameFilter);
-      // 현재 폼에서 이름 필드 찾기
-      const form = forms.find(f => f.id === formId);
-      const nameField = form?.fields?.find(f =>
-        f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명'))
-      );
-      if (nameField) {
-        params.append('nameFieldId', nameField.id);
-      }
-    }
-
-    const res = await fetch(`/api/admin/participants?${params.toString()}`);
-    const data = await res.json();
-
-    setParticipants(data.participants || []);
-    setPagination(data.pagination || null);
-    setCurrentPage(page);
-    setIsParticipantsLoading(false);
-  }, [pageSize, appliedPaymentFilter, appliedGroupFilter, appliedRoomTypeFilter, appliedNameFilter, forms]);
 
   // 최초 진입 시 1회만 실행
   useEffect(() => {
@@ -194,11 +141,11 @@ export default function AttendeesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 최초 1회만 실행
 
-  // 폼 변경 시 첫 페이지 로드
+  // 폼 변경 시 전체 데이터 로드
   useEffect(() => {
     if (!selectedFormId) return;
-    fetchParticipants(selectedFormId, 1);
-  }, [selectedFormId, fetchParticipants]);
+    fetchAllParticipants(selectedFormId);
+  }, [selectedFormId, fetchAllParticipants]);
 
   // 현재 선택된 폼 정보
   const currentForm = forms.find(f => f.id === selectedFormId);
@@ -208,31 +155,88 @@ export default function AttendeesPage() {
     return currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
   }, [currentForm]);
 
-  // 그룹 ID 목록 추출 (중복 제거) - useMemo로 최적화
+  // 🚀 클라이언트 측 필터링 (즉시 응답)
+  const filteredParticipants = useMemo(() => {
+    if (!isDataLoaded) return [];
+
+    let result = [...allParticipants];
+
+    // 이름 필터
+    if (appliedNameFilter) {
+      const searchLower = appliedNameFilter.toLowerCase();
+      const nameField = currentForm?.fields?.find(f =>
+        f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명'))
+      );
+
+      result = result.filter(p => {
+        const searchableFields = [];
+
+        // 동적 필드 ID로 저장된 이름
+        if (nameField && p[nameField.id]) {
+          const nameValue = p[nameField.id];
+          const actualName = nameValue.includes(' - 등록:')
+            ? nameValue.split(' - 등록:')[0]
+            : nameValue;
+          searchableFields.push(actualName);
+        }
+
+        // 그룹원의 대표자 이름
+        if (p.representativeName) {
+          searchableFields.push(p.representativeName);
+        }
+
+        return searchableFields.some(field =>
+          field && field.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    console.log('🔍 필터링 완료:', { total: allParticipants.length, filtered: result.length });
+    return result;
+  }, [allParticipants, appliedNameFilter, currentForm, isDataLoaded]);
+
+  // 클라이언트 측 페이지네이션
+  const paginatedParticipants = useMemo(() => {
+    const offset = (currentPage - 1) * pageSize;
+    return filteredParticipants.slice(offset, offset + pageSize);
+  }, [filteredParticipants, currentPage, pageSize]);
+
+  // 페이지네이션 정보
+  const paginationInfo = useMemo(() => ({
+    page: currentPage,
+    limit: pageSize,
+    hasNext: (currentPage * pageSize) < filteredParticipants.length,
+    hasPrev: currentPage > 1,
+    totalFiltered: filteredParticipants.length,
+    totalUnfiltered: allParticipants.length,
+    totalPages: Math.ceil(filteredParticipants.length / pageSize)
+  }), [currentPage, pageSize, filteredParticipants.length, allParticipants.length]);
+
+  // 그룹 ID 목록 추출 (필터링된 데이터 기준)
   const groupIds = useMemo(() => {
     return Array.from(new Set(
-      participants
+      allParticipants
         .filter(p => p.groupId)
         .map(p => p.groupId)
     )).sort();
-  }, [participants]);
+  }, [allParticipants]);
 
-  // 방 타입 목록 추출 (중복 제거) - useMemo로 최적화
+  // 방 타입 목록 추출 (필터링된 데이터 기준)
   const roomTypes = useMemo(() => {
     return Array.from(new Set(
-      participants
+      allParticipants
         .filter(p => p.roomType)
         .map(p => p.roomType)
     )).sort();
-  }, [participants]);
+  }, [allParticipants]);
 
-  // 그룹 정보 맵 생성 (그룹 드롭다운 렌더링 최적화)
+  // 그룹 정보 맵 생성
   const groupInfoMap = useMemo(() => {
     const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
     const phoneField = currentForm?.fields?.find(f => f.type === 'tel');
 
     return groupIds.reduce((acc, groupId) => {
-      const groupMembers = participants.filter(p => p.groupId === groupId);
+      const groupMembers = allParticipants.filter(p => p.groupId === groupId);
       const representative = groupMembers.find(p => p.isRepresentative);
 
       const repName = representative?.[nameField?.id] || representative?.representativeName || '알 수 없음';
@@ -245,20 +249,33 @@ export default function AttendeesPage() {
 
       return acc;
     }, {});
-  }, [groupIds, participants, currentForm]);
+  }, [groupIds, allParticipants, currentForm]);
 
   // 참가자 삭제
   const deleteParticipant = async (participantId) => {
     if (!confirm('정말 삭제하시겠습니까?')) return;
 
     const collectionName = `participants_${selectedFormId}`;
-    await fetch('/api/admin/attendees/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ collectionName, participantId }),
-    });
 
-    fetchParticipants(selectedFormId);
+    try {
+      // 🚀 낙관적 업데이트: 먼저 로컬에서 제거 (즉시 반영)
+      setAllParticipants(prev => prev.filter(p => p.id !== participantId));
+
+      const res = await fetch('/api/admin/attendees/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ collectionName, participantId }),
+      });
+
+      if (!res.ok) {
+        // 실패 시 데이터 복구
+        console.error('삭제 실패, 데이터 복구 중...');
+        fetchAllParticipants(selectedFormId);
+      }
+    } catch (error) {
+      console.error('삭제 에러:', error);
+      fetchAllParticipants(selectedFormId);
+    }
   };
 
   // 결제 상태 토글
@@ -266,23 +283,42 @@ export default function AttendeesPage() {
     const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
     const collectionName = `participants_${selectedFormId}`;
 
-    await fetch('/api/admin/attendees/payment-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        collectionName,
-        participantId,
-        paymentStatus: newStatus
-      }),
-    });
+    try {
+      // 🚀 낙관적 업데이트: 먼저 로컬 상태 변경 (즉시 반영)
+      setAllParticipants(prev =>
+        prev.map(p => p.id === participantId ? { ...p, paymentStatus: newStatus } : p)
+      );
 
-    fetchParticipants(selectedFormId);
+      const res = await fetch('/api/admin/attendees/payment-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionName,
+          participantId,
+          paymentStatus: newStatus
+        }),
+      });
+
+      if (!res.ok) {
+        // 실패 시 이전 상태로 복구
+        console.error('상태 변경 실패, 데이터 복구 중...');
+        setAllParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, paymentStatus: currentStatus } : p)
+        );
+      }
+    } catch (error) {
+      console.error('상태 변경 에러:', error);
+      // 실패 시 이전 상태로 복구
+      setAllParticipants(prev =>
+        prev.map(p => p.id === participantId ? { ...p, paymentStatus: currentStatus } : p)
+      );
+    }
   };
 
   // 방 배정 (roomNumber 기반)
   const assignRoom = async (participantId, roomNumber) => {
     const collectionName = `participants_${selectedFormId}`;
-    const participant = participants.find(p => p.id === participantId);
+    const participant = allParticipants.find(p => p.id === participantId);
 
     // 배정 해제
     if (!roomNumber || roomNumber === null || roomNumber === '') {
@@ -298,10 +334,10 @@ export default function AttendeesPage() {
         }),
       });
 
-      // 로컬 상태 업데이트 (깜빡거림 방지)
+      // 로컬 상태 업데이트
       const data = await res.json();
       if (data.ok && data.participant) {
-        setParticipants(prev =>
+        setAllParticipants(prev =>
           prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
         );
       }
@@ -357,7 +393,7 @@ export default function AttendeesPage() {
 
         if (roomOnDate) {
           // 해당 날짜에 이 방에 배정된 참가자들 찾기 (자기 자신 제외)
-          const participantsInRoomOnDate = participants.filter(p => {
+          const participantsInRoomOnDate = allParticipants.filter(p => {
             if (p.id === participantId) return false;
 
             // roomAssignments가 있으면 그것으로 체크
@@ -409,9 +445,13 @@ export default function AttendeesPage() {
 
     const data = await res.json();
     if (data.ok && data.participant) {
-      setParticipants(prev =>
+      // 🚀 낙관적 업데이트: 로컬 캐시 즉시 업데이트 (깜빡임 방지)
+      setAllParticipants(prev =>
         prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
       );
+    } else {
+      // 실패 시 전체 데이터 다시 로드
+      fetchAllParticipants(selectedFormId);
     }
   };
 
@@ -454,9 +494,6 @@ export default function AttendeesPage() {
   }
 
   const hasAccommodation = !!accommodationField;
-
-  // 서버에서 필터링된 데이터를 받으므로 클라이언트 필터링 불필요
-  const filteredParticipants = participants;
 
   // 엑셀용 값 포맷팅
   const formatExcelValue = (field, value, participant) => {
@@ -535,31 +572,14 @@ export default function AttendeesPage() {
       return;
     }
 
-    // 전체 참가자 데이터 가져오기 (페이지네이션 없이)
-    const collectionName = `participants_${selectedFormId}`;
-    const params = new URLSearchParams({
-      collectionName,
-      page: '1',
-      limit: '10000' // 충분히 큰 숫자로 전체 데이터 가져오기
-    });
-
-    // 적용된 필터만 추가
-    if (appliedPaymentFilter) params.append('paymentStatus', appliedPaymentFilter);
-    if (appliedGroupFilter) params.append('groupId', appliedGroupFilter);
-    if (appliedRoomTypeFilter) params.append('roomType', appliedRoomTypeFilter);
-    if (appliedNameFilter) params.append('searchName', appliedNameFilter);
-
-    const res = await fetch(`/api/admin/participants?${params.toString()}`);
-    const data = await res.json();
-    const allParticipants = data.participants || [];
-
-    if (allParticipants.length === 0) {
+    // 🚀 클라이언트 측 필터링된 데이터 사용 (API 호출 불필요)
+    if (filteredParticipants.length === 0) {
       alert('다운로드할 데이터가 없습니다.');
       return;
     }
 
-    // 엑셀 데이터 생성
-    const excelData = allParticipants.map((participant, index) => {
+    // 엑셀 데이터 생성 (필터링된 데이터 사용)
+    const excelData = filteredParticipants.map((participant, index) => {
       const row = {
         '번호': index + 1,
       };
@@ -715,7 +735,7 @@ export default function AttendeesPage() {
 
     // 각 날짜별로 점유율 계산하여 최대값 찾기
     roomsForNumber.forEach(roomOnDate => {
-      const participantsInRoomOnDate = participants.filter(p => {
+      const participantsInRoomOnDate = allParticipants.filter(p => {
         if (!p.roomAssignments || typeof p.roomAssignments !== 'object') {
           return false;
         }
@@ -824,7 +844,7 @@ export default function AttendeesPage() {
               onChange={(e) => setGroupFilter(e.target.value)}
               className="flex-1 max-w-md border border-gray-300 rounded-md p-2"
             >
-              <option value="">전체 보기 ({participants.length}명)</option>
+              <option value="">전체 보기 ({allParticipants.length}명)</option>
               {groupIds.map(groupId => {
                 const groupInfo = groupInfoMap[groupId];
                 return (
@@ -937,34 +957,35 @@ export default function AttendeesPage() {
         )}
       </div>
 
-      {/* 페이지네이션 컨트롤 */}
-      {pagination && (pagination.hasNext || pagination.hasPrev) && (
+      {/* 페이지네이션 컨트롤 (클라이언트 측) */}
+      {filteredParticipants.length > 0 && (
         <div className="mb-6 bg-white shadow rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              페이지 {pagination.page} (현재 {filteredParticipants.length}건 표시)
+              페이지 {paginationInfo.page} / {paginationInfo.totalPages}
+              (필터링: {paginationInfo.totalFiltered}건 / 전체: {paginationInfo.totalUnfiltered}건)
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => fetchParticipants(selectedFormId, 1)}
-                disabled={!pagination.hasPrev}
+                onClick={() => setCurrentPage(1)}
+                disabled={!paginationInfo.hasPrev}
                 className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 처음
               </button>
               <button
-                onClick={() => fetchParticipants(selectedFormId, currentPage - 1)}
-                disabled={!pagination.hasPrev}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                disabled={!paginationInfo.hasPrev}
                 className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 이전
               </button>
               <span className="px-3 py-1 text-sm font-medium">
-                페이지 {pagination.page}
+                페이지 {paginationInfo.page}
               </span>
               <button
-                onClick={() => fetchParticipants(selectedFormId, currentPage + 1)}
-                disabled={!pagination.hasNext}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                disabled={!paginationInfo.hasNext}
                 className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 다음
@@ -973,7 +994,7 @@ export default function AttendeesPage() {
                 value={pageSize}
                 onChange={(e) => {
                   setPageSize(parseInt(e.target.value));
-                  fetchParticipants(selectedFormId, 1);
+                  setCurrentPage(1);
                 }}
                 className="ml-4 px-2 py-1 border rounded text-sm"
               >
@@ -988,7 +1009,7 @@ export default function AttendeesPage() {
       )}
 
       {/* 참가자 목록 */}
-      {isParticipantsLoading ? (
+      {isLoadingData ? (
         <SkeletonTable />
       ) : (
         <div className="bg-white shadow rounded-lg p-6">
@@ -1111,13 +1132,13 @@ export default function AttendeesPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredParticipants.map(participant => (
+                {paginatedParticipants.map(participant => (
                   <tr key={participant.id}>
                     <td className="border p-2">
                       {participant.groupId ? (
                         (() => {
                           // 대표자의 이름과 전화번호 찾기
-                          const groupMembers = participants.filter(p => p.groupId === participant.groupId);
+                          const groupMembers = allParticipants.filter(p => p.groupId === participant.groupId);
                           const representative = groupMembers.find(p => p.isRepresentative);
 
                           const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
@@ -1273,7 +1294,7 @@ export default function AttendeesPage() {
 
                                   if (roomOnDate) {
                                     // 해당 날짜에 이 방에 배정된 참가자들 찾기 (자기 자신 제외)
-                                    const participantsInRoomOnDate = participants.filter(p => {
+                                    const participantsInRoomOnDate = allParticipants.filter(p => {
                                       if (p.id === participant.id) return false; // 자기 자신 제외
 
                                       // roomAssignments로 체크 (정확한 날짜별 매칭)

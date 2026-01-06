@@ -74,9 +74,7 @@ export async function GET(req) {
 
     // 이름 검색 필터링 (동적 필드 ID 지원)
     if (searchName) {
-      console.log('🔍 서버 검색 시작:', { searchName, nameFieldId });
       const searchLower = searchName.toLowerCase();
-      const beforeCount = participants.length;
 
       participants = participants.filter(p => {
         const searchableFields = [];
@@ -96,19 +94,10 @@ export async function GET(req) {
           searchableFields.push(p.representativeName);
         }
 
-        const match = searchableFields.some(field =>
+        return searchableFields.some(field =>
           field && field.toLowerCase().includes(searchLower)
         );
-
-        // 첫 번째 매칭 항목만 로그
-        if (match && beforeCount === participants.length) {
-          console.log('✅ 첫 매칭:', { searchableFields, id: p.id });
-        }
-
-        return match;
       });
-
-      console.log('📊 필터 결과:', { beforeCount, afterCount: participants.length });
     }
 
     // 필터링된 결과에 페이지네이션 적용
