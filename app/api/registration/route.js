@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminDb as db } from '@/lib/firebaseAdmin';
+import { Timestamp } from 'firebase-admin/firestore';
 
 // PUT: 등록 정보 수정
 export async function PUT(request) {
@@ -52,7 +53,7 @@ export async function PUT(request) {
     const updatedData = {
       ...existingData,
       ...formData,
-      updatedAt: new Date().toISOString(),
+      updatedAt: Timestamp.now(),
     };
 
     // amount 초기화 (무료에서 유료로 변경될 때를 대비)
@@ -389,8 +390,8 @@ export async function PUT(request) {
               total: individualAccomAmount,
             },
 
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
           };
 
           batch.set(memberRef, memberData);
