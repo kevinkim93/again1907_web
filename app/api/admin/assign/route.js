@@ -34,7 +34,7 @@ function parseKoreanDate(dateStr) {
 
 export async function POST(req) {
   const deny = requireAdmin(req); if (deny) return deny;
-  const { collectionName, participantId, roomNumber } = await req.json();
+  const { collectionName, participantId, roomNumber, rooms: clientRooms } = await req.json();
 
   if (!collectionName || !participantId) {
     return new NextResponse('collectionName and participantId are required', { status: 400 });
@@ -58,11 +58,17 @@ export async function POST(req) {
   let firstRoomName = null;
 
   if (roomNumber) {
-    // 모든 방 문서 가져오기
-    const roomsSnap = await adminDb.collection('rooms').get();
-    const allRooms = roomsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // 🚀 성능 최적화: 클라이언트에서 rooms 데이터를 받으면 사용, 없으면 DB 조회
+    let allRooms;
+    if (clientRooms && Array.isArray(clientRooms) && clientRooms.length > 0) {
+      allRooms = clientRooms;
+      console.log('  ✅ Using client-provided rooms:', allRooms.length);
+    } else {
+      const roomsSnap = await adminDb.collection('rooms').get();
+      allRooms = roomsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      console.log('  ⚠️ Fetched rooms from DB:', allRooms.length);
+    }
 
-    console.log('  Total rooms:', allRooms.length);
     console.log('  Sample room dates:', allRooms.slice(0, 3).map(r => r.date));
 
     // 각 숙박 날짜에 대해 해당 날짜의 방 번호 문서 찾기
@@ -103,17 +109,22 @@ export async function POST(req) {
 
   console.log('  Final roomAssignments:', roomAssignments);
 
-  await adminDb.collection(collectionName).doc(participantId).update({
+  const updateData = {
     roomAssignments,
     roomId: firstRoomId,
     roomName: firstRoomName,
     roomNumber: roomNumber || null, // 방 번호도 저장
-  });
+  };
 
-  // 업데이트된 participant 데이터 반환 (깜빡거림 방지를 위한 로컬 상태 업데이트용)
-  const updatedDoc = await adminDb.collection(collectionName).doc(participantId).get();
+  await adminDb.collection(collectionName).doc(participantId).update(updateData);
+
+  // 🚀 성능 최적화: 두 번째 읽기 제거, 업데이트한 데이터를 바로 반환
   return NextResponse.json({
     ok: true,
-    participant: { id: participantId, ...updatedDoc.data() }
+    participant: {
+      id: participantId,
+      ...participant,  // 기존 데이터
+      ...updateData    // 업데이트된 필드
+    }
   });
 }

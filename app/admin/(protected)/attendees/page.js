@@ -331,6 +331,7 @@ export default function AttendeesPage() {
           collectionName,
           participantId,
           roomNumber: null,
+          rooms, // 🚀 성능 최적화: rooms 데이터 전달
         }),
       });
 
@@ -440,6 +441,7 @@ export default function AttendeesPage() {
         collectionName,
         participantId,
         roomNumber,
+        rooms, // 🚀 성능 최적화: rooms 데이터 전달하여 DB 조회 생략
       }),
     });
 
@@ -1428,9 +1430,12 @@ function renderFieldValue(field, value, participant) {
 
       return (
         <div className="whitespace-pre-line">
-          {paymentDates.map((date, idx) => (
-            <div key={idx}>{date}</div>
-          ))}
+          {paymentDates.map((date, idx) => {
+            // "1월 27일 (Day2)" 형식에서 "(Day2)" 부분만 추출
+            const dayMatch = date.match(/\((Day\d+)\)/i);
+            const displayText = dayMatch ? dayMatch[1].toUpperCase() : date;
+            return <span key={idx}>{displayText} </span>;
+          })}
           <div className="font-semibold mt-1 pt-1 border-t">{amountDisplay}</div>
         </div>
       );
@@ -1442,10 +1447,11 @@ function renderFieldValue(field, value, participant) {
       const accomAmount = participant.accommodationAmount?.total
         ? `${participant.accommodationAmount.total.toLocaleString()}원`
         : '-';
+      const peopleCount = participant.totalGroupMembers;
 
       // 인원수 가져오기
-      const roomOptionsFieldId = `${field.id}_roomOptions`;
-      const peopleCount = participant[roomOptionsFieldId]?.count || '-';
+      // const roomOptionsFieldId = `${field.id}_roomOptions`;
+      // const peopleCount = participant[roomOptionsFieldId]?.count || '-';
 
       if (!Array.isArray(accomDates) || accomDates.length === 0) {
         return `${roomType} / ${peopleCount}명 / ${accomAmount}`;
@@ -1453,9 +1459,12 @@ function renderFieldValue(field, value, participant) {
 
       return (
         <div className="whitespace-pre-line">
-          {accomDates.map((date, idx) => (
-            <div key={idx}>{date}</div>
-          ))}
+          {accomDates.map((date, idx) => {
+            // "1월 27일 (Day2)" 형식에서 "(Day2)" 부분만 추출
+            const dayMatch = date.match(/\((Day\d+)\)/i);
+            const displayText = dayMatch ? dayMatch[1].toUpperCase() : date;
+            return <span key={idx}>{displayText} </span>;
+          })}
           <div className="font-semibold mt-1 pt-1 border-t">
             {roomType} / {peopleCount}명 / {accomAmount}
           </div>
