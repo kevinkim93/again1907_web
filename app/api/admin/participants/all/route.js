@@ -12,6 +12,7 @@ import { requireAdmin } from '../../_auth';
  */
 export async function GET(req) {
   const deny = requireAdmin(req); if (deny) return deny;
+  console.log('🔍 Collection:', req);
 
   const { searchParams } = new URL(req.url);
   const collectionName = searchParams.get('collectionName');
@@ -26,8 +27,20 @@ export async function GET(req) {
   }
 
   try {
-    let query = adminDb.collection(collectionName);
+    // 🚀 Firestore 정렬: participants_form_ 컬렉션은 복합 정렬 사용
+    const useCompoundSort = collectionName === 'participants_form_1760381290629';
 
+    console.log('🔍 Collection:', collectionName, '| useCompoundSort:', useCompoundSort);
+
+    let query = adminDb.collection(collectionName)
+      .orderBy('registeredAt', 'desc'); // 날짜순 (최신순)
+
+    // groupId 필드가 있는 컬렉션만 복합 정렬
+    if (useCompoundSort) {
+      console.log('✅ Applying groupId sorting');
+      query = query.orderBy('groupId', 'asc').orderBy('isRepresentative', 'asc');
+      // 같은 날짜 내에서 groupId 기준 그룹화
+    }
     // Firestore where 필터 적용 (인덱스 사용 가능)
     if (paymentStatus) {
       query = query.where('paymentStatus', '==', paymentStatus);
@@ -65,12 +78,10 @@ export async function GET(req) {
       };
     });
 
-    // 최신순 정렬
-    participants.sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return dateB - dateA;
-    });
+    // Firestore에서 이미 정렬되어 옴
+    // participants_form_ 컬렉션: createdAt desc → groupId asc (복합 정렬)
+    // 기타 컬렉션: createdAt desc (단일 정렬)
+    // JavaScript 정렬 불필요!
 
     // 응답 반환 (이름 필터링은 클라이언트에서 처리)
     return NextResponse.json({
