@@ -324,24 +324,42 @@ export default function AttendeesPage() {
     if (!roomNumber || roomNumber === null || roomNumber === '') {
       if (!confirm('방 배정을 해제하시겠습니까?')) return;
 
-      const res = await fetch('/api/admin/assign', {
+      // 🚀 즉시 UI 업데이트 (낙관적)
+      setAllParticipants(prev =>
+        prev.map(p => p.id === participantId ? {
+          ...p,
+          roomNumber: null,
+          roomId: null,
+          roomName: null,
+          roomAssignments: {}
+        } : p)
+      );
+
+      // 백그라운드로 서버 동기화
+      fetch('/api/admin/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           collectionName,
           participantId,
           roomNumber: null,
-          rooms, // 🚀 성능 최적화: rooms 데이터 전달
+          rooms,
         }),
+      }).then(res => res.json()).then(data => {
+        // 서버 응답으로 최종 동기화
+        if (data.ok && data.participant) {
+          setAllParticipants(prev =>
+            prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
+          );
+        } else {
+          // 실패 시 전체 데이터 다시 로드
+          fetchAllParticipants(selectedFormId);
+        }
+      }).catch(error => {
+        console.error('방 배정 해제 실패:', error);
+        fetchAllParticipants(selectedFormId);
       });
 
-      // 로컬 상태 업데이트
-      const data = await res.json();
-      if (data.ok && data.participant) {
-        setAllParticipants(prev =>
-          prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
-        );
-      }
       return;
     }
 
@@ -434,27 +452,39 @@ export default function AttendeesPage() {
       }
     }
 
-    const res = await fetch('/api/admin/assign', {
+    // 🚀 즉시 UI 업데이트 (낙관적) - 사용자는 바로 변경된 것처럼 보임
+    setAllParticipants(prev =>
+      prev.map(p => p.id === participantId ? {
+        ...p,
+        roomNumber: roomNumber
+      } : p)
+    );
+
+    // 백그라운드로 서버 동기화 (await 제거 - 비동기)
+    fetch('/api/admin/assign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         collectionName,
         participantId,
         roomNumber,
-        rooms, // 🚀 성능 최적화: rooms 데이터 전달하여 DB 조회 생략
+        rooms,
       }),
-    });
-
-    const data = await res.json();
-    if (data.ok && data.participant) {
-      // 🚀 낙관적 업데이트: 로컬 캐시 즉시 업데이트 (깜빡임 방지)
-      setAllParticipants(prev =>
-        prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
-      );
-    } else {
-      // 실패 시 전체 데이터 다시 로드
+    }).then(res => res.json()).then(data => {
+      // 서버 응답으로 최종 동기화 (roomAssignments 등 추가 정보 반영)
+      if (data.ok && data.participant) {
+        setAllParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
+        );
+      } else {
+        // 실패 시 전체 데이터 다시 로드
+        console.error('방 배정 실패, 데이터 복구 중...');
+        fetchAllParticipants(selectedFormId);
+      }
+    }).catch(error => {
+      console.error('방 배정 에러:', error);
       fetchAllParticipants(selectedFormId);
-    }
+    });
   };
 
   // 방 배정 페이지로 이동
