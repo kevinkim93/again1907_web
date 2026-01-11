@@ -70,11 +70,8 @@ export default function AttendeesPage() {
         collectionName
       });
 
-      // Firestore 인덱스 가능한 필터만 서버에서 적용 (성능 최적화)
-      // 이름 필터는 클라이언트에서 처리
-      if (appliedPaymentFilter) params.append('paymentStatus', appliedPaymentFilter);
-      if (appliedGroupFilter) params.append('groupId', appliedGroupFilter);
-      if (appliedRoomTypeFilter) params.append('roomType', appliedRoomTypeFilter);
+      // 🚀 모든 필터를 클라이언트에서 처리 (서버 필터 제거)
+      // 서버는 전체 데이터만 반환, 필터링은 클라이언트 메모리에서 즉시 처리
 
       const res = await fetch(`/api/admin/participants/all?${params.toString()}`);
       const data = await res.json();
@@ -88,7 +85,7 @@ export default function AttendeesPage() {
     } finally {
       setIsLoadingData(false);
     }
-  }, [appliedPaymentFilter, appliedGroupFilter, appliedRoomTypeFilter]);
+  }, []);
 
   // 검색 버튼 클릭 핸들러 (클라이언트 측 필터링 - 즉시 응답)
   const handleSearch = () => {
@@ -191,9 +188,19 @@ export default function AttendeesPage() {
       });
     }
 
+    // 결제상태 필터
+    if (appliedPaymentFilter) {
+      result = result.filter(p => p.paymentStatus === appliedPaymentFilter);
+    }
+
+    // 방 타입 필터
+    if (appliedRoomTypeFilter) {
+      result = result.filter(p => p.roomType === appliedRoomTypeFilter);
+    }
+
     console.log('🔍 필터링 완료:', { total: allParticipants.length, filtered: result.length });
     return result;
-  }, [allParticipants, appliedNameFilter, currentForm, isDataLoaded]);
+  }, [allParticipants, appliedNameFilter, appliedPaymentFilter, appliedRoomTypeFilter, currentForm, isDataLoaded]);
 
   // 클라이언트 측 페이지네이션
   const paginatedParticipants = useMemo(() => {
@@ -279,40 +286,39 @@ export default function AttendeesPage() {
   };
 
   // 결제 상태 토글
-  const togglePaymentStatus = async (participantId, currentStatus) => {
+  const togglePaymentStatus = (participantId, currentStatus) => {
     const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
     const collectionName = `participants_${selectedFormId}`;
 
-    try {
-      // 🚀 낙관적 업데이트: 먼저 로컬 상태 변경 (즉시 반영)
-      setAllParticipants(prev =>
-        prev.map(p => p.id === participantId ? { ...p, paymentStatus: newStatus } : p)
-      );
+    // 🚀 즉시 UI 업데이트 (낙관적) - 사용자는 바로 변경된 것처럼 보임
+    setAllParticipants(prev =>
+      prev.map(p => p.id === participantId ? { ...p, paymentStatus: newStatus } : p)
+    );
 
-      const res = await fetch('/api/admin/attendees/payment-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          collectionName,
-          participantId,
-          paymentStatus: newStatus
-        }),
-      });
-
+    // 백그라운드로 서버 동기화 (await 제거 - 비동기)
+    fetch('/api/admin/attendees/payment-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        collectionName,
+        participantId,
+        paymentStatus: newStatus
+      }),
+    }).then(res => {
       if (!res.ok) {
         // 실패 시 이전 상태로 복구
-        console.error('상태 변경 실패, 데이터 복구 중...');
+        console.error('결제 상태 변경 실패, 데이터 복구 중...');
         setAllParticipants(prev =>
           prev.map(p => p.id === participantId ? { ...p, paymentStatus: currentStatus } : p)
         );
       }
-    } catch (error) {
-      console.error('상태 변경 에러:', error);
+    }).catch(error => {
+      console.error('결제 상태 변경 에러:', error);
       // 실패 시 이전 상태로 복구
       setAllParticipants(prev =>
         prev.map(p => p.id === participantId ? { ...p, paymentStatus: currentStatus } : p)
       );
-    }
+    });
   };
 
   // 방 배정 (roomNumber 기반)
