@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import SkeletonTable from './components/SkeletonTable';
+import DynamicForm from '@/components/DynamicForm';
 
 export default function AttendeesPage() {
   const [forms, setForms] = useState([]);
@@ -32,6 +33,11 @@ export default function AttendeesPage() {
   // 페이지네이션 상태 (클라이언트 측)
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  // 수정 모드 상태
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
 
   // 폼 목록 가져오기
   const fetchForms = useCallback(async () => {
@@ -237,6 +243,11 @@ export default function AttendeesPage() {
     )).sort();
   }, [allParticipants]);
 
+  // 단체실 사용자가 있는지 확인
+  const hasDormitory = useMemo(() => {
+    return allParticipants.some(p => p.roomType === '단체실');
+  }, [allParticipants]);
+
   // 그룹 정보 맵 생성
   const groupInfoMap = useMemo(() => {
     const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
@@ -282,6 +293,129 @@ export default function AttendeesPage() {
     } catch (error) {
       console.error('삭제 에러:', error);
       fetchAllParticipants(selectedFormId);
+    }
+  };
+
+  // 수정 모드 진입
+  const handleEdit = (participant) => {
+    console.log('🔍 Edit clicked for participant:', participant.id);
+    console.log('  formId:', participant.formId);
+    console.log('  selectedFormId:', selectedFormId);
+
+    // 현재 선택된 폼의 스키마 가져오기
+    const currentForm = forms.find(f => f.id === selectedFormId);
+    if (!currentForm) {
+      console.error('❌ Form not found:', selectedFormId);
+      alert('폼 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    console.log('  Found form:', currentForm.name, '| fields:', currentForm.fields?.length);
+
+    // 참가자 데이터에 폼 필드 및 collectionName 추가
+    const collectionName = `participants_${selectedFormId}`;
+    const editDataWithFreeFields = {
+      ...participant,
+      formFields: currentForm.fields || [],
+      formId: currentForm.id,
+      formName: currentForm.name,
+      collectionName: collectionName, // 컬렉션명 추가
+    };
+
+    // payment-calculator 필드의 _free 값 설정
+    const paymentField = currentForm.fields?.find(f => f.type === 'payment-calculator');
+    if (paymentField) {
+      const freeFieldId = `${paymentField.id}_free`;
+      editDataWithFreeFields[freeFieldId] = participant.isFreePayment || false;
+    }
+
+    // accommodation-calculator 필드의 _free 값 설정
+    const accommodationField = currentForm.fields?.find(f => f.type === 'accommodation-calculator');
+    if (accommodationField) {
+      const freeFieldId = `${accommodationField.id}_free`;
+      editDataWithFreeFields[freeFieldId] = participant.isFreeAccommodation || false;
+    }
+
+    console.log('  Setting editData with fields:', editDataWithFreeFields.formFields?.length || 0);
+    setEditData(editDataWithFreeFields);
+    setEditMode(true);
+    console.log('  Edit mode set to true');
+  };
+
+  // 수정 내용 저장
+  const handleUpdate = async (formData) => {
+    setEditLoading(true);
+
+    try {
+      // 현재 폼의 필드 ID 목록 생성
+      const currentFormFieldIds = new Set();
+      editData.formFields?.forEach(field => {
+        currentFormFieldIds.add(field.id);
+
+        // payment-calculator의 날짜 및 식사 옵션 필드 추가
+        if (field.type === 'payment-calculator') {
+          currentFormFieldIds.add(`${field.id}_dates`);
+          currentFormFieldIds.add(`${field.id}_mealOptions`);
+          currentFormFieldIds.add(`${field.id}_free`); // 무료 옵션 필드 추가
+        }
+
+        // accommodation-calculator의 날짜와 방 타입 필드 추가
+        if (field.type === 'accommodation-calculator') {
+          currentFormFieldIds.add(`${field.id}_dates`);
+          currentFormFieldIds.add(`${field.id}_roomType`);
+          currentFormFieldIds.add(`${field.id}_roomOptions`);
+          currentFormFieldIds.add(`${field.id}_free`); // 무료 옵션 필드 추가
+        }
+
+        // date-of-birth의 임시 필드 추가
+        if (field.type === 'date-of-birth') {
+          currentFormFieldIds.add(`_temp_${field.id}`);
+        }
+      });
+
+      // 현재 폼의 필드에 해당하는 데이터만 필터링
+      const filteredFormData = {};
+      Object.keys(formData).forEach(key => {
+        if (currentFormFieldIds.has(key)) {
+          filteredFormData[key] = formData[key];
+        }
+      });
+
+      console.log('📤 Sending update request:');
+      console.log('  id:', editData.id);
+      console.log('  collectionName:', editData.collectionName);
+      console.log('  filteredFormData:', filteredFormData);
+      console.log('  filteredFormData keys:', Object.keys(filteredFormData));
+
+      const requestBody = {
+        id: editData.id,
+        collectionName: editData.collectionName,
+        formData: filteredFormData,
+      };
+
+      console.log('  Request body:', requestBody);
+
+      const res = await fetch("/api/registration", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText);
+      }
+
+      alert("수정되었습니다.");
+      setEditMode(false);
+
+      // 수정 후 데이터 다시 로드
+      await fetchAllParticipants(selectedFormId);
+    } catch (err) {
+      console.error("수정 오류:", err);
+      alert(`수정 실패: ${err.message || "알 수 없는 오류"}`);
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -497,6 +631,42 @@ export default function AttendeesPage() {
   const goToRoomAssignment = () => {
     window.location.href = '/admin/rooms';
   };
+
+  // 수정 모드일 때 렌더링
+  if (editMode && editData) {
+    console.log('📝 Rendering edit mode');
+    console.log('  editData:', editData);
+    console.log('  formFields:', editData.formFields);
+    console.log('  settings:', settings);
+
+    return (
+      <main className="p-6 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold">참가자 정보 수정</h1>
+          <button
+            onClick={() => setEditMode(false)}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            ← 목록으로
+          </button>
+        </div>
+
+        <div className="bg-white shadow-md rounded-xl p-6">
+          <DynamicForm
+            formSchema={{
+              id: editData.formId,
+              name: editData.formName,
+              fields: editData.formFields || []
+            }}
+            settings={settings}
+            onSubmit={handleUpdate}
+            submitButtonText={editLoading ? "수정 중..." : "수정하기"}
+            initialData={editData}
+          />
+        </div>
+      </main>
+    );
+  }
 
   // 최초 로딩 중 (폼 목록만 로딩 중일 때)
   if (isFormsLoading) {
@@ -1124,6 +1294,7 @@ export default function AttendeesPage() {
                   ))}
                   <th className="border p-2">등록일</th>
                   <th className="border p-2">결제상태</th>
+                  {hasDormitory && <th className="border p-2">성별</th>}
                   {hasAccommodation && <th className="border p-2">숙박 인원</th>}
                   {hasAccommodation && (
                     <th className="border p-2">
@@ -1229,6 +1400,23 @@ export default function AttendeesPage() {
                         {participant.paymentStatus === 'paid' ? '납부완료' : '미납'}
                       </button>
                     </td>
+                    {hasDormitory && (
+                      <td className="border p-2">
+                        {participant.roomType === '단체실' ? (
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            participant.gender === 'male'
+                              ? 'bg-blue-100 text-blue-700'
+                              : participant.gender === 'female'
+                              ? 'bg-pink-100 text-pink-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {participant.gender === 'male' ? '남' : participant.gender === 'female' ? '여' : '-'}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    )}
                     {hasAccommodation && (
                       <td className="border p-2">
                         {(() => {
@@ -1377,12 +1565,20 @@ export default function AttendeesPage() {
                       </td>
                     )}
                     <td className="border p-2">
-                      <button
-                        onClick={() => deleteParticipant(participant.id)}
-                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                      >
-                        삭제
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(participant)}
+                          className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => deleteParticipant(participant.id)}
+                          className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                        >
+                          삭제
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

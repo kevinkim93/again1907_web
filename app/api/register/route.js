@@ -368,6 +368,27 @@ export async function POST(req) {
       participant.totalGroupMembers = totalGroupMembers;
       participant.groupPosition = 0;
 
+      // 단체실인 경우 대표자의 성별도 저장
+      if (!isPrivateRoom && representativePerson) {
+        // representativePerson에 gender가 있으면 사용, 없으면 어느 배열에 있는지로 판단
+        if (representativePerson.gender) {
+          participant.gender = representativePerson.gender;
+        } else {
+          // male 배열에 있는지 확인
+          const isInMale = (roomOptions.male || []).some(p => p.isRepresentative || p.name === representativeName);
+          // female 배열에 있는지 확인
+          const isInFemale = (roomOptions.female || []).some(p => p.isRepresentative || p.name === representativeName);
+
+          if (isInMale) {
+            participant.gender = 'male';
+          } else if (isInFemale) {
+            participant.gender = 'female';
+          } else {
+            participant.gender = null;
+          }
+        }
+      }
+
       // 대표자 문서 저장
       const representativeDocRef = await adminDb.collection(collectionName).add(participant);
 
@@ -431,8 +452,19 @@ export async function POST(req) {
         }
       } else {
         // 단체실: male/female 배열 처리
-        const maleList = (roomOptions.male || []).filter(p => !p.isRepresentative);
-        const femaleList = (roomOptions.female || []).filter(p => !p.isRepresentative);
+        // 대표자는 본인 이름으로 필터링 (isRepresentative 플래그와 이름 둘 다 체크)
+        const maleList = (roomOptions.male || []).filter(p => {
+          if (p.isRepresentative) return false;
+          // 대표자 본인 이름과 같으면 제외
+          if (p.name === representativeName) return false;
+          return true;
+        });
+        const femaleList = (roomOptions.female || []).filter(p => {
+          if (p.isRepresentative) return false;
+          // 대표자 본인 이름과 같으면 제외
+          if (p.name === representativeName) return false;
+          return true;
+        });
 
         // 남자 인원 각각 문서로 저장
         for (const male of maleList) {
