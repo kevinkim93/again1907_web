@@ -15,6 +15,7 @@ export default function AttendeesPage() {
   const nameInputRef = useRef(null); // 이름 필터 ref (uncontrolled)
   const [paymentFilter, setPaymentFilter] = useState(''); // 결제상태 필터 (all/paid/unpaid)
   const [roomTypeFilter, setRoomTypeFilter] = useState(''); // 방 타입 필터 (가족실/단체실)
+  const [genderFilter, setGenderFilter] = useState(''); // 성별 필터 (male/female)
   const [hideFullRooms, setHideFullRooms] = useState(false); // 만실 방 숨기기
   const [roomSortOption, setRoomSortOption] = useState('roomNumber'); // 방 정렬 옵션 (roomNumber/mostSpace/leastSpace)
   const [roomAssignmentCapacityFilter, setRoomAssignmentCapacityFilter] = useState(''); // 방 배정 칼럼의 방 타입 필터 (2인실/4인실/6인실/30인실)
@@ -24,6 +25,7 @@ export default function AttendeesPage() {
   const [appliedPaymentFilter, setAppliedPaymentFilter] = useState('');
   const [appliedGroupFilter, setAppliedGroupFilter] = useState('');
   const [appliedRoomTypeFilter, setAppliedRoomTypeFilter] = useState('');
+  const [appliedGenderFilter, setAppliedGenderFilter] = useState('');
 
   // 🚀 클라이언트 측 필터링 최적화: 전체 데이터 캐싱
   const [allParticipants, setAllParticipants] = useState([]); // 전체 데이터 캐시
@@ -83,6 +85,19 @@ export default function AttendeesPage() {
       const data = await res.json();
 
       console.log('✅ 전체 데이터 로드 완료:', data.totalCount, '건');
+      console.log('📊 로드된 참가자 샘플:', data.participants?.slice(0, 3));
+
+      // 방 배정된 사람 수 확인
+      const assignedCount = data.participants?.filter(p => p.roomNumber && p.roomNumber !== '미배정').length || 0;
+      console.log('🏠 방 배정된 사람:', assignedCount, '명');
+
+      // roomNumber 필드 확인
+      const withRoomNumber = data.participants?.filter(p => p.roomNumber);
+      console.log('🔑 roomNumber 필드가 있는 사람:', withRoomNumber?.length, '명');
+      if (withRoomNumber && withRoomNumber.length > 0) {
+        console.log('   샘플 (전체 데이터):', withRoomNumber.slice(0, 2));
+      }
+
       setAllParticipants(data.participants || []);
       setIsDataLoaded(true);
     } catch (error) {
@@ -97,13 +112,14 @@ export default function AttendeesPage() {
   const handleSearch = () => {
     const nameValue = nameInputRef.current?.value || '';
 
-    console.log('🔍 필터 적용:', { name: nameValue, payment: paymentFilter, group: groupFilter, room: roomTypeFilter });
+    console.log('🔍 필터 적용:', { name: nameValue, payment: paymentFilter, group: groupFilter, room: roomTypeFilter, gender: genderFilter });
 
     // 필터 상태 업데이트 (useMemo 자동 재계산)
     setAppliedNameFilter(nameValue);
     setAppliedPaymentFilter(paymentFilter);
     setAppliedGroupFilter(groupFilter);
     setAppliedRoomTypeFilter(roomTypeFilter);
+    setAppliedGenderFilter(genderFilter);
 
     // 첫 페이지로 이동
     setCurrentPage(1);
@@ -118,12 +134,14 @@ export default function AttendeesPage() {
     setPaymentFilter('');
     setGroupFilter('');
     setRoomTypeFilter('');
+    setGenderFilter('');
 
     // 적용된 필터 상태 초기화
     setAppliedNameFilter('');
     setAppliedPaymentFilter('');
     setAppliedGroupFilter('');
     setAppliedRoomTypeFilter('');
+    setAppliedGenderFilter('');
 
     // 첫 페이지로 이동
     setCurrentPage(1);
@@ -204,9 +222,42 @@ export default function AttendeesPage() {
       result = result.filter(p => p.roomType === appliedRoomTypeFilter);
     }
 
+    // 그룹 필터
+    if (appliedGroupFilter) {
+      result = result.filter(p => p.groupId === appliedGroupFilter);
+    }
+
+    // 성별 필터
+    if (appliedGenderFilter) {
+      result = result.filter(p => p.gender === appliedGenderFilter);
+    }
+
+    // 🚀 클라이언트 정렬 (서버에서 정렬 제거했으므로)
+    // 등록일 내림차순 → 같은 날짜면 groupId 오름차순 → 같은 그룹이면 대표자 우선
+    result.sort((a, b) => {
+      // 1. 등록일 내림차순 (최신순)
+      const dateA = a.registeredAt || '';
+      const dateB = b.registeredAt || '';
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+
+      // 2. groupId 오름차순 (같은 날짜 내에서 그룹 모아보기)
+      const groupA = a.groupId || 'zzz'; // groupId 없으면 맨 뒤로
+      const groupB = b.groupId || 'zzz';
+      if (groupA !== groupB) {
+        return groupA.localeCompare(groupB);
+      }
+
+      // 3. 대표자 우선 (true가 false보다 앞)
+      const isRepA = a.isRepresentative ? 0 : 1;
+      const isRepB = b.isRepresentative ? 0 : 1;
+      return isRepA - isRepB;
+    });
+
     console.log('🔍 필터링 완료:', { total: allParticipants.length, filtered: result.length });
     return result;
-  }, [allParticipants, appliedNameFilter, appliedPaymentFilter, appliedRoomTypeFilter, currentForm, isDataLoaded]);
+  }, [allParticipants, appliedNameFilter, appliedPaymentFilter, appliedRoomTypeFilter, appliedGroupFilter, appliedGenderFilter, currentForm, isDataLoaded]);
 
   // 클라이언트 측 페이지네이션
   const paginatedParticipants = useMemo(() => {
@@ -1042,14 +1093,19 @@ export default function AttendeesPage() {
         </select>
       </div>
 
-      {/* 그룹 필터 (그룹이 있는 경우만 표시) */}
+      {/* 그룹 필터 (그룹이 있는 경우만 표시)
       {groupIds.length > 0 && (
         <div className="mb-6 bg-white shadow rounded-lg p-4">
           <label className="block text-sm font-medium mb-2">그룹 필터</label>
           <div className="flex gap-2 items-center">
             <select
-              value={groupFilter}
-              onChange={(e) => setGroupFilter(e.target.value)}
+              value={appliedGroupFilter}
+              onChange={(e) => {
+                const value = e.target.value;
+                setGroupFilter(value);
+                setAppliedGroupFilter(value);
+                setCurrentPage(1); // 첫 페이지로 이동
+              }}
               className="flex-1 max-w-md border border-gray-300 rounded-md p-2"
             >
               <option value="">전체 보기 ({allParticipants.length}명)</option>
@@ -1062,9 +1118,13 @@ export default function AttendeesPage() {
                 );
               })}
             </select>
-            {groupFilter && (
+            {appliedGroupFilter && (
               <button
-                onClick={() => setGroupFilter('')}
+                onClick={() => {
+                  setGroupFilter('');
+                  setAppliedGroupFilter('');
+                  setCurrentPage(1);
+                }}
                 className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
               >
                 필터 해제
@@ -1072,7 +1132,7 @@ export default function AttendeesPage() {
             )}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* 추가 필터 (이름, 결제상태, 방 타입) */}
       <div className="mb-6 bg-white shadow rounded-lg p-4">
@@ -1122,6 +1182,22 @@ export default function AttendeesPage() {
               </select>
             </div>
           )}
+
+          {/* 성별 필터 (단체실이 있는 경우만 표시) */}
+          {/* {hasDormitory && (
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">성별</label>
+              <select
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 text-sm"
+              >
+                <option value="">전체</option>
+                <option value="male">남</option>
+                <option value="female">여</option>
+              </select>
+            </div>
+          )} */}
         </div>
 
         {/* 검색 및 초기화 버튼 */}
@@ -1141,7 +1217,7 @@ export default function AttendeesPage() {
         </div>
 
         {/* 적용된 필터 표시 */}
-        {(appliedNameFilter || appliedPaymentFilter || appliedRoomTypeFilter) && (
+        {(appliedNameFilter || appliedPaymentFilter || appliedRoomTypeFilter || appliedGenderFilter) && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-xs text-gray-600 font-medium">적용된 필터:</span>
@@ -1158,6 +1234,11 @@ export default function AttendeesPage() {
               {appliedRoomTypeFilter && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
                   방 타입: {appliedRoomTypeFilter}
+                </span>
+              )}
+              {appliedGenderFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                  성별: {appliedGenderFilter === 'male' ? '남' : '여'}
                 </span>
               )}
             </div>

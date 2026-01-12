@@ -27,20 +27,11 @@ export async function GET(req) {
   }
 
   try {
-    // 🚀 Firestore 정렬: participants_form_ 컬렉션은 복합 정렬 사용
-    const useCompoundSort = collectionName === 'participants_form_1760381290629';
+    console.log('🔍 Collection:', collectionName);
 
-    console.log('🔍 Collection:', collectionName, '| useCompoundSort:', useCompoundSort);
-
-    let query = adminDb.collection(collectionName)
-      .orderBy('registeredAt', 'desc'); // 날짜순 (최신순)
-
-    // groupId 필드가 있는 컬렉션만 복합 정렬
-    if (useCompoundSort) {
-      console.log('✅ Applying groupId sorting');
-      query = query.orderBy('groupId', 'asc').orderBy('isRepresentative', 'asc');
-      // 같은 날짜 내에서 groupId 기준 그룹화
-    }
+    // 🚀 orderBy 제거: groupId 필드가 없는 문서도 포함하기 위해
+    // 정렬은 클라이언트에서 처리 (이미 전체 데이터를 메모리에 로드하므로)
+    let query = adminDb.collection(collectionName);
     // Firestore where 필터 적용 (인덱스 사용 가능)
     if (paymentStatus) {
       query = query.where('paymentStatus', '==', paymentStatus);
@@ -78,10 +69,8 @@ export async function GET(req) {
       };
     });
 
-    // Firestore에서 이미 정렬되어 옴
-    // participants_form_ 컬렉션: createdAt desc → groupId asc (복합 정렬)
-    // 기타 컬렉션: createdAt desc (단일 정렬)
-    // JavaScript 정렬 불필요!
+    // 🚀 정렬 없이 모든 데이터 반환 (groupId 없는 문서도 포함)
+    // 정렬은 클라이언트에서 처리
 
     // 응답 반환 (이름 필터링은 클라이언트에서 처리)
     return NextResponse.json({
