@@ -81,7 +81,14 @@ export default function AttendeesPage() {
       // 🚀 모든 필터를 클라이언트에서 처리 (서버 필터 제거)
       // 서버는 전체 데이터만 반환, 필터링은 클라이언트 메모리에서 즉시 처리
 
-      const res = await fetch(`/api/admin/participants/all?${params.toString()}`);
+      const res = await fetch(`/api/admin/participants/all?${params.toString()}`, {
+        credentials: 'include' // 🔐 쿠키 포함 (인증 토큰)
+      });
+
+      if (!res.ok) {
+        throw new Error(`API 요청 실패: ${res.status} ${res.statusText}`);
+      }
+
       const data = await res.json();
 
       console.log('✅ 전체 데이터 로드 완료:', data.totalCount, '건');
@@ -333,6 +340,7 @@ export default function AttendeesPage() {
       const res = await fetch('/api/admin/attendees/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
         body: JSON.stringify({ collectionName, participantId }),
       });
 
@@ -449,6 +457,7 @@ export default function AttendeesPage() {
       const res = await fetch("/api/registration", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
         body: JSON.stringify(requestBody),
       });
 
@@ -484,6 +493,7 @@ export default function AttendeesPage() {
     fetch('/api/admin/attendees/payment-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
       body: JSON.stringify({
         collectionName,
         participantId,
@@ -655,13 +665,19 @@ export default function AttendeesPage() {
     fetch('/api/admin/assign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
       body: JSON.stringify({
         collectionName,
         participantId,
         roomNumber,
         rooms,
       }),
-    }).then(res => res.json()).then(data => {
+    }).then(res => {
+      if (!res.ok) {
+        throw new Error(`방 배정 실패: ${res.status} ${res.statusText}`);
+      }
+      return res.json();
+    }).then(data => {
       // 서버 응답으로 최종 동기화 (roomAssignments 등 추가 정보 반영)
       if (data.ok && data.participant) {
         setAllParticipants(prev =>
