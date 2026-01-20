@@ -859,19 +859,9 @@ export default function AttendeesPage() {
         '번호': index + 1,
       };
 
-      // 그룹 정보
-      if (participant.groupId) {
-        const groupMembers = allParticipants.filter(p => p.groupId === participant.groupId);
-        const representative = groupMembers.find(p => p.isRepresentative);
-        const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
-        const repName = representative?.[nameField?.id] || '알 수 없음';
-        row['그룹'] = participant.isRepresentative ? `대표자 (${repName})` : `구성원 (${repName})`;
-      } else {
-        row['그룹'] = '-';
-      }
-
-      // 폼 필드 데이터
+      // 폼 필드 데이터 (label이 비어있는 필드는 건너뛰기)
       currentForm.fields.forEach(field => {
+        if (!field.label || field.label.trim() === '') return;
         const value = participant[field.id];
         row[field.label] = formatExcelValue(field, value, participant);
       });
@@ -918,6 +908,20 @@ export default function AttendeesPage() {
       // 결제상태
       row['결제상태'] = participant.paymentStatus === 'paid' ? '납부완료' : '미납';
 
+      // 방 타입 (숙박이 있는 경우)
+      if (hasAccommodation) {
+        row['방 타입'] = participant.roomType || '-';
+      }
+
+      // 성별 (숙박 단체실인 경우)
+      if (hasAccommodation) {
+        if (participant.roomType === '단체실' && participant.gender) {
+          row['성별'] = participant.gender === 'male' ? '남' : participant.gender === 'female' ? '여' : '-';
+        } else {
+          row['성별'] = '-';
+        }
+      }
+
       // 숙박 인원 (숙박이 있는 경우)
       if (hasAccommodation) {
         const accommodationField = currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
@@ -925,7 +929,20 @@ export default function AttendeesPage() {
           const hasAccommodationDates = participant.accommodationDates && participant.accommodationDates.length > 0;
           if (hasAccommodationDates) {
             const roomOptionsFieldId = `${accommodationField.id}_roomOptions`;
-            const peopleCount = parseInt(participant[roomOptionsFieldId]?.count) || 1;
+            const roomOptions = participant[roomOptionsFieldId] || {};
+
+            let peopleCount = 1;
+            if (roomOptions.count) {
+              // 가족실: count 필드 사용
+              peopleCount = parseInt(roomOptions.count) || 1;
+            } else if (roomOptions.male || roomOptions.female) {
+              // 단체실: male + female 배열 길이 합산
+              const maleCount = Array.isArray(roomOptions.male) ? roomOptions.male.length : 0;
+              const femaleCount = Array.isArray(roomOptions.female) ? roomOptions.female.length : 0;
+              peopleCount = maleCount + femaleCount;
+              if (peopleCount === 0) peopleCount = 1; // 최소 1명 (대표자)
+            }
+
             row['숙박 인원'] = `${peopleCount}명`;
           } else {
             row['숙박 인원'] = '-';
