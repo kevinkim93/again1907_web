@@ -48,8 +48,12 @@ export async function POST(req) {
           ? storedName.split(' - 등록:')[0]
           : storedName;
 
+        // 이름 비교 시 띄어쓰기 제거하여 비교 (예: "홍길동" == "홍 길동")
+        const normalizedInput = name.replace(/\s/g, '');
+        const normalizedStored = actualName.replace(/\s/g, '');
+
         // 이름이 일치하는 경우만 추가
-        if (actualName === name) {
+        if (normalizedStored === normalizedInput) {
           allRegistrations.push({
             id: doc.id,
             ...data,
