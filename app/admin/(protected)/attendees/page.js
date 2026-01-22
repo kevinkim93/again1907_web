@@ -516,13 +516,13 @@ export default function AttendeesPage() {
     });
   };
 
-  // 방 배정 (roomNumber 기반)
-  const assignRoom = async (participantId, roomNumber) => {
+  // 방 배정 (groupKey 기반: "A동|1" 또는 "1" 형식)
+  const assignRoom = async (participantId, groupKey) => {
     const collectionName = `participants_${selectedFormId}`;
     const participant = allParticipants.find(p => p.id === participantId);
 
     // 배정 해제
-    if (!roomNumber || roomNumber === null || roomNumber === '') {
+    if (!groupKey || groupKey === null || groupKey === '') {
       if (!confirm('방 배정을 해제하시겠습니까?')) return;
 
       // 🚀 즉시 UI 업데이트 (낙관적)
@@ -530,6 +530,7 @@ export default function AttendeesPage() {
         prev.map(p => p.id === participantId ? {
           ...p,
           roomNumber: null,
+          buildingName: null,
           roomId: null,
           roomName: null,
           roomAssignments: {}
@@ -544,6 +545,7 @@ export default function AttendeesPage() {
           collectionName,
           participantId,
           roomNumber: null,
+          buildingName: null,
           rooms,
         }),
       }).then(res => res.json()).then(data => {
@@ -563,6 +565,12 @@ export default function AttendeesPage() {
 
       return;
     }
+
+    // groupKey 파싱: "A동|1" → { building: "A동", roomNum: "1" } 또는 "1" → { building: "", roomNum: "1" }
+    const [buildingName, roomNumber] = groupKey.includes('|')
+      ? groupKey.split('|')
+      : ['', groupKey];
+    const displayName = buildingName ? `${buildingName} ${roomNumber}호` : `${roomNumber}호`;
 
     // 숙박 날짜가 있는지 확인
     const accommodationDates = participant?.accommodationDates || [];
@@ -605,11 +613,12 @@ export default function AttendeesPage() {
       for (const accomDate of accommodationDates) {
         const standardDate = parseKoreanDate(accomDate);
 
-        // 해당 날짜, 해당 방 번호의 방 찾기
-        const roomOnDate = rooms.find(r =>
-          (r.roomNumber === roomNumber || r.name?.replace(/[^\d]/g, '') === roomNumber) &&
-          r.date === standardDate
-        );
+        // 해당 날짜, 해당 방 번호 + 숙소의 방 찾기
+        const roomOnDate = rooms.find(r => {
+          const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+          const rBuilding = r.buildingName || '';
+          return rNum === roomNumber && rBuilding === buildingName && r.date === standardDate;
+        });
 
         if (roomOnDate) {
           // 해당 날짜에 이 방에 배정된 참가자들 찾기 (자기 자신 제외)
@@ -621,7 +630,7 @@ export default function AttendeesPage() {
               for (const dateKey in p.roomAssignments) {
                 const assignment = p.roomAssignments[dateKey];
                 if (assignment.roomId === roomOnDate.id ||
-                    (assignment.standardDate === standardDate && p.roomNumber === roomNumber)) {
+                    (assignment.standardDate === standardDate && p.roomNumber === roomNumber && (p.buildingName || '') === buildingName)) {
                   return true;
                 }
               }
@@ -637,7 +646,7 @@ export default function AttendeesPage() {
 
           if (afterOccupancy > roomOnDate.capacity) {
             const warningMessage = `⚠️ 정원 초과 경고!\n\n` +
-              `방: ${roomNumber}호\n` +
+              `방: ${displayName}\n` +
               `날짜: ${accomDate}\n` +
               `정원: ${roomOnDate.capacity}명\n` +
               `현재 배정: ${currentOccupancy}명\n` +
@@ -657,7 +666,8 @@ export default function AttendeesPage() {
     setAllParticipants(prev =>
       prev.map(p => p.id === participantId ? {
         ...p,
-        roomNumber: roomNumber
+        roomNumber: roomNumber,
+        buildingName: buildingName
       } : p)
     );
 
@@ -670,6 +680,7 @@ export default function AttendeesPage() {
         collectionName,
         participantId,
         roomNumber,
+        buildingName,
         rooms,
       }),
     }).then(res => {
@@ -691,6 +702,26 @@ export default function AttendeesPage() {
     }).catch(error => {
       console.error('방 배정 에러:', error);
       fetchAllParticipants(selectedFormId);
+    });
+  };
+
+  // 비고 저장
+  const saveNote = (participantId, note) => {
+    const collectionName = `participants_${selectedFormId}`;
+
+    // 🚀 즉시 UI 업데이트 (낙관적)
+    setAllParticipants(prev =>
+      prev.map(p => p.id === participantId ? { ...p, note } : p)
+    );
+
+    // 백그라운드로 서버 동기화
+    fetch('/api/admin/attendees/note', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ collectionName, participantId, note }),
+    }).catch(error => {
+      console.error('비고 저장 실패:', error);
     });
   };
 
@@ -951,11 +982,16 @@ export default function AttendeesPage() {
 
         // 방 배정
         if (participant.roomNumber) {
-          row['방 배정'] = `${participant.roomNumber}호`;
+          row['방 배정'] = participant.buildingName
+            ? `${participant.buildingName} ${participant.roomNumber}호`
+            : `${participant.roomNumber}호`;
         } else {
           row['방 배정'] = '미배정';
         }
       }
+
+      // 비고
+      row['비고'] = participant.note || '';
 
       return row;
     });
@@ -987,13 +1023,26 @@ export default function AttendeesPage() {
     XLSX.writeFile(workbook, fileName);
   };
 
-  // 방 번호로 그룹화 (중복 제거)
-  const roomNumbersSet = new Set();
+  // 방 번호 + 숙소 이름으로 그룹화 (중복 제거)
+  const roomGroupsMap = new Map();
   rooms.forEach(room => {
     const roomNum = room.roomNumber || room.name?.replace(/[^\d]/g, '');
-    if (roomNum) roomNumbersSet.add(roomNum);
+    const building = room.buildingName || '';
+    const groupKey = building ? `${building}|${roomNum}` : roomNum;
+    if (roomNum && !roomGroupsMap.has(groupKey)) {
+      roomGroupsMap.set(groupKey, { roomNum, building });
+    }
   });
-  let uniqueRoomNumbers = Array.from(roomNumbersSet).sort((a, b) => parseInt(a) - parseInt(b));
+  let uniqueRoomGroups = Array.from(roomGroupsMap.entries()).sort((a, b) => {
+    const [, dataA] = a;
+    const [, dataB] = b;
+    // 먼저 숙소 이름으로 정렬
+    if (dataA.building !== dataB.building) {
+      return dataA.building.localeCompare(dataB.building);
+    }
+    // 같은 숙소면 방 번호로 정렬
+    return parseInt(dataA.roomNum) - parseInt(dataB.roomNum);
+  });
 
   // 날짜별로 표준 형식으로 변환하는 함수
   const parseKoreanDateUtil = (dateStr) => {
@@ -1012,11 +1061,13 @@ export default function AttendeesPage() {
   };
 
   // 방별 최대 점유율 계산 함수 (모든 날짜 중 가장 많이 찬 날짜 기준)
-  const calculateMaxRoomOccupancy = (roomNum) => {
-    // 해당 방 번호의 모든 날짜별 방 찾기
-    const roomsForNumber = rooms.filter(r =>
-      r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum
-    );
+  const calculateMaxRoomOccupancy = (roomNum, building = '') => {
+    // 해당 방 번호 + 숙소의 모든 날짜별 방 찾기
+    const roomsForNumber = rooms.filter(r => {
+      const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+      const rBuilding = r.buildingName || '';
+      return rNum === roomNum && rBuilding === building;
+    });
 
     if (roomsForNumber.length === 0) {
       return { capacity: 0, maxOccupancy: 0, availableSpace: 0 };
@@ -1054,18 +1105,20 @@ export default function AttendeesPage() {
 
   // 방 필터링 (만실 방 숨기기)
   if (hideFullRooms) {
-    uniqueRoomNumbers = uniqueRoomNumbers.filter(roomNum => {
-      const { availableSpace } = calculateMaxRoomOccupancy(roomNum);
+    uniqueRoomGroups = uniqueRoomGroups.filter(([, data]) => {
+      const { availableSpace } = calculateMaxRoomOccupancy(data.roomNum, data.building);
       return availableSpace > 0;
     });
   }
 
   // 방 필터링 (방 타입별)
   if (roomAssignmentCapacityFilter) {
-    uniqueRoomNumbers = uniqueRoomNumbers.filter(roomNum => {
-      const sampleRoom = rooms.find(r =>
-        r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum
-      );
+    uniqueRoomGroups = uniqueRoomGroups.filter(([, data]) => {
+      const sampleRoom = rooms.find(r => {
+        const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+        const rBuilding = r.buildingName || '';
+        return rNum === data.roomNum && rBuilding === data.building;
+      });
       if (!sampleRoom) return false;
 
       return sampleRoom.capacity === parseInt(roomAssignmentCapacityFilter);
@@ -1075,22 +1128,20 @@ export default function AttendeesPage() {
   // 방 정렬
   if (roomSortOption === 'mostSpace') {
     // 여유 공간 많은 순
-    uniqueRoomNumbers = uniqueRoomNumbers.sort((a, b) => {
-      const spaceA = calculateMaxRoomOccupancy(a).availableSpace;
-      const spaceB = calculateMaxRoomOccupancy(b).availableSpace;
+    uniqueRoomGroups = uniqueRoomGroups.sort((a, b) => {
+      const spaceA = calculateMaxRoomOccupancy(a[1].roomNum, a[1].building).availableSpace;
+      const spaceB = calculateMaxRoomOccupancy(b[1].roomNum, b[1].building).availableSpace;
       return spaceB - spaceA;
     });
   } else if (roomSortOption === 'leastSpace') {
     // 여유 공간 적은 순
-    uniqueRoomNumbers = uniqueRoomNumbers.sort((a, b) => {
-      const spaceA = calculateMaxRoomOccupancy(a).availableSpace;
-      const spaceB = calculateMaxRoomOccupancy(b).availableSpace;
+    uniqueRoomGroups = uniqueRoomGroups.sort((a, b) => {
+      const spaceA = calculateMaxRoomOccupancy(a[1].roomNum, a[1].building).availableSpace;
+      const spaceB = calculateMaxRoomOccupancy(b[1].roomNum, b[1].building).availableSpace;
       return spaceA - spaceB;
     });
-  } else {
-    // 방 번호 순 (기본값)
-    uniqueRoomNumbers = uniqueRoomNumbers.sort((a, b) => parseInt(a) - parseInt(b));
   }
+  // 기본 정렬은 이미 uniqueRoomGroups 생성 시 적용됨
 
   return (
     <main className="p-6">
@@ -1451,6 +1502,7 @@ export default function AttendeesPage() {
                       </div>
                     </th>
                   )}
+                  <th className="border p-2">비고</th>
                   <th className="border p-2">액션</th>
                 </tr>
               </thead>
@@ -1556,7 +1608,9 @@ export default function AttendeesPage() {
                       <td className="border p-2">
                         {participant.roomNumber ? (
                           <div className="text-xs">
-                            <div className="font-semibold text-blue-700">{participant.roomNumber}호</div>
+                            <div className="font-semibold text-blue-700">
+                              {participant.buildingName ? `${participant.buildingName} ${participant.roomNumber}호` : `${participant.roomNumber}호`}
+                            </div>
                             <div className="text-gray-500 text-[10px] mt-0.5">
                               {participant.accommodationDates?.length || 0}일 배정됨
                             </div>
@@ -1574,15 +1628,17 @@ export default function AttendeesPage() {
                             className="w-full border border-gray-300 rounded p-1 text-xs"
                           >
                             <option value="">방 선택</option>
-                            {uniqueRoomNumbers
-                              .filter(roomNum => {
+                            {uniqueRoomGroups
+                              .filter(([, data]) => {
                                 // 참가자의 방 타입과 일치하는 방만 표시
                                 const participantRoomType = participant.roomType;
                                 if (!participantRoomType) return true;
 
-                                const sampleRoom = rooms.find(r =>
-                                  (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum)
-                                );
+                                const sampleRoom = rooms.find(r => {
+                                  const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+                                  const rBuilding = r.buildingName || '';
+                                  return rNum === data.roomNum && rBuilding === data.building;
+                                });
 
                                 if (!sampleRoom) return false;
 
@@ -1592,10 +1648,13 @@ export default function AttendeesPage() {
                                 const requiredCapacity = parseInt(typeMatch[1]);
                                 return sampleRoom.capacity === requiredCapacity;
                               })
-                              .map(roomNum => {
-                                const sampleRoom = rooms.find(r =>
-                                  (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum)
-                                );
+                              .map(([groupKey, data]) => {
+                                const { roomNum, building } = data;
+                                const sampleRoom = rooms.find(r => {
+                                  const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+                                  const rBuilding = r.buildingName || '';
+                                  return rNum === roomNum && rBuilding === building;
+                                });
 
                                 const capacity = sampleRoom?.capacity || 0;
 
@@ -1626,11 +1685,12 @@ export default function AttendeesPage() {
                                 // 내 숙박 날짜들 중에서 각 날짜별 배정 인원 계산
                                 let maxOccupancy = 0;
                                 myStandardDates.forEach(standardDate => {
-                                  // 해당 날짜의 해당 방 번호 방 찾기
-                                  const roomOnDate = rooms.find(r =>
-                                    (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum) &&
-                                    r.date === standardDate
-                                  );
+                                  // 해당 날짜의 해당 방 번호 + 숙소 방 찾기
+                                  const roomOnDate = rooms.find(r => {
+                                    const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+                                    const rBuilding = r.buildingName || '';
+                                    return rNum === roomNum && rBuilding === building && r.date === standardDate;
+                                  });
 
                                   if (roomOnDate) {
                                     // 해당 날짜에 이 방에 배정된 참가자들 찾기 (자기 자신 제외)
@@ -1660,17 +1720,18 @@ export default function AttendeesPage() {
                                 });
 
                                 const isOverCapacity = maxOccupancy >= capacity;
+                                const displayName = building ? `${building} ${roomNum}호` : `${roomNum}호`;
 
                                 return (
                                   <option
-                                    key={roomNum}
-                                    value={roomNum}
+                                    key={groupKey}
+                                    value={groupKey}
                                     style={{
                                       color: isOverCapacity ? '#dc2626' : '#000',
                                       fontWeight: isOverCapacity ? 'bold' : 'normal'
                                     }}
                                   >
-                                    {roomNum}호 ({maxOccupancy}/{capacity}명) {isOverCapacity ? '⚠️ 만실' : ''}
+                                    {displayName} ({maxOccupancy}/{capacity}명) {isOverCapacity ? '⚠️ 만실' : ''}
                                   </option>
                                 );
                               })}
@@ -1678,6 +1739,25 @@ export default function AttendeesPage() {
                         )}
                       </td>
                     )}
+                    <td className="border p-2">
+                      <input
+                        type="text"
+                        defaultValue={participant.note || ''}
+                        placeholder="비고 입력..."
+                        onBlur={(e) => {
+                          const newNote = e.target.value.trim();
+                          if (newNote !== (participant.note || '')) {
+                            saveNote(participant.id, newNote);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.target.blur();
+                          }
+                        }}
+                        className="w-full min-w-[120px] border border-gray-300 rounded px-2 py-1 text-xs"
+                      />
+                    </td>
                     <td className="border p-2">
                       <div className="flex gap-2">
                         <button

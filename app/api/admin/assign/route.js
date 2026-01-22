@@ -34,7 +34,7 @@ function parseKoreanDate(dateStr) {
 
 export async function POST(req) {
   const deny = requireAdmin(req); if (deny) return deny;
-  const { collectionName, participantId, roomNumber, rooms: clientRooms } = await req.json();
+  const { collectionName, participantId, roomNumber, buildingName, rooms: clientRooms } = await req.json();
 
   if (!collectionName || !participantId) {
     return new NextResponse('collectionName and participantId are required', { status: 400 });
@@ -50,6 +50,7 @@ export async function POST(req) {
   console.log('🔍 Assign API Debug:');
   console.log('  Participant:', participantId);
   console.log('  Room Number:', roomNumber);
+  console.log('  Building Name:', buildingName);
   console.log('  Original accommodationDates:', accommodationDates);
 
   // roomAssignments 객체 생성
@@ -84,16 +85,20 @@ export async function POST(req) {
       }
 
       const matchingRoom = allRooms.find(r =>
-        r.roomNumber === roomNumber && r.date === standardDate
+        r.roomNumber === roomNumber &&
+        (r.buildingName || '') === (buildingName || '') &&
+        r.date === standardDate
       );
 
       console.log(`  Looking for room ${roomNumber} on ${standardDate}:`, matchingRoom ? 'FOUND' : 'NOT FOUND');
 
       if (matchingRoom) {
         // 원본 날짜 문자열을 키로 사용 (한글 형식 유지)
+        const displayName = buildingName ? `${buildingName} ${roomNumber}호` : `${roomNumber}호`;
         roomAssignments[dateStr] = {
           roomId: matchingRoom.id,
-          roomName: matchingRoom.name || `${roomNumber}호 (${standardDate})`,
+          roomName: matchingRoom.name || `${displayName} (${standardDate})`,
+          buildingName: buildingName || '',
           standardDate: standardDate // 표준 날짜도 함께 저장
         };
 
@@ -114,6 +119,7 @@ export async function POST(req) {
     roomId: firstRoomId,
     roomName: firstRoomName,
     roomNumber: roomNumber || null, // 방 번호도 저장
+    buildingName: buildingName || null, // 숙소 이름도 저장
   };
 
   await adminDb.collection(collectionName).doc(participantId).update(updateData);

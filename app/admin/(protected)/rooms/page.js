@@ -14,7 +14,8 @@ export default function RoomsPage() {
     startDate: '',
     endDate: '',
     group: '전부',
-    capacity: 4
+    capacity: 4,
+    buildingName: ''
   });
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null); // 모달용
@@ -121,7 +122,7 @@ export default function RoomsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
-    setForm({ start: '', end: '', startDate: '', endDate: '', group: '전부', capacity: 4 });
+    setForm({ start: '', end: '', startDate: '', endDate: '', group: '전부', capacity: 4, buildingName: '' });
     fetchRooms();
   };
 
@@ -203,18 +204,29 @@ export default function RoomsPage() {
     return filtered;
   };
 
-  // 방 번호로 그룹화
+  // 방 번호 + 숙소 이름으로 그룹화
   const groupedRooms = {};
   rooms.forEach(room => {
     const roomNum = room.roomNumber || room.name?.replace(/[^\d]/g, '');
-    if (!groupedRooms[roomNum]) {
-      groupedRooms[roomNum] = [];
+    const building = room.buildingName || '';
+    const groupKey = building ? `${building}|${roomNum}` : roomNum;
+    if (!groupedRooms[groupKey]) {
+      groupedRooms[groupKey] = [];
     }
-    groupedRooms[roomNum].push(room);
+    groupedRooms[groupKey].push(room);
   });
 
-  // 방 번호 순으로 정렬
-  const sortedRoomNumbers = Object.keys(groupedRooms).sort((a, b) => parseInt(a) - parseInt(b));
+  // 숙소 이름 → 방 번호 순으로 정렬
+  const sortedRoomNumbers = Object.keys(groupedRooms).sort((a, b) => {
+    const [buildingA, numA] = a.includes('|') ? a.split('|') : ['', a];
+    const [buildingB, numB] = b.includes('|') ? b.split('|') : ['', b];
+    // 먼저 숙소 이름으로 정렬
+    if (buildingA !== buildingB) {
+      return buildingA.localeCompare(buildingB);
+    }
+    // 같은 숙소면 방 번호로 정렬
+    return parseInt(numA) - parseInt(numB);
+  });
 
   // 숙박 가능 날짜 목록 (마지막 날 제외)
   const accommodationDates = settings?.dates?.slice(0, -1) || [];
@@ -254,6 +266,17 @@ export default function RoomsPage() {
       {/* 방 생성 */}
       <form onSubmit={createRooms} className="bg-white shadow rounded-lg p-6 mb-6 max-w-2xl">
         <h2 className="text-xl font-semibold mb-4">방 생성</h2>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">숙소 이름 (선택)</label>
+          <input
+            type="text"
+            value={form.buildingName}
+            onChange={(e) => setForm(f => ({ ...f, buildingName: e.target.value }))}
+            className="w-full border border-gray-300 rounded-md p-2"
+            placeholder="예: A동, 본관, 별관 (비워두면 호수만 표시)"
+          />
+        </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
@@ -337,7 +360,9 @@ export default function RoomsPage() {
                   const startD = new Date(form.startDate);
                   const endD = new Date(form.endDate);
                   const dayCount = Math.floor((endD - startD) / (1000 * 60 * 60 * 24)) + 1;
-                  return `${roomCount}개 방 × ${dayCount}일 = 총 ${roomCount * dayCount}개`;
+                  const prefix = form.buildingName ? `${form.buildingName} ` : '';
+                  const exampleName = `${prefix}${form.start}호 ~ ${prefix}${form.end}호`;
+                  return `${exampleName} (${roomCount}개 방 × ${dayCount}일 = 총 ${roomCount * dayCount}개)`;
                 })()
               : '정보를 입력하세요'
           }
@@ -383,17 +408,18 @@ export default function RoomsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {sortedRoomNumbers.map(roomNumber => {
-            const roomsByDate = groupedRooms[roomNumber];
+          {sortedRoomNumbers.map(groupKey => {
+            const roomsByDate = groupedRooms[groupKey];
             // 날짜 순으로 정렬
             roomsByDate.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
             const firstRoom = roomsByDate[0];
+            const roomNumber = firstRoom.roomNumber || groupKey.split('|').pop();
             const allRoomIds = roomsByDate.map(r => r.id);
             const allSelected = allRoomIds.every(id => selectedRooms.includes(id));
 
             return (
-              <div key={roomNumber} className="bg-white shadow rounded-lg overflow-hidden">
+              <div key={groupKey} className="bg-white shadow rounded-lg overflow-hidden">
                 {/* 방 번호 헤더 */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -410,7 +436,7 @@ export default function RoomsPage() {
                       className="h-5 w-5"
                     />
                     <h3 className="text-xl font-bold text-white">
-                      {roomNumber}호
+                      {firstRoom.buildingName ? `${firstRoom.buildingName} ${roomNumber}호` : `${roomNumber}호`}
                     </h3>
                     <span className="text-blue-100 text-sm">
                       {firstRoom.group} | 정원 {firstRoom.capacity}명
