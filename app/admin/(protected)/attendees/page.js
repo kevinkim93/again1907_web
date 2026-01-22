@@ -1217,7 +1217,7 @@ export default function AttendeesPage() {
           )}
 
           {/* 성별 필터 (단체실이 있는 경우만 표시) */}
-          {/* {hasDormitory && (
+          {hasDormitory && (
             <div>
               <label className="block text-xs text-gray-600 mb-1">성별</label>
               <select
@@ -1230,7 +1230,7 @@ export default function AttendeesPage() {
                 <option value="female">여</option>
               </select>
             </div>
-          )} */}
+          )}
         </div>
 
         {/* 검색 및 초기화 버튼 */}
