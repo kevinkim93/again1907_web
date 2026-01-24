@@ -1425,6 +1425,20 @@ export default function AttendeesPage() {
             })()}
           </h2>
           <div className="flex gap-2">
+            <button
+              onClick={() => fetchAllParticipants(selectedFormId)}
+              disabled={isLoadingData}
+              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              {isLoadingData ? (
+                <>
+                  <span className="animate-spin">↻</span>
+                  새로고침 중...
+                </>
+              ) : (
+                <>↻ 새로고침</>
+              )}
+            </button>
             {filteredParticipants.length > 0 && (
               <button
                 onClick={downloadExcel}
