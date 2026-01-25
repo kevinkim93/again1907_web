@@ -14,6 +14,7 @@ export default function AttendeesPage() {
   const [groupFilter, setGroupFilter] = useState(''); // 그룹 ID 필터
   const nameInputRef = useRef(null); // 이름 필터 ref (uncontrolled)
   const [paymentFilter, setPaymentFilter] = useState(''); // 결제상태 필터 (all/paid/unpaid)
+  const [checkInFilter, setCheckInFilter] = useState(''); // 접수상태 필터 (checked/unchecked)
   const [roomTypeFilter, setRoomTypeFilter] = useState(''); // 방 타입 필터 (가족실/단체실)
   const [genderFilter, setGenderFilter] = useState(''); // 성별 필터 (male/female)
   const [hideFullRooms, setHideFullRooms] = useState(false); // 만실 방 숨기기
@@ -23,6 +24,7 @@ export default function AttendeesPage() {
   // 실제 적용된 필터 (검색 버튼 클릭 시 적용)
   const [appliedNameFilter, setAppliedNameFilter] = useState('');
   const [appliedPaymentFilter, setAppliedPaymentFilter] = useState('');
+  const [appliedCheckInFilter, setAppliedCheckInFilter] = useState('');
   const [appliedGroupFilter, setAppliedGroupFilter] = useState('');
   const [appliedRoomTypeFilter, setAppliedRoomTypeFilter] = useState('');
   const [appliedGenderFilter, setAppliedGenderFilter] = useState('');
@@ -119,11 +121,12 @@ export default function AttendeesPage() {
   const handleSearch = () => {
     const nameValue = nameInputRef.current?.value || '';
 
-    console.log('🔍 필터 적용:', { name: nameValue, payment: paymentFilter, group: groupFilter, room: roomTypeFilter, gender: genderFilter });
+    console.log('🔍 필터 적용:', { name: nameValue, payment: paymentFilter, checkIn: checkInFilter, group: groupFilter, room: roomTypeFilter, gender: genderFilter });
 
     // 필터 상태 업데이트 (useMemo 자동 재계산)
     setAppliedNameFilter(nameValue);
     setAppliedPaymentFilter(paymentFilter);
+    setAppliedCheckInFilter(checkInFilter);
     setAppliedGroupFilter(groupFilter);
     setAppliedRoomTypeFilter(roomTypeFilter);
     setAppliedGenderFilter(genderFilter);
@@ -139,6 +142,7 @@ export default function AttendeesPage() {
     // UI 입력 필드 초기화
     if (nameInputRef.current) nameInputRef.current.value = '';
     setPaymentFilter('');
+    setCheckInFilter('');
     setGroupFilter('');
     setRoomTypeFilter('');
     setGenderFilter('');
@@ -146,6 +150,7 @@ export default function AttendeesPage() {
     // 적용된 필터 상태 초기화
     setAppliedNameFilter('');
     setAppliedPaymentFilter('');
+    setAppliedCheckInFilter('');
     setAppliedGroupFilter('');
     setAppliedRoomTypeFilter('');
     setAppliedGenderFilter('');
@@ -224,6 +229,14 @@ export default function AttendeesPage() {
       result = result.filter(p => p.paymentStatus === appliedPaymentFilter);
     }
 
+    // 접수상태 필터
+    if (appliedCheckInFilter) {
+      result = result.filter(p => {
+        const status = p.checkInStatus || 'unchecked'; // 기본값: 미접수
+        return status === appliedCheckInFilter;
+      });
+    }
+
     // 방 타입 필터
     if (appliedRoomTypeFilter) {
       result = result.filter(p => p.roomType === appliedRoomTypeFilter);
@@ -264,7 +277,7 @@ export default function AttendeesPage() {
 
     console.log('🔍 필터링 완료:', { total: allParticipants.length, filtered: result.length });
     return result;
-  }, [allParticipants, appliedNameFilter, appliedPaymentFilter, appliedRoomTypeFilter, appliedGroupFilter, appliedGenderFilter, currentForm, isDataLoaded]);
+  }, [allParticipants, appliedNameFilter, appliedPaymentFilter, appliedCheckInFilter, appliedRoomTypeFilter, appliedGroupFilter, appliedGenderFilter, currentForm, isDataLoaded]);
 
   // 클라이언트 측 페이지네이션
   const paginatedParticipants = useMemo(() => {
@@ -512,6 +525,43 @@ export default function AttendeesPage() {
       // 실패 시 이전 상태로 복구
       setAllParticipants(prev =>
         prev.map(p => p.id === participantId ? { ...p, paymentStatus: currentStatus } : p)
+      );
+    });
+  };
+
+  // 접수 상태 토글
+  const toggleCheckInStatus = (participantId, currentStatus) => {
+    const newStatus = currentStatus === 'checked' ? 'unchecked' : 'checked';
+    const collectionName = `participants_${selectedFormId}`;
+
+    // 🚀 즉시 UI 업데이트 (낙관적) - 사용자는 바로 변경된 것처럼 보임
+    setAllParticipants(prev =>
+      prev.map(p => p.id === participantId ? { ...p, checkInStatus: newStatus } : p)
+    );
+
+    // 백그라운드로 서버 동기화 (await 제거 - 비동기)
+    fetch('/api/admin/attendees/checkin-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
+      body: JSON.stringify({
+        collectionName,
+        participantId,
+        checkInStatus: newStatus
+      }),
+    }).then(res => {
+      if (!res.ok) {
+        // 실패 시 이전 상태로 복구
+        console.error('접수 상태 변경 실패, 데이터 복구 중...');
+        setAllParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, checkInStatus: currentStatus } : p)
+        );
+      }
+    }).catch(error => {
+      console.error('접수 상태 변경 에러:', error);
+      // 실패 시 이전 상태로 복구
+      setAllParticipants(prev =>
+        prev.map(p => p.id === participantId ? { ...p, checkInStatus: currentStatus } : p)
       );
     });
   };
@@ -939,6 +989,9 @@ export default function AttendeesPage() {
       // 결제상태
       row['결제상태'] = participant.paymentStatus === 'paid' ? '납부완료' : '미납';
 
+      // 접수상태
+      row['접수상태'] = participant.checkInStatus === 'checked' ? '접수완료' : '미접수';
+
       // 방 타입 (숙박이 있는 경우)
       if (hasAccommodation) {
         row['방 타입'] = participant.roomType || '-';
@@ -1159,10 +1212,12 @@ export default function AttendeesPage() {
             setGroupFilter('');
             if (nameInputRef.current) nameInputRef.current.value = '';
             setPaymentFilter('');
+            setCheckInFilter('');
             setRoomTypeFilter('');
             // 2. 적용된 필터 상태도 초기화 (중요!)
             setAppliedNameFilter('');
             setAppliedPaymentFilter('');
+            setAppliedCheckInFilter('');
             setAppliedGroupFilter('');
             setAppliedRoomTypeFilter('');
             setCurrentPage(1);
@@ -1248,6 +1303,20 @@ export default function AttendeesPage() {
             </select>
           </div>
 
+          {/* 접수상태 필터 */}
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">접수상태</label>
+            <select
+              value={checkInFilter}
+              onChange={(e) => setCheckInFilter(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+            >
+              <option value="">전체</option>
+              <option value="checked">접수완료</option>
+              <option value="unchecked">미접수</option>
+            </select>
+          </div>
+
           {/* 방 타입 필터 (숙박이 있는 경우만 표시) */}
           {hasAccommodation && roomTypes.length > 0 && (
             <div>
@@ -1301,7 +1370,7 @@ export default function AttendeesPage() {
         </div>
 
         {/* 적용된 필터 표시 */}
-        {(appliedNameFilter || appliedPaymentFilter || appliedRoomTypeFilter || appliedGenderFilter) && (
+        {(appliedNameFilter || appliedPaymentFilter || appliedCheckInFilter || appliedRoomTypeFilter || appliedGenderFilter) && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-xs text-gray-600 font-medium">적용된 필터:</span>
@@ -1313,6 +1382,11 @@ export default function AttendeesPage() {
               {appliedPaymentFilter && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
                   결제: {appliedPaymentFilter === 'paid' ? '납부완료' : '미납'}
+                </span>
+              )}
+              {appliedCheckInFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                  접수: {appliedCheckInFilter === 'checked' ? '접수완료' : '미접수'}
                 </span>
               )}
               {appliedRoomTypeFilter && (
@@ -1473,6 +1547,7 @@ export default function AttendeesPage() {
                   ))}
                   <th className="border p-2">등록일</th>
                   <th className="border p-2">결제상태</th>
+                  <th className="border p-2">접수상태</th>
                   {hasDormitory && <th className="border p-2">성별</th>}
                   {hasAccommodation && <th className="border p-2">숙박 인원</th>}
                   {hasAccommodation && (
@@ -1578,6 +1653,18 @@ export default function AttendeesPage() {
                         }`}
                       >
                         {participant.paymentStatus === 'paid' ? '납부완료' : '미납'}
+                      </button>
+                    </td>
+                    <td className="border p-2">
+                      <button
+                        onClick={() => toggleCheckInStatus(participant.id, participant.checkInStatus || 'unchecked')}
+                        className={`px-3 py-1 rounded text-xs font-medium transition hover:opacity-80 ${
+                          participant.checkInStatus === 'checked'
+                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {participant.checkInStatus === 'checked' ? '접수완료' : '미접수'}
                       </button>
                     </td>
                     {hasDormitory && (

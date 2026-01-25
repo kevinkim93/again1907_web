@@ -351,7 +351,7 @@ export default function LookupPage() {
                           'accommodationAmount', 'groupId', 'representativeId',
                           'groupPosition', 'isRepresentative', 'representativeName',
                           'totalGroupMembers', 'gender', 'age', 'representativeIncluded', 'updatedAt',
-                          'isFreePayment', 'isFreeAccommodation', 'roomNumber', 'priceRecalculatedAt', 'buildingName', 'note'
+                          'isFreePayment', 'isFreeAccommodation', 'roomNumber', 'priceRecalculatedAt', 'buildingName', 'note', "checkInStatus"
                         ];
 
                         // 추가 인원 필드 제외
