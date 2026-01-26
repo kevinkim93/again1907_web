@@ -52,7 +52,7 @@ export default function RoomsPage() {
       for (const form of forms) {
         const collectionName = `participants_${form.id}`;
         console.log(`🔍 Fetching from collection: ${collectionName}`);
-        const res = await fetch(`/api/admin/participants?collectionName=${collectionName}`, {
+        const res = await fetch(`/api/admin/participants/all?collectionName=${collectionName}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
