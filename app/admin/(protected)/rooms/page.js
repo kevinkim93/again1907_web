@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 
 export default function RoomsPage() {
@@ -20,6 +20,8 @@ export default function RoomsPage() {
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null); // 모달용
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const fetchingRef = useRef(false); // 중복 fetch 방지
 
   const fetchSettings = async () => {
     const res = await fetch('/api/admin/settings');
@@ -39,24 +41,19 @@ export default function RoomsPage() {
     setSelectedRooms([]);
   };
 
-  const fetchAllParticipants = async () => {
-    // 모든 폼의 참가자를 가져옴
+  const fetchAllParticipants = useCallback(async () => {
+    // 모든 폼의 참가자를 병렬로 가져옴
     try {
       const formsRes = await fetch('/api/admin/forms');
       const formsData = await formsRes.json();
       const forms = formsData.forms || [];
 
-      console.log('📋 Forms found:', forms.length);
-
-      let allParts = [];
-      for (const form of forms) {
+      // 병렬로 모든 폼의 참가자 데이터 fetch
+      const fetchPromises = forms.map(async (form) => {
         const collectionName = `participants_${form.id}`;
-        console.log(`🔍 Fetching from collection: ${collectionName}`);
         const res = await fetch(`/api/admin/participants/all?collectionName=${collectionName}`, {
           cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache',
-          }
+          headers: { 'Cache-Control': 'no-cache' }
         });
         const data = await res.json();
         const participants = data.participants || [];
@@ -66,54 +63,45 @@ export default function RoomsPage() {
         const phoneField = form.fields?.find(f => f.type === 'tel');
 
         // 참가자 데이터에 name과 phone 속성 추가
-        const enrichedParticipants = participants.map(p => ({
+        return participants.map(p => ({
           ...p,
           name: nameField ? p[nameField.id] : '이름 없음',
           phone: phoneField ? p[phoneField.id] : '',
-          totalPeople: p.totalPeople || 1 // totalPeople이 없으면 기본값 1
+          totalPeople: p.totalPeople || 1
         }));
+      });
 
-        console.log(`  ✅ Found ${participants.length} participants`);
-        console.log(`  📊 Participants with rooms:`, participants.filter(p => p.roomId).length);
-        console.log(`  👤 Sample enriched participant:`, enrichedParticipants[0]);
-        allParts = [...allParts, ...enrichedParticipants];
-      }
-
-      console.log('👥 Total participants:', allParts.length);
-      console.log('🏠 Participants with room assignments:', allParts.filter(p => p.roomId).length);
-      console.log('🔑 Sample participant with room:', allParts.find(p => p.roomId));
+      const results = await Promise.all(fetchPromises);
+      const allParts = results.flat();
 
       setAllParticipants(allParts);
     } catch (err) {
       console.error('Failed to fetch participants:', err);
       setAllParticipants([]);
     }
-  };
-
-  useEffect(() => {
-    fetchSettings();
-    fetchRooms();
-    fetchAllParticipants();
-
-    // 페이지가 다시 포커스될 때마다 데이터 새로고침
-    const handleFocus = () => {
-      console.log('🔄 Page focused - refreshing data...');
-      fetchRooms();
-      fetchAllParticipants();
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
-  // pathname이 변경될 때마다 데이터 새로고침
-  useEffect(() => {
-    if (pathname === '/admin/rooms') {
-      console.log('🔄 Navigated to rooms page - refreshing data...');
-      fetchRooms();
-      fetchAllParticipants();
+  // 데이터 로드 함수 (중복 방지)
+  const loadData = useCallback(async () => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    setIsLoading(true);
+
+    try {
+      await Promise.all([
+        fetchSettings(),
+        fetchRooms(),
+        fetchAllParticipants()
+      ]);
+    } finally {
+      fetchingRef.current = false;
+      setIsLoading(false);
     }
-  }, [pathname]);
+  }, [fetchAllParticipants]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const createRooms = async (e) => {
     e.preventDefault();
@@ -152,57 +140,42 @@ export default function RoomsPage() {
     }
   };
 
-  // 특정 방(날짜별)에 배정된 참가자들
-  const getParticipantsForRoom = (roomId, roomDate) => {
-    console.log('🔍 getParticipantsForRoom called:', { roomId, roomDate });
-    console.log('📊 Total participants:', allParticipants.length);
+  // 참가자-방 매핑을 메모이제이션하여 O(1) 조회
+  const participantsByRoom = useMemo(() => {
+    const map = new Map();
 
-    // roomDate가 제공된 경우: 해당 날짜에 이 방에 배정된 참가자 찾기
-    if (roomDate) {
-      // 배정 정보가 있는 참가자만 필터링해서 확인
-      const participantsWithAssignments = allParticipants.filter(p => p.roomAssignments && Object.keys(p.roomAssignments).length > 0);
-      console.log('👥 Participants with room assignments:', participantsWithAssignments.length);
-
-      if (participantsWithAssignments.length > 0) {
-        console.log('📋 Sample participant with assignments:', {
-          id: participantsWithAssignments[0].id,
-          name: participantsWithAssignments[0].name,
-          roomAssignments: participantsWithAssignments[0].roomAssignments
-        });
-      }
-
-      const filtered = allParticipants.filter(p => {
-        if (!p.roomAssignments || typeof p.roomAssignments !== 'object') {
-          return false;
-        }
-
-        // roomAssignments의 모든 키(날짜)를 순회
+    allParticipants.forEach(p => {
+      // roomAssignments 기반 매핑 (날짜별 배정)
+      if (p.roomAssignments && typeof p.roomAssignments === 'object') {
         for (const dateKey in p.roomAssignments) {
           const assignment = p.roomAssignments[dateKey];
-
-          // standardDate가 있으면 그것으로 비교, 없으면 한글 날짜로 비교
           const assignmentDate = assignment.standardDate || dateKey;
+          const key = `${assignment.roomId}_${assignmentDate}`;
 
-          console.log(`  🔎 Checking ${p.name || p.id}: dateKey="${dateKey}", standardDate="${assignmentDate}", roomId="${assignment.roomId}" vs target roomDate="${roomDate}", roomId="${roomId}"`);
-
-          // roomDate와 비교 (표준 날짜 형식으로)
-          if (assignmentDate === roomDate && assignment.roomId === roomId) {
-            console.log(`    ✅ Match found: ${p.name || p.id}`);
-            return true;
-          }
+          if (!map.has(key)) map.set(key, []);
+          map.get(key).push(p);
         }
+      }
 
-        return false;
-      });
+      // 기존 roomId 기반 매핑 (하위 호환성)
+      if (p.roomId) {
+        const legacyKey = `${p.roomId}_legacy`;
+        if (!map.has(legacyKey)) map.set(legacyKey, []);
+        map.get(legacyKey).push(p);
+      }
+    });
 
-      console.log(`✅ Filtered ${filtered.length} participants for room ${roomId} on ${roomDate}`);
-      return filtered;
+    return map;
+  }, [allParticipants]);
+
+  // 특정 방(날짜별)에 배정된 참가자들 - O(1) 조회
+  const getParticipantsForRoom = useCallback((roomId, roomDate) => {
+    if (roomDate) {
+      return participantsByRoom.get(`${roomId}_${roomDate}`) || [];
     }
-
     // roomDate가 없으면 기존 방식 (하위 호환성)
-    const filtered = allParticipants.filter(p => p.roomId === roomId);
-    return filtered;
-  };
+    return participantsByRoom.get(`${roomId}_legacy`) || [];
+  }, [participantsByRoom]);
 
   // 방 번호 + 숙소 이름으로 그룹화
   const groupedRooms = {};
@@ -241,13 +214,33 @@ export default function RoomsPage() {
   };
 
   const handleRefresh = async () => {
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
     setIsRefreshing(true);
-    await Promise.all([
-      fetchRooms(),
-      fetchAllParticipants()
-    ]);
-    setIsRefreshing(false);
+
+    try {
+      await Promise.all([
+        fetchRooms(),
+        fetchAllParticipants()
+      ]);
+    } finally {
+      fetchingRef.current = false;
+      setIsRefreshing(false);
+    }
   };
+
+  // 초기 로딩 화면
+  if (isLoading && rooms.length === 0) {
+    return (
+      <main className="p-6">
+        <h1 className="text-2xl font-bold mb-6">방 관리</h1>
+        <div className="bg-white shadow rounded-lg p-12 text-center">
+          <div className="animate-spin text-4xl mb-4">🔄</div>
+          <p className="text-gray-600">데이터를 불러오는 중...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="p-6">
@@ -255,7 +248,7 @@ export default function RoomsPage() {
         <h1 className="text-2xl font-bold">방 관리</h1>
         <button
           onClick={handleRefresh}
-          disabled={isRefreshing}
+          disabled={isRefreshing || isLoading}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition"
         >
           <span className={isRefreshing ? 'animate-spin' : ''}>🔄</span>

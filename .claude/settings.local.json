@@ -8,7 +8,8 @@
       "Bash(taskkill:*)",
       "Bash(npx kill-port:*)",
       "Bash(npm run build:*)",
-      "Bash(timeout /t 5 /nobreak)"
+      "Bash(timeout /t 5 /nobreak)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
