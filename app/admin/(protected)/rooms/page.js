@@ -19,9 +19,15 @@ export default function RoomsPage() {
   });
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null); // 모달용
+  const [showCreateModal, setShowCreateModal] = useState(false); // 방 생성 모달
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const fetchingRef = useRef(false); // 중복 fetch 방지
+
+  // 검색 및 필터링
+  const [roomSearch, setRoomSearch] = useState('');
+  const [buildingFilter, setBuildingFilter] = useState(''); // '사랑', '비전', '선교' 또는 ''
+  const [expandedRooms, setExpandedRooms] = useState({}); // Collapse 상태
 
   const fetchSettings = async () => {
     const res = await fetch('/api/admin/settings');
@@ -111,6 +117,7 @@ export default function RoomsPage() {
       body: JSON.stringify(form),
     });
     setForm({ start: '', end: '', startDate: '', endDate: '', group: '전부', capacity: 4, buildingName: '' });
+    setShowCreateModal(false);
     fetchRooms();
   };
 
@@ -201,6 +208,56 @@ export default function RoomsPage() {
     return parseInt(numA) - parseInt(numB);
   });
 
+  // 검색 및 필터링 적용
+  const filteredRoomNumbers = sortedRoomNumbers.filter(groupKey => {
+    const roomsByDate = groupedRooms[groupKey];
+    const firstRoom = roomsByDate[0];
+    const roomName = firstRoom.name || '';
+    const buildingName = firstRoom.buildingName || '';
+    const roomNumber = firstRoom.roomNumber || groupKey.split('|').pop();
+
+    // 텍스트 검색 필터
+    if (roomSearch) {
+      const searchLower = roomSearch.toLowerCase();
+      const matchesSearch =
+        roomName.toLowerCase().includes(searchLower) ||
+        buildingName.toLowerCase().includes(searchLower) ||
+        roomNumber.includes(roomSearch);
+      if (!matchesSearch) return false;
+    }
+
+    // 건물 필터 (사랑, 비전, 선교)
+    if (buildingFilter) {
+      const matchesBuilding =
+        roomName.includes(buildingFilter) ||
+        buildingName.includes(buildingFilter);
+      if (!matchesBuilding) return false;
+    }
+
+    return true;
+  });
+
+  // Collapse 토글 함수
+  const toggleRoomExpand = (groupKey) => {
+    setExpandedRooms(prev => ({
+      ...prev,
+      [groupKey]: !prev[groupKey]
+    }));
+  };
+
+  // 모든 방 펼치기/접기
+  const expandAll = () => {
+    const allExpanded = {};
+    filteredRoomNumbers.forEach(key => {
+      allExpanded[key] = true;
+    });
+    setExpandedRooms(allExpanded);
+  };
+
+  const collapseAll = () => {
+    setExpandedRooms({});
+  };
+
   // 숙박 가능 날짜 목록 (마지막 날 제외)
   const accommodationDates = settings?.dates?.slice(0, -1) || [];
 
@@ -246,125 +303,81 @@ export default function RoomsPage() {
     <main className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">방 관리</h1>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing || isLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition"
-        >
-          <span className={isRefreshing ? 'animate-spin' : ''}>🔄</span>
-          {isRefreshing ? '새로고침 중...' : '새로고침'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            + 방 생성
+          </button>
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing || isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition"
+          >
+            <span className={isRefreshing ? 'animate-spin' : ''}>🔄</span>
+            {isRefreshing ? '새로고침 중...' : '새로고침'}
+          </button>
+        </div>
       </div>
 
-      {/* 방 생성 */}
-      <form onSubmit={createRooms} className="bg-white shadow rounded-lg p-6 mb-6 max-w-2xl">
-        <h2 className="text-xl font-semibold mb-4">방 생성</h2>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-2">숙소 이름 (선택)</label>
-          <input
-            type="text"
-            value={form.buildingName}
-            onChange={(e) => setForm(f => ({ ...f, buildingName: e.target.value }))}
-            className="w-full border border-gray-300 rounded-md p-2"
-            placeholder="예: A동, 본관, 별관 (비워두면 호수만 표시)"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">시작 방번호</label>
+      {/* 검색 및 필터 */}
+      <div className="bg-white shadow rounded-lg p-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* 텍스트 검색 */}
+          <div className="flex-1 min-w-[200px]">
             <input
-              type="number"
-              value={form.start}
-              onChange={(e) => setForm(f => ({ ...f, start: e.target.value }))}
-              required
-              className="w-full border border-gray-300 rounded-md p-2"
-              placeholder="예: 101"
+              type="text"
+              value={roomSearch}
+              onChange={(e) => setRoomSearch(e.target.value)}
+              placeholder="방 번호 또는 숙소명 검색..."
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">끝 방번호</label>
-            <input
-              type="number"
-              value={form.end}
-              onChange={(e) => setForm(f => ({ ...f, end: e.target.value }))}
-              required
-              className="w-full border border-gray-300 rounded-md p-2"
-              placeholder="예: 110"
-            />
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">시작 날짜</label>
-            <input
-              type="date"
-              value={form.startDate}
-              onChange={(e) => setForm(f => ({ ...f, startDate: e.target.value }))}
-              required
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
+          {/* 건물 필터 버튼 */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600 mr-1">필터:</span>
+            {['사랑', '비전', '선교'].map(name => (
+              <button
+                key={name}
+                onClick={() => setBuildingFilter(buildingFilter === name ? '' : name)}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition ${
+                  buildingFilter === name
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {name}
+              </button>
+            ))}
+            {buildingFilter && (
+              <button
+                onClick={() => setBuildingFilter('')}
+                className="px-2 py-1.5 text-gray-500 hover:text-gray-700 text-sm"
+              >
+                초기화
+              </button>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">끝 날짜</label>
-            <input
-              type="date"
-              value={form.endDate}
-              onChange={(e) => setForm(f => ({ ...f, endDate: e.target.value }))}
-              required
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">배정 그룹</label>
-            <select
-              value={form.group}
-              onChange={(e) => setForm(f => ({ ...f, group: e.target.value }))}
-              className="w-full border border-gray-300 rounded-md p-2"
+          {/* 펼치기/접기 버튼 */}
+          <div className="flex items-center gap-2 border-l pl-4">
+            <button
+              onClick={expandAll}
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
             >
-              <option>탈북민</option>
-              <option>목회자</option>
-              <option>평신도</option>
-              <option>전부</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">가용 인원</label>
-            <input
-              type="number"
-              value={form.capacity}
-              onChange={(e) => setForm(f => ({ ...f, capacity: e.target.value }))}
-              required
-              className="w-full border border-gray-300 rounded-md p-2"
-            />
+              모두 펼치기
+            </button>
+            <button
+              onClick={collapseAll}
+              className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 text-sm"
+            >
+              모두 접기
+            </button>
           </div>
         </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 text-sm text-blue-800">
-          <strong>생성될 방:</strong> {
-            form.start && form.end && form.startDate && form.endDate
-              ? (() => {
-                  const roomCount = parseInt(form.end) - parseInt(form.start) + 1;
-                  const startD = new Date(form.startDate);
-                  const endD = new Date(form.endDate);
-                  const dayCount = Math.floor((endD - startD) / (1000 * 60 * 60 * 24)) + 1;
-                  const prefix = form.buildingName ? `${form.buildingName} ` : '';
-                  const exampleName = `${prefix}${form.start}호 ~ ${prefix}${form.end}호`;
-                  return `${exampleName} (${roomCount}개 방 × ${dayCount}일 = 총 ${roomCount * dayCount}개)`;
-                })()
-              : '정보를 입력하세요'
-          }
-        </div>
-
-        <button className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
-          방 생성
-        </button>
-      </form>
+      </div>
 
       {/* 전체 선택 + 삭제 버튼 */}
       <div className="flex items-center justify-between mb-4">
@@ -379,7 +392,10 @@ export default function RoomsPage() {
             <span className="text-sm text-gray-700">전체 선택</span>
           </label>
           <span className="text-sm text-gray-600">
-            전체 {rooms.length}개 방
+            {roomSearch || buildingFilter
+              ? `검색 결과: ${filteredRoomNumbers.length}개 방`
+              : `전체 ${sortedRoomNumbers.length}개 방`
+            }
           </span>
         </div>
 
@@ -393,15 +409,20 @@ export default function RoomsPage() {
         )}
       </div>
 
-      {/* 방 목록 (방 번호 기준 그룹화) */}
+      {/* 방 목록 (방 번호 기준 그룹화 - Collapse) */}
       {rooms.length === 0 ? (
         <div className="bg-white shadow rounded-lg p-12 text-center text-gray-500">
           <p className="text-lg">생성된 방이 없습니다.</p>
-          <p className="text-sm mt-2">위 폼에서 방을 생성해주세요.</p>
+          <p className="text-sm mt-2">&quot;방 생성&quot; 버튼을 눌러 방을 생성해주세요.</p>
+        </div>
+      ) : filteredRoomNumbers.length === 0 ? (
+        <div className="bg-white shadow rounded-lg p-12 text-center text-gray-500">
+          <p className="text-lg">검색 결과가 없습니다.</p>
+          <p className="text-sm mt-2">다른 검색어나 필터를 시도해보세요.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {sortedRoomNumbers.map(groupKey => {
+        <div className="space-y-3">
+          {filteredRoomNumbers.map(groupKey => {
             const roomsByDate = groupedRooms[groupKey];
             // 날짜 순으로 정렬
             roomsByDate.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
@@ -410,38 +431,56 @@ export default function RoomsPage() {
             const roomNumber = firstRoom.roomNumber || groupKey.split('|').pop();
             const allRoomIds = roomsByDate.map(r => r.id);
             const allSelected = allRoomIds.every(id => selectedRooms.includes(id));
+            const isExpanded = expandedRooms[groupKey];
+
+            // 총 배정 인원 계산
+            const totalAssigned = roomsByDate.reduce((sum, room) => {
+              const participants = getParticipantsForRoom(room.id, room.date);
+              return sum + participants.reduce((s, p) => s + (p.totalPeople || 0), 0);
+            }, 0);
 
             return (
               <div key={groupKey} className="bg-white shadow rounded-lg overflow-hidden">
-                {/* 방 번호 헤더 */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                {/* 방 번호 헤더 (클릭 시 Collapse) */}
+                <div
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 flex items-center justify-between cursor-pointer hover:from-blue-700 hover:to-blue-800 transition"
+                  onClick={() => toggleRoomExpand(groupKey)}
+                >
+                  <div className="flex items-center gap-3">
                     <input
                       type="checkbox"
                       checked={allSelected}
-                      onChange={() => {
+                      onChange={(e) => {
+                        e.stopPropagation();
                         if (allSelected) {
                           setSelectedRooms(prev => prev.filter(id => !allRoomIds.includes(id)));
                         } else {
                           setSelectedRooms(prev => [...new Set([...prev, ...allRoomIds])]);
                         }
                       }}
-                      className="h-5 w-5"
+                      onClick={(e) => e.stopPropagation()}
+                      className="h-4 w-4"
                     />
-                    <h3 className="text-xl font-bold text-white">
+                    <h3 className="text-lg font-bold text-white">
                       {firstRoom.buildingName ? `${firstRoom.buildingName} ${roomNumber}호` : `${roomNumber}호`}
                     </h3>
                     <span className="text-blue-100 text-sm">
-                      {firstRoom.group} | 정원 {firstRoom.capacity}명
+                      {firstRoom.capacity}인실
                     </span>
                   </div>
-                  <span className="text-blue-100 text-sm">
-                    {roomsByDate.length}일 등록됨
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-blue-100 text-sm">
+                      {roomsByDate.length}일 | 총 {totalAssigned}명 배정
+                    </span>
+                    <span className="text-white text-lg">
+                      {isExpanded ? '▲' : '▼'}
+                    </span>
+                  </div>
                 </div>
 
-                {/* 날짜별 상태 */}
-                <div className="p-4">
+                {/* 날짜별 상태 (Collapse 내용) */}
+                {isExpanded && (
+                <div className="p-3 bg-gray-50">
                   <div className="space-y-2">
                     {roomsByDate.map(room => {
                       const participants = getParticipantsForRoom(room.id, room.date);
@@ -452,7 +491,7 @@ export default function RoomsPage() {
                       return (
                         <div
                           key={room.id}
-                          className={`border rounded-lg p-3 transition ${
+                          className={`border rounded-lg p-3 transition bg-white ${
                             isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
@@ -465,37 +504,35 @@ export default function RoomsPage() {
                                 className="h-4 w-4"
                               />
                               <div>
-                                <div className="font-medium text-gray-900">
-                                  📅 {room.date}
+                                <div className="font-medium text-gray-900 text-sm">
+                                  {room.date}
                                 </div>
                                 <div className="text-xs text-gray-500 mt-0.5">
-                                  배정: {totalPeople}명 / {room.capacity}명
+                                  {totalPeople}/{room.capacity}명
                                   {isOverCapacity && (
-                                    <span className="ml-2 text-red-600 font-semibold">⚠️ 초과</span>
+                                    <span className="ml-1 text-red-600 font-semibold">초과</span>
                                   )}
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                               {participants.length > 0 ? (
                                 <div className="text-xs text-gray-700 text-right">
                                   {participants.slice(0, 2).map(p => (
-                                    <div key={p.id}>{p.name} ({p.totalPeople}명)</div>
+                                    <span key={p.id} className="mr-2">{p.name}</span>
                                   ))}
                                   {participants.length > 2 && (
-                                    <div className="text-blue-600 font-medium">
-                                      +{participants.length - 2}명 더 보기
-                                    </div>
+                                    <span className="text-blue-600">+{participants.length - 2}</span>
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-xs text-gray-400 italic">배정 없음</span>
+                                <span className="text-xs text-gray-400">-</span>
                               )}
 
                               <button
                                 onClick={() => openRoomDetail(room)}
-                                className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition whitespace-nowrap"
+                                className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition"
                               >
                                 상세
                               </button>
@@ -506,6 +543,7 @@ export default function RoomsPage() {
                     })}
                   </div>
                 </div>
+                )}
               </div>
             );
           })}
@@ -605,6 +643,148 @@ export default function RoomsPage() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 방 생성 모달 */}
+      {showCreateModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold">방 생성</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={createRooms} className="p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">숙소 이름 (선택)</label>
+                <input
+                  type="text"
+                  value={form.buildingName}
+                  onChange={(e) => setForm(f => ({ ...f, buildingName: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md p-2"
+                  placeholder="예: A동, 본관, 별관 (비워두면 호수만 표시)"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">시작 방번호</label>
+                  <input
+                    type="number"
+                    value={form.start}
+                    onChange={(e) => setForm(f => ({ ...f, start: e.target.value }))}
+                    required
+                    className="w-full border border-gray-300 rounded-md p-2"
+                    placeholder="예: 101"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">끝 방번호</label>
+                  <input
+                    type="number"
+                    value={form.end}
+                    onChange={(e) => setForm(f => ({ ...f, end: e.target.value }))}
+                    required
+                    className="w-full border border-gray-300 rounded-md p-2"
+                    placeholder="예: 110"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">시작 날짜</label>
+                  <input
+                    type="date"
+                    value={form.startDate}
+                    onChange={(e) => setForm(f => ({ ...f, startDate: e.target.value }))}
+                    required
+                    className="w-full border border-gray-300 rounded-md p-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">끝 날짜</label>
+                  <input
+                    type="date"
+                    value={form.endDate}
+                    onChange={(e) => setForm(f => ({ ...f, endDate: e.target.value }))}
+                    required
+                    className="w-full border border-gray-300 rounded-md p-2"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">배정 그룹</label>
+                  <select
+                    value={form.group}
+                    onChange={(e) => setForm(f => ({ ...f, group: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md p-2"
+                  >
+                    <option>탈북민</option>
+                    <option>목회자</option>
+                    <option>평신도</option>
+                    <option>전부</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">가용 인원</label>
+                  <input
+                    type="number"
+                    value={form.capacity}
+                    onChange={(e) => setForm(f => ({ ...f, capacity: e.target.value }))}
+                    required
+                    className="w-full border border-gray-300 rounded-md p-2"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 text-sm text-blue-800">
+                <strong>생성될 방:</strong> {
+                  form.start && form.end && form.startDate && form.endDate
+                    ? (() => {
+                        const roomCount = parseInt(form.end) - parseInt(form.start) + 1;
+                        const startD = new Date(form.startDate);
+                        const endD = new Date(form.endDate);
+                        const dayCount = Math.floor((endD - startD) / (1000 * 60 * 60 * 24)) + 1;
+                        const prefix = form.buildingName ? `${form.buildingName} ` : '';
+                        const exampleName = `${prefix}${form.start}호 ~ ${prefix}${form.end}호`;
+                        return `${exampleName} (${roomCount}개 방 × ${dayCount}일 = 총 ${roomCount * dayCount}개)`;
+                      })()
+                    : '정보를 입력하세요'
+                }
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+                >
+                  방 생성
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
