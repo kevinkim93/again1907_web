@@ -1,5 +1,134 @@
 # 스크립트 모음
 
+## print-accommodation.js
+
+Firebase 데이터베이스에서 숙박 인원을 조회하고 통계를 출력하는 스크립트입니다.
+
+### 기능
+
+- 모든 폼의 숙박 참가자 조회
+- 방 타입별 통계 (가족실, 단체실 등)
+- 성별 통계 (단체실)
+- 방 배정 통계 (배정 완료/미배정)
+- 결제 통계 (납부완료/미납)
+- 상세 참가자 목록 출력 (옵션)
+
+### 사용법
+
+#### 1. 기본 실행 (통계만)
+
+```bash
+node scripts/print-accommodation.js
+```
+
+**출력:**
+- 총 숙박 인원 수
+- 방 타입별 통계
+- 단체실 성별 통계
+- 방 배정 통계
+- 결제 통계
+
+#### 2. 상세 정보 포함 실행
+
+```bash
+node scripts/print-accommodation.js --details
+```
+
+또는
+
+```bash
+node scripts/print-accommodation.js -d
+```
+
+**추가 출력:**
+- 모든 숙박 참가자의 상세 정보 (이름, 연락처, 방 번호, 성별, 숙박 날짜 등)
+
+#### 3. 방 배정된 사람만 조회
+
+```bash
+node scripts/print-accommodation.js --assigned
+```
+
+또는
+
+```bash
+node scripts/print-accommodation.js -a
+```
+
+**출력:**
+- 방 배정된 사람만 필터링된 통계
+- 미배정자 제외
+
+#### 4. 방 배정된 사람 상세 정보
+
+```bash
+node scripts/print-accommodation.js --assigned --details
+```
+
+또는
+
+```bash
+node scripts/print-accommodation.js -a -d
+```
+
+#### 5. 결과를 파일로 저장
+
+```bash
+node scripts/print-accommodation.js --details > accommodation-report.txt
+```
+
+방 배정된 사람만 파일로 저장:
+
+```bash
+node scripts/print-accommodation.js --assigned --details > assigned-only.txt
+```
+
+### 출력 예시
+
+```
+📋 숙박 인원 조회 시작...
+
+📁 총 2개의 폼 발견
+
+🔍 폼: 예배및식사 등록 (participants_form_1760379940577)
+   ✅ 숙박 인원: 0명
+🔍 폼: 숙박 등록 (participants_form_1760381290629)
+   ✅ 숙박 인원: 150명
+
+📊 총 숙박 인원: 150명
+
+====================================================================================================
+
+📊 방 타입별 통계:
+   가족실: 80명
+   단체실: 70명
+
+👥 단체실 성별 통계:
+   남: 45명
+   여: 25명
+
+🏠 방 배정 통계:
+   배정 완료: 120명
+   미배정: 30명
+
+💰 결제 통계:
+   납부완료: 100명
+   미납: 50명
+
+====================================================================================================
+
+💡 상세 목록을 보려면 --details 또는 -d 옵션을 추가하세요.
+
+✅ 완료
+```
+
+### 요구사항
+
+- Node.js 설치 필요
+- 프로젝트 루트에 `serviceAccountKey.json` 파일 필요
+
+---
+
 ## get-participants-data.js
 
 파이어베이스 데이터베이스에서 숙박 인원과 집회 등록 인원 데이터를 가져오는 스크립트입니다.
