@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminDb as db } from '@/lib/firebaseAdmin';
+import { Timestamp } from 'firebase-admin/firestore';
 
 // PUT: 등록 정보 수정
 export async function PUT(request) {
@@ -52,7 +53,7 @@ export async function PUT(request) {
     const updatedData = {
       ...existingData,
       ...formData,
-      updatedAt: new Date().toISOString(),
+      updatedAt: Timestamp.now(),
     };
 
     // amount 초기화 (무료에서 유료로 변경될 때를 대비)
@@ -286,8 +287,20 @@ export async function PUT(request) {
 
         if (roomTypeOption?.type === 'gender') {
           // 단체실: 남자 + 여자 (대표자 제외)
-          const maleList = (roomOptions.male || []).filter(p => !p.isRepresentative);
-          const femaleList = (roomOptions.female || []).filter(p => !p.isRepresentative);
+          const representativeName = updatedData[form.fields.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')))?.id] || '';
+
+          const maleList = (roomOptions.male || []).filter(p => {
+            if (p.isRepresentative) return false;
+            // 대표자 본인 이름과 같으면 제외
+            if (p.name === representativeName) return false;
+            return true;
+          });
+          const femaleList = (roomOptions.female || []).filter(p => {
+            if (p.isRepresentative) return false;
+            // 대표자 본인 이름과 같으면 제외
+            if (p.name === representativeName) return false;
+            return true;
+          });
 
           newMembers = [
             ...maleList.map(person => ({ ...person, gender: 'male' })),
@@ -296,7 +309,7 @@ export async function PUT(request) {
 
           // 대표자 포함 여부 확인
           const allPeople = [...(roomOptions.male || []), ...(roomOptions.female || [])];
-          const representativeIncluded = allPeople.some(p => p.isRepresentative);
+          const representativeIncluded = allPeople.some(p => p.isRepresentative || p.name === representativeName);
           totalGroupMembers = newMembers.length + (representativeIncluded ? 1 : 0);
         } else if (roomTypeOption?.type === 'count') {
           // 가족실: people 배열 (대표자 제외)
@@ -313,6 +326,27 @@ export async function PUT(request) {
         updatedData.representativeName = updatedData[form.fields.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')))?.id] || '';
         updatedData.totalGroupMembers = totalGroupMembers;
         updatedData.groupPosition = 0;
+
+        // 단체실인 경우 대표자의 성별도 저장
+        if (roomTypeOption?.type === 'gender') {
+          const representativeName = updatedData.representativeName;
+          const allPeople = [...(roomOptions.male || []), ...(roomOptions.female || [])];
+          const representativePerson = allPeople.find(p => p.isRepresentative || p.name === representativeName);
+
+          if (representativePerson && representativePerson.gender) {
+            updatedData.gender = representativePerson.gender;
+          } else {
+            // gender 필드가 없으면 어느 배열에 있는지로 판단
+            const isInMale = (roomOptions.male || []).some(p => p.isRepresentative || p.name === representativeName);
+            const isInFemale = (roomOptions.female || []).some(p => p.isRepresentative || p.name === representativeName);
+
+            if (isInMale) {
+              updatedData.gender = 'male';
+            } else if (isInFemale) {
+              updatedData.gender = 'female';
+            }
+          }
+        }
 
         // 그룹 구성원 문서 생성
         const batch = db.batch();
@@ -389,8 +423,8 @@ export async function PUT(request) {
               total: individualAccomAmount,
             },
 
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
           };
 
           batch.set(memberRef, memberData);

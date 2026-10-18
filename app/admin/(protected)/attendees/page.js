@@ -1,20 +1,22 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import * as XLSX from 'xlsx';
+import SkeletonTable from './components/SkeletonTable';
+import DynamicForm from '@/components/DynamicForm';
 
 export default function AttendeesPage() {
   const [forms, setForms] = useState([]);
   const [selectedFormId, setSelectedFormId] = useState('');
-  const [participants, setParticipants] = useState([]);
   const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [isFormsLoading, setIsFormsLoading] = useState(true); // 폼 목록 로딩
   const [rooms, setRooms] = useState([]);
   const [groupFilter, setGroupFilter] = useState(''); // 그룹 ID 필터
-  const [nameFilter, setNameFilter] = useState(''); // 이름 필터
+  const nameInputRef = useRef(null); // 이름 필터 ref (uncontrolled)
   const [paymentFilter, setPaymentFilter] = useState(''); // 결제상태 필터 (all/paid/unpaid)
-  const [dateFilter, setDateFilter] = useState(''); // 등록일자 필터
+  const [checkInFilter, setCheckInFilter] = useState(''); // 접수상태 필터 (checked/unchecked)
   const [roomTypeFilter, setRoomTypeFilter] = useState(''); // 방 타입 필터 (가족실/단체실)
+  const [genderFilter, setGenderFilter] = useState(''); // 성별 필터 (male/female)
   const [hideFullRooms, setHideFullRooms] = useState(false); // 만실 방 숨기기
   const [roomSortOption, setRoomSortOption] = useState('roomNumber'); // 방 정렬 옵션 (roomNumber/mostSpace/leastSpace)
   const [roomAssignmentCapacityFilter, setRoomAssignmentCapacityFilter] = useState(''); // 방 배정 칼럼의 방 타입 필터 (2인실/4인실/6인실/30인실)
@@ -22,13 +24,24 @@ export default function AttendeesPage() {
   // 실제 적용된 필터 (검색 버튼 클릭 시 적용)
   const [appliedNameFilter, setAppliedNameFilter] = useState('');
   const [appliedPaymentFilter, setAppliedPaymentFilter] = useState('');
+  const [appliedCheckInFilter, setAppliedCheckInFilter] = useState('');
   const [appliedGroupFilter, setAppliedGroupFilter] = useState('');
   const [appliedRoomTypeFilter, setAppliedRoomTypeFilter] = useState('');
+  const [appliedGenderFilter, setAppliedGenderFilter] = useState('');
 
-  // 페이지네이션 상태
+  // 🚀 클라이언트 측 필터링 최적화: 전체 데이터 캐싱
+  const [allParticipants, setAllParticipants] = useState([]); // 전체 데이터 캐시
+  const [isDataLoaded, setIsDataLoaded] = useState(false); // 데이터 로드 완료 여부
+  const [isLoadingData, setIsLoadingData] = useState(false); // 데이터 로딩 중
+
+  // 페이지네이션 상태 (클라이언트 측)
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState(null);
   const [pageSize, setPageSize] = useState(10);
+
+  // 수정 모드 상태
+  const [editMode, setEditMode] = useState(false);
+  const [editData, setEditData] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
 
   // 폼 목록 가져오기
   const fetchForms = useCallback(async () => {
@@ -54,156 +67,560 @@ export default function AttendeesPage() {
     setRooms(data.rooms || []);
   }, []);
 
-  // 검색 버튼 클릭 핸들러
+  // 🚀 전체 참가자 데이터 가져오기 (클라이언트 측 필터링 최적화)
+  const fetchAllParticipants = useCallback(async (formId) => {
+    if (!formId) return;
+
+    console.log('🔄 전체 데이터 로드 시작:', formId);
+    setIsLoadingData(true);
+    const collectionName = `participants_${formId}`;
+
+    try {
+      const params = new URLSearchParams({
+        collectionName
+      });
+
+      // 🚀 모든 필터를 클라이언트에서 처리 (서버 필터 제거)
+      // 서버는 전체 데이터만 반환, 필터링은 클라이언트 메모리에서 즉시 처리
+
+      const res = await fetch(`/api/admin/participants/all?${params.toString()}`, {
+        credentials: 'include' // 🔐 쿠키 포함 (인증 토큰)
+      });
+
+      if (!res.ok) {
+        throw new Error(`API 요청 실패: ${res.status} ${res.statusText}`);
+      }
+
+      const data = await res.json();
+
+      console.log('✅ 전체 데이터 로드 완료:', data.totalCount, '건');
+      console.log('📊 로드된 참가자 샘플:', data.participants?.slice(0, 3));
+
+      // 방 배정된 사람 수 확인
+      const assignedCount = data.participants?.filter(p => p.roomNumber && p.roomNumber !== '미배정').length || 0;
+      console.log('🏠 방 배정된 사람:', assignedCount, '명');
+
+      // roomNumber 필드 확인
+      const withRoomNumber = data.participants?.filter(p => p.roomNumber);
+      console.log('🔑 roomNumber 필드가 있는 사람:', withRoomNumber?.length, '명');
+      if (withRoomNumber && withRoomNumber.length > 0) {
+        console.log('   샘플 (전체 데이터):', withRoomNumber.slice(0, 2));
+      }
+
+      setAllParticipants(data.participants || []);
+      setIsDataLoaded(true);
+    } catch (error) {
+      console.error('❌ 데이터 로드 실패:', error);
+      setAllParticipants([]);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, []);
+
+  // 검색 버튼 클릭 핸들러 (클라이언트 측 필터링 - 즉시 응답)
   const handleSearch = () => {
-    setAppliedNameFilter(nameFilter);
+    const nameValue = nameInputRef.current?.value || '';
+
+    console.log('🔍 필터 적용:', { name: nameValue, payment: paymentFilter, checkIn: checkInFilter, group: groupFilter, room: roomTypeFilter, gender: genderFilter });
+
+    // 필터 상태 업데이트 (useMemo 자동 재계산)
+    setAppliedNameFilter(nameValue);
     setAppliedPaymentFilter(paymentFilter);
+    setAppliedCheckInFilter(checkInFilter);
     setAppliedGroupFilter(groupFilter);
     setAppliedRoomTypeFilter(roomTypeFilter);
-    fetchParticipants(selectedFormId, 1);
+    setAppliedGenderFilter(genderFilter);
+
+    // 첫 페이지로 이동
+    setCurrentPage(1);
+
+    // API 호출 없음 - 클라이언트 메모리에서 즉시 필터링!
   };
 
   // 필터 초기화 핸들러
   const handleResetFilters = () => {
-    setNameFilter('');
+    // UI 입력 필드 초기화
+    if (nameInputRef.current) nameInputRef.current.value = '';
     setPaymentFilter('');
+    setCheckInFilter('');
     setGroupFilter('');
     setRoomTypeFilter('');
+    setGenderFilter('');
+
+    // 적용된 필터 상태 초기화
     setAppliedNameFilter('');
     setAppliedPaymentFilter('');
+    setAppliedCheckInFilter('');
     setAppliedGroupFilter('');
     setAppliedRoomTypeFilter('');
-    fetchParticipants(selectedFormId, 1);
+    setAppliedGenderFilter('');
+
+    // 첫 페이지로 이동
+    setCurrentPage(1);
+
+    // API 호출 없음 - 필터만 제거하면 전체 데이터 표시
   };
 
-  // 선택된 폼의 참가자 가져오기
-  const fetchParticipants = useCallback(async (formId, page = 1) => {
-    if (!formId) return;
-
-    setLoading(true);
-    const collectionName = `participants_${formId}`;
-
-    // URL 파라미터 구성
-    const params = new URLSearchParams({
-      collectionName,
-      page: page.toString(),
-      limit: pageSize.toString()
-    });
-
-    // 적용된 필터 파라미터 추가 (검색 버튼을 누른 후의 값)
-    if (appliedPaymentFilter) params.append('paymentStatus', appliedPaymentFilter);
-    if (appliedGroupFilter) params.append('groupId', appliedGroupFilter);
-    if (appliedRoomTypeFilter) params.append('roomType', appliedRoomTypeFilter);
-    if (appliedNameFilter) params.append('searchName', appliedNameFilter);
-
-    const res = await fetch(`/api/admin/participants?${params.toString()}`);
-    const data = await res.json();
-
-    console.log('🔍 Attendees Page - Fetched participants:', data.participants?.length);
-    console.log('📄 Pagination:', data.pagination);
-
-    // roomNumber가 있는 참가자 확인
-    const withRoomNumber = data.participants?.filter(p => p.roomNumber) || [];
-    console.log('🚪 Participants with roomNumber:', withRoomNumber.length);
-
-    // roomAssignments가 있는 참가자 확인
-    const withAssignments = data.participants?.filter(p => p.roomAssignments && Object.keys(p.roomAssignments).length > 0) || [];
-    console.log('🏠 Participants with room assignments:', withAssignments.length);
-
-    if (withRoomNumber.length > 0) {
-      console.log('📋 Sample participant with roomNumber:', {
-        id: withRoomNumber[0].id,
-        roomNumber: withRoomNumber[0].roomNumber,
-        roomId: withRoomNumber[0].roomId,
-        roomName: withRoomNumber[0].roomName,
-        roomAssignments: withRoomNumber[0].roomAssignments,
-        accommodationDates: withRoomNumber[0].accommodationDates
-      });
-    }
-
-    setParticipants(data.participants || []);
-    setPagination(data.pagination || null);
-    setCurrentPage(page);
-    setLoading(false);
-  }, [pageSize, appliedPaymentFilter, appliedGroupFilter, appliedRoomTypeFilter, appliedNameFilter]);
-
+  // 최초 진입 시 1회만 실행
   useEffect(() => {
     const init = async () => {
-      setLoading(true);
+      setIsFormsLoading(true);
       await fetchForms();
       await fetchSettings();
       await fetchRooms();
-      setLoading(false);
+      setIsFormsLoading(false);
     };
     init();
-  }, [fetchForms, fetchSettings, fetchRooms]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 최초 1회만 실행
 
-  // 폼 변경 시 첫 페이지 로드
+  // 폼 변경 시 전체 데이터 로드
   useEffect(() => {
     if (!selectedFormId) return;
-    fetchParticipants(selectedFormId, 1);
-  }, [selectedFormId, fetchParticipants]);
+    fetchAllParticipants(selectedFormId);
+  }, [selectedFormId, fetchAllParticipants]);
+
+  // 현재 선택된 폼 정보
+  const currentForm = forms.find(f => f.id === selectedFormId);
+
+  // 현재 폼에 accommodation-calculator 필드 찾기 (useMemo로 최적화)
+  const accommodationField = useMemo(() => {
+    return currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
+  }, [currentForm]);
+
+  // 🚀 클라이언트 측 필터링 (즉시 응답)
+  const filteredParticipants = useMemo(() => {
+    if (!isDataLoaded) return [];
+
+    let result = [...allParticipants];
+
+    // 이름 필터
+    if (appliedNameFilter) {
+      const searchLower = appliedNameFilter.toLowerCase();
+      const nameField = currentForm?.fields?.find(f =>
+        f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명'))
+      );
+
+      result = result.filter(p => {
+        const searchableFields = [];
+
+        // 동적 필드 ID로 저장된 이름
+        if (nameField && p[nameField.id]) {
+          const nameValue = p[nameField.id];
+          const actualName = nameValue.includes(' - 등록:')
+            ? nameValue.split(' - 등록:')[0]
+            : nameValue;
+          searchableFields.push(actualName);
+        }
+
+        // 그룹원의 대표자 이름
+        if (p.representativeName) {
+          searchableFields.push(p.representativeName);
+        }
+
+        return searchableFields.some(field =>
+          field && field.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // 결제상태 필터
+    if (appliedPaymentFilter) {
+      result = result.filter(p => p.paymentStatus === appliedPaymentFilter);
+    }
+
+    // 접수상태 필터
+    if (appliedCheckInFilter) {
+      result = result.filter(p => {
+        const status = p.checkInStatus || 'unchecked'; // 기본값: 미접수
+        return status === appliedCheckInFilter;
+      });
+    }
+
+    // 방 타입 필터
+    if (appliedRoomTypeFilter) {
+      result = result.filter(p => p.roomType === appliedRoomTypeFilter);
+    }
+
+    // 그룹 필터
+    if (appliedGroupFilter) {
+      result = result.filter(p => p.groupId === appliedGroupFilter);
+    }
+
+    // 성별 필터
+    if (appliedGenderFilter) {
+      result = result.filter(p => p.gender === appliedGenderFilter);
+    }
+
+    // 🚀 클라이언트 정렬 (서버에서 정렬 제거했으므로)
+    // 등록일 내림차순 → 같은 날짜면 groupId 오름차순 → 같은 그룹이면 대표자 우선
+    result.sort((a, b) => {
+      // 1. 등록일 내림차순 (최신순)
+      const dateA = a.registeredAt || '';
+      const dateB = b.registeredAt || '';
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+
+      // 2. groupId 오름차순 (같은 날짜 내에서 그룹 모아보기)
+      const groupA = a.groupId || 'zzz'; // groupId 없으면 맨 뒤로
+      const groupB = b.groupId || 'zzz';
+      if (groupA !== groupB) {
+        return groupA.localeCompare(groupB);
+      }
+
+      // 3. 대표자 우선 (true가 false보다 앞)
+      const isRepA = a.isRepresentative ? 0 : 1;
+      const isRepB = b.isRepresentative ? 0 : 1;
+      return isRepA - isRepB;
+    });
+
+    console.log('🔍 필터링 완료:', { total: allParticipants.length, filtered: result.length });
+    return result;
+  }, [allParticipants, appliedNameFilter, appliedPaymentFilter, appliedCheckInFilter, appliedRoomTypeFilter, appliedGroupFilter, appliedGenderFilter, currentForm, isDataLoaded]);
+
+  // 클라이언트 측 페이지네이션
+  const paginatedParticipants = useMemo(() => {
+    const offset = (currentPage - 1) * pageSize;
+    return filteredParticipants.slice(offset, offset + pageSize);
+  }, [filteredParticipants, currentPage, pageSize]);
+
+  // 페이지네이션 정보
+  const paginationInfo = useMemo(() => ({
+    page: currentPage,
+    limit: pageSize,
+    hasNext: (currentPage * pageSize) < filteredParticipants.length,
+    hasPrev: currentPage > 1,
+    totalFiltered: filteredParticipants.length,
+    totalUnfiltered: allParticipants.length,
+    totalPages: Math.ceil(filteredParticipants.length / pageSize)
+  }), [currentPage, pageSize, filteredParticipants.length, allParticipants.length]);
+
+  // 그룹 ID 목록 추출 (필터링된 데이터 기준)
+  const groupIds = useMemo(() => {
+    return Array.from(new Set(
+      allParticipants
+        .filter(p => p.groupId)
+        .map(p => p.groupId)
+    )).sort();
+  }, [allParticipants]);
+
+  // 방 타입 목록 추출 (필터링된 데이터 기준)
+  const roomTypes = useMemo(() => {
+    return Array.from(new Set(
+      allParticipants
+        .filter(p => p.roomType)
+        .map(p => p.roomType)
+    )).sort();
+  }, [allParticipants]);
+
+  // 단체실 사용자가 있는지 확인
+  const hasDormitory = useMemo(() => {
+    return allParticipants.some(p => p.roomType === '단체실');
+  }, [allParticipants]);
+
+  // 그룹 정보 맵 생성
+  const groupInfoMap = useMemo(() => {
+    const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
+    const phoneField = currentForm?.fields?.find(f => f.type === 'tel');
+
+    return groupIds.reduce((acc, groupId) => {
+      const groupMembers = allParticipants.filter(p => p.groupId === groupId);
+      const representative = groupMembers.find(p => p.isRepresentative);
+
+      const repName = representative?.[nameField?.id] || representative?.representativeName || '알 수 없음';
+      const repPhone = representative?.[phoneField?.id] || '';
+
+      acc[groupId] = {
+        label: repPhone ? `${repName} (${repPhone})` : repName,
+        memberCount: groupMembers.length
+      };
+
+      return acc;
+    }, {});
+  }, [groupIds, allParticipants, currentForm]);
 
   // 참가자 삭제
   const deleteParticipant = async (participantId) => {
     if (!confirm('정말 삭제하시겠습니까?')) return;
 
     const collectionName = `participants_${selectedFormId}`;
-    await fetch('/api/admin/attendees/delete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ collectionName, participantId }),
-    });
 
-    fetchParticipants(selectedFormId);
+    try {
+      // 🚀 낙관적 업데이트: 먼저 로컬에서 제거 (즉시 반영)
+      setAllParticipants(prev => prev.filter(p => p.id !== participantId));
+
+      const res = await fetch('/api/admin/attendees/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
+        body: JSON.stringify({ collectionName, participantId }),
+      });
+
+      if (!res.ok) {
+        // 실패 시 데이터 복구
+        console.error('삭제 실패, 데이터 복구 중...');
+        fetchAllParticipants(selectedFormId);
+      }
+    } catch (error) {
+      console.error('삭제 에러:', error);
+      fetchAllParticipants(selectedFormId);
+    }
+  };
+
+  // 수정 모드 진입
+  const handleEdit = (participant) => {
+    console.log('🔍 Edit clicked for participant:', participant.id);
+    console.log('  formId:', participant.formId);
+    console.log('  selectedFormId:', selectedFormId);
+
+    // 현재 선택된 폼의 스키마 가져오기
+    const currentForm = forms.find(f => f.id === selectedFormId);
+    if (!currentForm) {
+      console.error('❌ Form not found:', selectedFormId);
+      alert('폼 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    console.log('  Found form:', currentForm.name, '| fields:', currentForm.fields?.length);
+
+    // 참가자 데이터에 폼 필드 및 collectionName 추가
+    const collectionName = `participants_${selectedFormId}`;
+    const editDataWithFreeFields = {
+      ...participant,
+      formFields: currentForm.fields || [],
+      formId: currentForm.id,
+      formName: currentForm.name,
+      collectionName: collectionName, // 컬렉션명 추가
+    };
+
+    // payment-calculator 필드의 _free 값 설정
+    const paymentField = currentForm.fields?.find(f => f.type === 'payment-calculator');
+    if (paymentField) {
+      const freeFieldId = `${paymentField.id}_free`;
+      editDataWithFreeFields[freeFieldId] = participant.isFreePayment || false;
+    }
+
+    // accommodation-calculator 필드의 _free 값 설정
+    const accommodationField = currentForm.fields?.find(f => f.type === 'accommodation-calculator');
+    if (accommodationField) {
+      const freeFieldId = `${accommodationField.id}_free`;
+      editDataWithFreeFields[freeFieldId] = participant.isFreeAccommodation || false;
+    }
+
+    console.log('  Setting editData with fields:', editDataWithFreeFields.formFields?.length || 0);
+    setEditData(editDataWithFreeFields);
+    setEditMode(true);
+    console.log('  Edit mode set to true');
+  };
+
+  // 수정 내용 저장
+  const handleUpdate = async (formData) => {
+    setEditLoading(true);
+
+    try {
+      // 현재 폼의 필드 ID 목록 생성
+      const currentFormFieldIds = new Set();
+      editData.formFields?.forEach(field => {
+        currentFormFieldIds.add(field.id);
+
+        // payment-calculator의 날짜 및 식사 옵션 필드 추가
+        if (field.type === 'payment-calculator') {
+          currentFormFieldIds.add(`${field.id}_dates`);
+          currentFormFieldIds.add(`${field.id}_mealOptions`);
+          currentFormFieldIds.add(`${field.id}_free`); // 무료 옵션 필드 추가
+        }
+
+        // accommodation-calculator의 날짜와 방 타입 필드 추가
+        if (field.type === 'accommodation-calculator') {
+          currentFormFieldIds.add(`${field.id}_dates`);
+          currentFormFieldIds.add(`${field.id}_roomType`);
+          currentFormFieldIds.add(`${field.id}_roomOptions`);
+          currentFormFieldIds.add(`${field.id}_free`); // 무료 옵션 필드 추가
+        }
+
+        // date-of-birth의 임시 필드 추가
+        if (field.type === 'date-of-birth') {
+          currentFormFieldIds.add(`_temp_${field.id}`);
+        }
+      });
+
+      // 현재 폼의 필드에 해당하는 데이터만 필터링
+      const filteredFormData = {};
+      Object.keys(formData).forEach(key => {
+        if (currentFormFieldIds.has(key)) {
+          filteredFormData[key] = formData[key];
+        }
+      });
+
+      console.log('📤 Sending update request:');
+      console.log('  id:', editData.id);
+      console.log('  collectionName:', editData.collectionName);
+      console.log('  filteredFormData:', filteredFormData);
+      console.log('  filteredFormData keys:', Object.keys(filteredFormData));
+
+      const requestBody = {
+        id: editData.id,
+        collectionName: editData.collectionName,
+        formData: filteredFormData,
+      };
+
+      console.log('  Request body:', requestBody);
+
+      const res = await fetch("/api/registration", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText);
+      }
+
+      alert("수정되었습니다.");
+      setEditMode(false);
+
+      // 수정 후 데이터 다시 로드
+      await fetchAllParticipants(selectedFormId);
+    } catch (err) {
+      console.error("수정 오류:", err);
+      alert(`수정 실패: ${err.message || "알 수 없는 오류"}`);
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   // 결제 상태 토글
-  const togglePaymentStatus = async (participantId, currentStatus) => {
+  const togglePaymentStatus = (participantId, currentStatus) => {
     const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
     const collectionName = `participants_${selectedFormId}`;
 
-    await fetch('/api/admin/attendees/payment-status', {
+    // 🚀 즉시 UI 업데이트 (낙관적) - 사용자는 바로 변경된 것처럼 보임
+    setAllParticipants(prev =>
+      prev.map(p => p.id === participantId ? { ...p, paymentStatus: newStatus } : p)
+    );
+
+    // 백그라운드로 서버 동기화 (await 제거 - 비동기)
+    fetch('/api/admin/attendees/payment-status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
       body: JSON.stringify({
         collectionName,
         participantId,
         paymentStatus: newStatus
       }),
+    }).then(res => {
+      if (!res.ok) {
+        // 실패 시 이전 상태로 복구
+        console.error('결제 상태 변경 실패, 데이터 복구 중...');
+        setAllParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, paymentStatus: currentStatus } : p)
+        );
+      }
+    }).catch(error => {
+      console.error('결제 상태 변경 에러:', error);
+      // 실패 시 이전 상태로 복구
+      setAllParticipants(prev =>
+        prev.map(p => p.id === participantId ? { ...p, paymentStatus: currentStatus } : p)
+      );
     });
-
-    fetchParticipants(selectedFormId);
   };
 
-  // 방 배정 (roomNumber 기반)
-  const assignRoom = async (participantId, roomNumber) => {
+  // 접수 상태 토글
+  const toggleCheckInStatus = (participantId, currentStatus) => {
+    const newStatus = currentStatus === 'checked' ? 'unchecked' : 'checked';
     const collectionName = `participants_${selectedFormId}`;
-    const participant = participants.find(p => p.id === participantId);
+
+    // 🚀 즉시 UI 업데이트 (낙관적) - 사용자는 바로 변경된 것처럼 보임
+    setAllParticipants(prev =>
+      prev.map(p => p.id === participantId ? { ...p, checkInStatus: newStatus } : p)
+    );
+
+    // 백그라운드로 서버 동기화 (await 제거 - 비동기)
+    fetch('/api/admin/attendees/checkin-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
+      body: JSON.stringify({
+        collectionName,
+        participantId,
+        checkInStatus: newStatus
+      }),
+    }).then(res => {
+      if (!res.ok) {
+        // 실패 시 이전 상태로 복구
+        console.error('접수 상태 변경 실패, 데이터 복구 중...');
+        setAllParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, checkInStatus: currentStatus } : p)
+        );
+      }
+    }).catch(error => {
+      console.error('접수 상태 변경 에러:', error);
+      // 실패 시 이전 상태로 복구
+      setAllParticipants(prev =>
+        prev.map(p => p.id === participantId ? { ...p, checkInStatus: currentStatus } : p)
+      );
+    });
+  };
+
+  // 방 배정 (groupKey 기반: "A동|1" 또는 "1" 형식)
+  const assignRoom = async (participantId, groupKey) => {
+    const collectionName = `participants_${selectedFormId}`;
+    const participant = allParticipants.find(p => p.id === participantId);
 
     // 배정 해제
-    if (!roomNumber || roomNumber === null || roomNumber === '') {
+    if (!groupKey || groupKey === null || groupKey === '') {
       if (!confirm('방 배정을 해제하시겠습니까?')) return;
 
-      const res = await fetch('/api/admin/assign', {
+      // 🚀 즉시 UI 업데이트 (낙관적)
+      setAllParticipants(prev =>
+        prev.map(p => p.id === participantId ? {
+          ...p,
+          roomNumber: null,
+          buildingName: null,
+          roomId: null,
+          roomName: null,
+          roomAssignments: {}
+        } : p)
+      );
+
+      // 백그라운드로 서버 동기화
+      fetch('/api/admin/assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           collectionName,
           participantId,
           roomNumber: null,
+          buildingName: null,
+          rooms,
         }),
+      }).then(res => res.json()).then(data => {
+        // 서버 응답으로 최종 동기화
+        if (data.ok && data.participant) {
+          setAllParticipants(prev =>
+            prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
+          );
+        } else {
+          // 실패 시 전체 데이터 다시 로드
+          fetchAllParticipants(selectedFormId);
+        }
+      }).catch(error => {
+        console.error('방 배정 해제 실패:', error);
+        fetchAllParticipants(selectedFormId);
       });
 
-      // 로컬 상태 업데이트 (깜빡거림 방지)
-      const data = await res.json();
-      if (data.ok && data.participant) {
-        setParticipants(prev =>
-          prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
-        );
-      }
       return;
     }
+
+    // groupKey 파싱: "A동|1" → { building: "A동", roomNum: "1" } 또는 "1" → { building: "", roomNum: "1" }
+    const [buildingName, roomNumber] = groupKey.includes('|')
+      ? groupKey.split('|')
+      : ['', groupKey];
+    const displayName = buildingName ? `${buildingName} ${roomNumber}호` : `${roomNumber}호`;
 
     // 숙박 날짜가 있는지 확인
     const accommodationDates = participant?.accommodationDates || [];
@@ -246,15 +663,16 @@ export default function AttendeesPage() {
       for (const accomDate of accommodationDates) {
         const standardDate = parseKoreanDate(accomDate);
 
-        // 해당 날짜, 해당 방 번호의 방 찾기
-        const roomOnDate = rooms.find(r =>
-          (r.roomNumber === roomNumber || r.name?.replace(/[^\d]/g, '') === roomNumber) &&
-          r.date === standardDate
-        );
+        // 해당 날짜, 해당 방 번호 + 숙소의 방 찾기
+        const roomOnDate = rooms.find(r => {
+          const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+          const rBuilding = r.buildingName || '';
+          return rNum === roomNumber && rBuilding === buildingName && r.date === standardDate;
+        });
 
         if (roomOnDate) {
           // 해당 날짜에 이 방에 배정된 참가자들 찾기 (자기 자신 제외)
-          const participantsInRoomOnDate = participants.filter(p => {
+          const participantsInRoomOnDate = allParticipants.filter(p => {
             if (p.id === participantId) return false;
 
             // roomAssignments가 있으면 그것으로 체크
@@ -262,7 +680,7 @@ export default function AttendeesPage() {
               for (const dateKey in p.roomAssignments) {
                 const assignment = p.roomAssignments[dateKey];
                 if (assignment.roomId === roomOnDate.id ||
-                    (assignment.standardDate === standardDate && p.roomNumber === roomNumber)) {
+                    (assignment.standardDate === standardDate && p.roomNumber === roomNumber && (p.buildingName || '') === buildingName)) {
                   return true;
                 }
               }
@@ -278,7 +696,7 @@ export default function AttendeesPage() {
 
           if (afterOccupancy > roomOnDate.capacity) {
             const warningMessage = `⚠️ 정원 초과 경고!\n\n` +
-              `방: ${roomNumber}호\n` +
+              `방: ${displayName}\n` +
               `날짜: ${accomDate}\n` +
               `정원: ${roomOnDate.capacity}명\n` +
               `현재 배정: ${currentOccupancy}명\n` +
@@ -294,22 +712,67 @@ export default function AttendeesPage() {
       }
     }
 
-    const res = await fetch('/api/admin/assign', {
+    // 🚀 즉시 UI 업데이트 (낙관적) - 사용자는 바로 변경된 것처럼 보임
+    setAllParticipants(prev =>
+      prev.map(p => p.id === participantId ? {
+        ...p,
+        roomNumber: roomNumber,
+        buildingName: buildingName
+      } : p)
+    );
+
+    // 백그라운드로 서버 동기화 (await 제거 - 비동기)
+    fetch('/api/admin/assign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include', // 🔐 쿠키 포함 (인증 토큰)
       body: JSON.stringify({
         collectionName,
         participantId,
         roomNumber,
+        buildingName,
+        rooms,
       }),
+    }).then(res => {
+      if (!res.ok) {
+        throw new Error(`방 배정 실패: ${res.status} ${res.statusText}`);
+      }
+      return res.json();
+    }).then(data => {
+      // 서버 응답으로 최종 동기화 (roomAssignments 등 추가 정보 반영)
+      if (data.ok && data.participant) {
+        setAllParticipants(prev =>
+          prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
+        );
+      } else {
+        // 실패 시 전체 데이터 다시 로드
+        console.error('방 배정 실패, 데이터 복구 중...');
+        fetchAllParticipants(selectedFormId);
+      }
+    }).catch(error => {
+      console.error('방 배정 에러:', error);
+      fetchAllParticipants(selectedFormId);
     });
+  };
 
-    const data = await res.json();
-    if (data.ok && data.participant) {
-      setParticipants(prev =>
-        prev.map(p => p.id === participantId ? { ...p, ...data.participant } : p)
-      );
-    }
+  // 비고 저장
+  const saveNote = (participantId, note) => {
+    const collectionName = `participants_${selectedFormId}`;
+
+    // 🚀 즉시 UI 업데이트 (낙관적)
+    setAllParticipants(prev =>
+      prev.map(p => p.id === participantId ? { ...p, note } : p)
+    );
+
+    // 백그라운드로 서버 동기화
+    fetch('/api/admin/attendees/note', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ collectionName, participantId, note }),
+    }).catch(error => {
+      console.error('비고 저장 실패:', error);
+    });
   };
 
   // 방 배정 페이지로 이동
@@ -317,14 +780,58 @@ export default function AttendeesPage() {
     window.location.href = '/admin/rooms';
   };
 
-  if (loading) {
+  // 수정 모드일 때 렌더링
+  if (editMode && editData) {
+    console.log('📝 Rendering edit mode');
+    console.log('  editData:', editData);
+    console.log('  formFields:', editData.formFields);
+    console.log('  settings:', settings);
+
     return (
-      <main className="p-6">
-        <p>로딩 중...</p>
+      <main className="p-6 max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold">참가자 정보 수정</h1>
+          <button
+            onClick={() => setEditMode(false)}
+            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          >
+            ← 목록으로
+          </button>
+        </div>
+
+        <div className="bg-white shadow-md rounded-xl p-6">
+          <DynamicForm
+            formSchema={{
+              id: editData.formId,
+              name: editData.formName,
+              fields: editData.formFields || []
+            }}
+            settings={settings}
+            onSubmit={handleUpdate}
+            submitButtonText={editLoading ? "수정 중..." : "수정하기"}
+            initialData={editData}
+          />
+        </div>
       </main>
     );
   }
 
+  // 최초 로딩 중 (폼 목록만 로딩 중일 때)
+  if (isFormsLoading) {
+    return (
+      <main className="p-6">
+        <h1 className="text-2xl font-bold mb-4">인원 관리</h1>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">폼 목록을 불러오는 중...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // 폼이 없는 경우
   if (forms.length === 0) {
     return (
       <main className="p-6">
@@ -342,27 +849,7 @@ export default function AttendeesPage() {
     );
   }
 
-  const currentForm = forms.find(f => f.id === selectedFormId);
-
-  // 현재 폼에 accommodation-calculator가 있는지 확인
-  const hasAccommodation = currentForm?.fields?.some(f => f.type === 'accommodation-calculator');
-
-  // 그룹 ID 목록 추출 (중복 제거) - 현재 페이지 데이터에서만
-  const groupIds = Array.from(new Set(
-    participants
-      .filter(p => p.groupId)
-      .map(p => p.groupId)
-  )).sort();
-
-  // 방 타입 목록 추출 (중복 제거)
-  const roomTypes = Array.from(new Set(
-    participants
-      .filter(p => p.roomType)
-      .map(p => p.roomType)
-  )).sort();
-
-  // 서버에서 필터링된 데이터를 받으므로 클라이언트 필터링 불필요
-  const filteredParticipants = participants;
+  const hasAccommodation = !!accommodationField;
 
   // 엑셀용 값 포맷팅
   const formatExcelValue = (field, value, participant) => {
@@ -441,48 +928,21 @@ export default function AttendeesPage() {
       return;
     }
 
-    // 전체 참가자 데이터 가져오기 (페이지네이션 없이)
-    const collectionName = `participants_${selectedFormId}`;
-    const params = new URLSearchParams({
-      collectionName,
-      page: '1',
-      limit: '10000' // 충분히 큰 숫자로 전체 데이터 가져오기
-    });
-
-    // 적용된 필터만 추가
-    if (appliedPaymentFilter) params.append('paymentStatus', appliedPaymentFilter);
-    if (appliedGroupFilter) params.append('groupId', appliedGroupFilter);
-    if (appliedRoomTypeFilter) params.append('roomType', appliedRoomTypeFilter);
-    if (appliedNameFilter) params.append('searchName', appliedNameFilter);
-
-    const res = await fetch(`/api/admin/participants?${params.toString()}`);
-    const data = await res.json();
-    const allParticipants = data.participants || [];
-
-    if (allParticipants.length === 0) {
+    // 🚀 클라이언트 측 필터링된 데이터 사용 (API 호출 불필요)
+    if (filteredParticipants.length === 0) {
       alert('다운로드할 데이터가 없습니다.');
       return;
     }
 
-    // 엑셀 데이터 생성
-    const excelData = allParticipants.map((participant, index) => {
+    // 엑셀 데이터 생성 (필터링된 데이터 사용)
+    const excelData = filteredParticipants.map((participant, index) => {
       const row = {
         '번호': index + 1,
       };
 
-      // 그룹 정보
-      if (participant.groupId) {
-        const groupMembers = allParticipants.filter(p => p.groupId === participant.groupId);
-        const representative = groupMembers.find(p => p.isRepresentative);
-        const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
-        const repName = representative?.[nameField?.id] || '알 수 없음';
-        row['그룹'] = participant.isRepresentative ? `대표자 (${repName})` : `구성원 (${repName})`;
-      } else {
-        row['그룹'] = '-';
-      }
-
-      // 폼 필드 데이터
+      // 폼 필드 데이터 (label이 비어있는 필드는 건너뛰기)
       currentForm.fields.forEach(field => {
+        if (!field.label || field.label.trim() === '') return;
         const value = participant[field.id];
         row[field.label] = formatExcelValue(field, value, participant);
       });
@@ -529,6 +989,23 @@ export default function AttendeesPage() {
       // 결제상태
       row['결제상태'] = participant.paymentStatus === 'paid' ? '납부완료' : '미납';
 
+      // 접수상태
+      row['접수상태'] = participant.checkInStatus === 'checked' ? '접수완료' : '미접수';
+
+      // 방 타입 (숙박이 있는 경우)
+      if (hasAccommodation) {
+        row['방 타입'] = participant.roomType || '-';
+      }
+
+      // 성별 (숙박 단체실인 경우)
+      if (hasAccommodation) {
+        if (participant.roomType === '단체실' && participant.gender) {
+          row['성별'] = participant.gender === 'male' ? '남' : participant.gender === 'female' ? '여' : '-';
+        } else {
+          row['성별'] = '-';
+        }
+      }
+
       // 숙박 인원 (숙박이 있는 경우)
       if (hasAccommodation) {
         const accommodationField = currentForm?.fields?.find(f => f.type === 'accommodation-calculator');
@@ -536,7 +1013,20 @@ export default function AttendeesPage() {
           const hasAccommodationDates = participant.accommodationDates && participant.accommodationDates.length > 0;
           if (hasAccommodationDates) {
             const roomOptionsFieldId = `${accommodationField.id}_roomOptions`;
-            const peopleCount = parseInt(participant[roomOptionsFieldId]?.count) || 1;
+            const roomOptions = participant[roomOptionsFieldId] || {};
+
+            let peopleCount = 1;
+            if (roomOptions.count) {
+              // 가족실: count 필드 사용
+              peopleCount = parseInt(roomOptions.count) || 1;
+            } else if (roomOptions.male || roomOptions.female) {
+              // 단체실: male + female 배열 길이 합산
+              const maleCount = Array.isArray(roomOptions.male) ? roomOptions.male.length : 0;
+              const femaleCount = Array.isArray(roomOptions.female) ? roomOptions.female.length : 0;
+              peopleCount = maleCount + femaleCount;
+              if (peopleCount === 0) peopleCount = 1; // 최소 1명 (대표자)
+            }
+
             row['숙박 인원'] = `${peopleCount}명`;
           } else {
             row['숙박 인원'] = '-';
@@ -545,11 +1035,16 @@ export default function AttendeesPage() {
 
         // 방 배정
         if (participant.roomNumber) {
-          row['방 배정'] = `${participant.roomNumber}호`;
+          row['방 배정'] = participant.buildingName
+            ? `${participant.buildingName} ${participant.roomNumber}호`
+            : `${participant.roomNumber}호`;
         } else {
           row['방 배정'] = '미배정';
         }
       }
+
+      // 비고
+      row['비고'] = participant.note || '';
 
       return row;
     });
@@ -581,13 +1076,26 @@ export default function AttendeesPage() {
     XLSX.writeFile(workbook, fileName);
   };
 
-  // 방 번호로 그룹화 (중복 제거)
-  const roomNumbersSet = new Set();
+  // 방 번호 + 숙소 이름으로 그룹화 (중복 제거)
+  const roomGroupsMap = new Map();
   rooms.forEach(room => {
     const roomNum = room.roomNumber || room.name?.replace(/[^\d]/g, '');
-    if (roomNum) roomNumbersSet.add(roomNum);
+    const building = room.buildingName || '';
+    const groupKey = building ? `${building}|${roomNum}` : roomNum;
+    if (roomNum && !roomGroupsMap.has(groupKey)) {
+      roomGroupsMap.set(groupKey, { roomNum, building });
+    }
   });
-  let uniqueRoomNumbers = Array.from(roomNumbersSet).sort((a, b) => parseInt(a) - parseInt(b));
+  let uniqueRoomGroups = Array.from(roomGroupsMap.entries()).sort((a, b) => {
+    const [, dataA] = a;
+    const [, dataB] = b;
+    // 먼저 숙소 이름으로 정렬
+    if (dataA.building !== dataB.building) {
+      return dataA.building.localeCompare(dataB.building);
+    }
+    // 같은 숙소면 방 번호로 정렬
+    return parseInt(dataA.roomNum) - parseInt(dataB.roomNum);
+  });
 
   // 날짜별로 표준 형식으로 변환하는 함수
   const parseKoreanDateUtil = (dateStr) => {
@@ -606,11 +1114,13 @@ export default function AttendeesPage() {
   };
 
   // 방별 최대 점유율 계산 함수 (모든 날짜 중 가장 많이 찬 날짜 기준)
-  const calculateMaxRoomOccupancy = (roomNum) => {
-    // 해당 방 번호의 모든 날짜별 방 찾기
-    const roomsForNumber = rooms.filter(r =>
-      r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum
-    );
+  const calculateMaxRoomOccupancy = (roomNum, building = '') => {
+    // 해당 방 번호 + 숙소의 모든 날짜별 방 찾기
+    const roomsForNumber = rooms.filter(r => {
+      const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+      const rBuilding = r.buildingName || '';
+      return rNum === roomNum && rBuilding === building;
+    });
 
     if (roomsForNumber.length === 0) {
       return { capacity: 0, maxOccupancy: 0, availableSpace: 0 };
@@ -621,7 +1131,7 @@ export default function AttendeesPage() {
 
     // 각 날짜별로 점유율 계산하여 최대값 찾기
     roomsForNumber.forEach(roomOnDate => {
-      const participantsInRoomOnDate = participants.filter(p => {
+      const participantsInRoomOnDate = allParticipants.filter(p => {
         if (!p.roomAssignments || typeof p.roomAssignments !== 'object') {
           return false;
         }
@@ -648,18 +1158,20 @@ export default function AttendeesPage() {
 
   // 방 필터링 (만실 방 숨기기)
   if (hideFullRooms) {
-    uniqueRoomNumbers = uniqueRoomNumbers.filter(roomNum => {
-      const { availableSpace } = calculateMaxRoomOccupancy(roomNum);
+    uniqueRoomGroups = uniqueRoomGroups.filter(([, data]) => {
+      const { availableSpace } = calculateMaxRoomOccupancy(data.roomNum, data.building);
       return availableSpace > 0;
     });
   }
 
   // 방 필터링 (방 타입별)
   if (roomAssignmentCapacityFilter) {
-    uniqueRoomNumbers = uniqueRoomNumbers.filter(roomNum => {
-      const sampleRoom = rooms.find(r =>
-        r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum
-      );
+    uniqueRoomGroups = uniqueRoomGroups.filter(([, data]) => {
+      const sampleRoom = rooms.find(r => {
+        const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+        const rBuilding = r.buildingName || '';
+        return rNum === data.roomNum && rBuilding === data.building;
+      });
       if (!sampleRoom) return false;
 
       return sampleRoom.capacity === parseInt(roomAssignmentCapacityFilter);
@@ -669,22 +1181,20 @@ export default function AttendeesPage() {
   // 방 정렬
   if (roomSortOption === 'mostSpace') {
     // 여유 공간 많은 순
-    uniqueRoomNumbers = uniqueRoomNumbers.sort((a, b) => {
-      const spaceA = calculateMaxRoomOccupancy(a).availableSpace;
-      const spaceB = calculateMaxRoomOccupancy(b).availableSpace;
+    uniqueRoomGroups = uniqueRoomGroups.sort((a, b) => {
+      const spaceA = calculateMaxRoomOccupancy(a[1].roomNum, a[1].building).availableSpace;
+      const spaceB = calculateMaxRoomOccupancy(b[1].roomNum, b[1].building).availableSpace;
       return spaceB - spaceA;
     });
   } else if (roomSortOption === 'leastSpace') {
     // 여유 공간 적은 순
-    uniqueRoomNumbers = uniqueRoomNumbers.sort((a, b) => {
-      const spaceA = calculateMaxRoomOccupancy(a).availableSpace;
-      const spaceB = calculateMaxRoomOccupancy(b).availableSpace;
+    uniqueRoomGroups = uniqueRoomGroups.sort((a, b) => {
+      const spaceA = calculateMaxRoomOccupancy(a[1].roomNum, a[1].building).availableSpace;
+      const spaceB = calculateMaxRoomOccupancy(b[1].roomNum, b[1].building).availableSpace;
       return spaceA - spaceB;
     });
-  } else {
-    // 방 번호 순 (기본값)
-    uniqueRoomNumbers = uniqueRoomNumbers.sort((a, b) => parseInt(a) - parseInt(b));
   }
+  // 기본 정렬은 이미 uniqueRoomGroups 생성 시 적용됨
 
   return (
     <main className="p-6">
@@ -698,10 +1208,18 @@ export default function AttendeesPage() {
           onChange={(e) => {
             setSelectedFormId(e.target.value);
             // 폼 변경시 모든 필터 및 페이지 초기화
+            // 1. UI 필터 초기화
             setGroupFilter('');
-            setNameFilter('');
+            if (nameInputRef.current) nameInputRef.current.value = '';
             setPaymentFilter('');
+            setCheckInFilter('');
             setRoomTypeFilter('');
+            // 2. 적용된 필터 상태도 초기화 (중요!)
+            setAppliedNameFilter('');
+            setAppliedPaymentFilter('');
+            setAppliedCheckInFilter('');
+            setAppliedGroupFilter('');
+            setAppliedRoomTypeFilter('');
             setCurrentPage(1);
           }}
           className="w-full max-w-md border border-gray-300 rounded-md p-2"
@@ -714,42 +1232,38 @@ export default function AttendeesPage() {
         </select>
       </div>
 
-      {/* 그룹 필터 (그룹이 있는 경우만 표시) */}
+      {/* 그룹 필터 (그룹이 있는 경우만 표시)
       {groupIds.length > 0 && (
         <div className="mb-6 bg-white shadow rounded-lg p-4">
           <label className="block text-sm font-medium mb-2">그룹 필터</label>
           <div className="flex gap-2 items-center">
             <select
-              value={groupFilter}
-              onChange={(e) => setGroupFilter(e.target.value)}
+              value={appliedGroupFilter}
+              onChange={(e) => {
+                const value = e.target.value;
+                setGroupFilter(value);
+                setAppliedGroupFilter(value);
+                setCurrentPage(1); // 첫 페이지로 이동
+              }}
               className="flex-1 max-w-md border border-gray-300 rounded-md p-2"
             >
-              <option value="">전체 보기 ({participants.length}명)</option>
+              <option value="">전체 보기 ({allParticipants.length}명)</option>
               {groupIds.map(groupId => {
-                const groupMembers = participants.filter(p => p.groupId === groupId);
-                const representative = groupMembers.find(p => p.isRepresentative);
-
-                // 대표자의 이름과 전화번호 가져오기
-                const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
-                const phoneField = currentForm?.fields?.find(f => f.type === 'tel');
-
-                const repName = representative?.[nameField?.id] || representative?.representativeName || '알 수 없음';
-                const repPhone = representative?.[phoneField?.id] || '';
-
-                const groupLabel = repPhone
-                  ? `${repName} (${repPhone})`
-                  : repName;
-
+                const groupInfo = groupInfoMap[groupId];
                 return (
                   <option key={groupId} value={groupId}>
-                    그룹: {groupLabel} - {groupMembers.length}명
+                    그룹: {groupInfo.label} - {groupInfo.memberCount}명
                   </option>
                 );
               })}
             </select>
-            {groupFilter && (
+            {appliedGroupFilter && (
               <button
-                onClick={() => setGroupFilter('')}
+                onClick={() => {
+                  setGroupFilter('');
+                  setAppliedGroupFilter('');
+                  setCurrentPage(1);
+                }}
                 className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
               >
                 필터 해제
@@ -757,7 +1271,7 @@ export default function AttendeesPage() {
             )}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* 추가 필터 (이름, 결제상태, 방 타입) */}
       <div className="mb-6 bg-white shadow rounded-lg p-4">
@@ -768,8 +1282,7 @@ export default function AttendeesPage() {
             <label className="block text-xs text-gray-600 mb-1">이름 검색</label>
             <input
               type="text"
-              value={nameFilter}
-              onChange={(e) => setNameFilter(e.target.value)}
+              ref={nameInputRef}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="이름 입력..."
               className="w-full border border-gray-300 rounded-md p-2 text-sm"
@@ -790,6 +1303,20 @@ export default function AttendeesPage() {
             </select>
           </div>
 
+          {/* 접수상태 필터 */}
+          <div>
+            <label className="block text-xs text-gray-600 mb-1">접수상태</label>
+            <select
+              value={checkInFilter}
+              onChange={(e) => setCheckInFilter(e.target.value)}
+              className="w-full border border-gray-300 rounded-md p-2 text-sm"
+            >
+              <option value="">전체</option>
+              <option value="checked">접수완료</option>
+              <option value="unchecked">미접수</option>
+            </select>
+          </div>
+
           {/* 방 타입 필터 (숙박이 있는 경우만 표시) */}
           {hasAccommodation && roomTypes.length > 0 && (
             <div>
@@ -805,6 +1332,22 @@ export default function AttendeesPage() {
                     {roomType}
                   </option>
                 ))}
+              </select>
+            </div>
+          )}
+
+          {/* 성별 필터 (단체실이 있는 경우만 표시) */}
+          {hasDormitory && (
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">성별</label>
+              <select
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                className="w-full border border-gray-300 rounded-md p-2 text-sm"
+              >
+                <option value="">전체</option>
+                <option value="male">남</option>
+                <option value="female">여</option>
               </select>
             </div>
           )}
@@ -827,7 +1370,7 @@ export default function AttendeesPage() {
         </div>
 
         {/* 적용된 필터 표시 */}
-        {(appliedNameFilter || appliedPaymentFilter || appliedRoomTypeFilter) && (
+        {(appliedNameFilter || appliedPaymentFilter || appliedCheckInFilter || appliedRoomTypeFilter || appliedGenderFilter) && (
           <div className="mt-4 pt-4 border-t border-gray-200">
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-xs text-gray-600 font-medium">적용된 필터:</span>
@@ -841,9 +1384,19 @@ export default function AttendeesPage() {
                   결제: {appliedPaymentFilter === 'paid' ? '납부완료' : '미납'}
                 </span>
               )}
+              {appliedCheckInFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                  접수: {appliedCheckInFilter === 'checked' ? '접수완료' : '미접수'}
+                </span>
+              )}
               {appliedRoomTypeFilter && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
                   방 타입: {appliedRoomTypeFilter}
+                </span>
+              )}
+              {appliedGenderFilter && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                  성별: {appliedGenderFilter === 'male' ? '남' : '여'}
                 </span>
               )}
             </div>
@@ -851,34 +1404,35 @@ export default function AttendeesPage() {
         )}
       </div>
 
-      {/* 페이지네이션 컨트롤 */}
-      {pagination && (pagination.hasNext || pagination.hasPrev) && (
+      {/* 페이지네이션 컨트롤 (클라이언트 측) */}
+      {filteredParticipants.length > 0 && (
         <div className="mb-6 bg-white shadow rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              페이지 {pagination.page} (현재 {filteredParticipants.length}건 표시)
+              페이지 {paginationInfo.page} / {paginationInfo.totalPages}
+              (필터링: {paginationInfo.totalFiltered}건 / 전체: {paginationInfo.totalUnfiltered}건)
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => fetchParticipants(selectedFormId, 1)}
-                disabled={!pagination.hasPrev}
+                onClick={() => setCurrentPage(1)}
+                disabled={!paginationInfo.hasPrev}
                 className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 처음
               </button>
               <button
-                onClick={() => fetchParticipants(selectedFormId, currentPage - 1)}
-                disabled={!pagination.hasPrev}
+                onClick={() => setCurrentPage(prev => prev - 1)}
+                disabled={!paginationInfo.hasPrev}
                 className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 이전
               </button>
               <span className="px-3 py-1 text-sm font-medium">
-                페이지 {pagination.page}
+                페이지 {paginationInfo.page}
               </span>
               <button
-                onClick={() => fetchParticipants(selectedFormId, currentPage + 1)}
-                disabled={!pagination.hasNext}
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                disabled={!paginationInfo.hasNext}
                 className="px-3 py-1 border rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 다음
@@ -887,7 +1441,7 @@ export default function AttendeesPage() {
                 value={pageSize}
                 onChange={(e) => {
                   setPageSize(parseInt(e.target.value));
-                  fetchParticipants(selectedFormId, 1);
+                  setCurrentPage(1);
                 }}
                 className="ml-4 px-2 py-1 border rounded text-sm"
               >
@@ -902,9 +1456,12 @@ export default function AttendeesPage() {
       )}
 
       {/* 참가자 목록 */}
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">
+      {isLoadingData ? (
+        <SkeletonTable />
+      ) : (
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">
             {(() => {
               // 전체 인원 합계 계산
               const totalPeople = filteredParticipants.reduce((sum, p) => {
@@ -915,7 +1472,7 @@ export default function AttendeesPage() {
                 <>
                   {currentForm?.name} 참가자 목록 (현재 페이지: {filteredParticipants.length}건)
                   {!accommodationField && <span className="text-xl font-semibold">&nbsp;</span>}
-                  {(groupFilter || paymentFilter || nameFilter || roomTypeFilter) && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
+                  {(groupFilter || paymentFilter || appliedNameFilter || roomTypeFilter) && <span className="text-sm text-gray-600 ml-2">(필터링됨)</span>}
                 </>
               );
             })()}
@@ -942,6 +1499,20 @@ export default function AttendeesPage() {
             })()}
           </h2>
           <div className="flex gap-2">
+            <button
+              onClick={() => fetchAllParticipants(selectedFormId)}
+              disabled={isLoadingData}
+              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              {isLoadingData ? (
+                <>
+                  <span className="animate-spin">↻</span>
+                  새로고침 중...
+                </>
+              ) : (
+                <>↻ 새로고침</>
+              )}
+            </button>
             {filteredParticipants.length > 0 && (
               <button
                 onClick={downloadExcel}
@@ -976,6 +1547,8 @@ export default function AttendeesPage() {
                   ))}
                   <th className="border p-2">등록일</th>
                   <th className="border p-2">결제상태</th>
+                  <th className="border p-2">접수상태</th>
+                  {hasDormitory && <th className="border p-2">성별</th>}
                   {hasAccommodation && <th className="border p-2">숙박 인원</th>}
                   {hasAccommodation && (
                     <th className="border p-2">
@@ -1018,17 +1591,18 @@ export default function AttendeesPage() {
                       </div>
                     </th>
                   )}
+                  <th className="border p-2">비고</th>
                   <th className="border p-2">액션</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredParticipants.map(participant => (
+                {paginatedParticipants.map(participant => (
                   <tr key={participant.id}>
                     <td className="border p-2">
                       {participant.groupId ? (
                         (() => {
                           // 대표자의 이름과 전화번호 찾기
-                          const groupMembers = participants.filter(p => p.groupId === participant.groupId);
+                          const groupMembers = allParticipants.filter(p => p.groupId === participant.groupId);
                           const representative = groupMembers.find(p => p.isRepresentative);
 
                           const nameField = currentForm?.fields?.find(f => f.type === 'text' && (f.label?.includes('이름') || f.label?.includes('성명')));
@@ -1081,6 +1655,35 @@ export default function AttendeesPage() {
                         {participant.paymentStatus === 'paid' ? '납부완료' : '미납'}
                       </button>
                     </td>
+                    <td className="border p-2">
+                      <button
+                        onClick={() => toggleCheckInStatus(participant.id, participant.checkInStatus || 'unchecked')}
+                        className={`px-3 py-1 rounded text-xs font-medium transition hover:opacity-80 ${
+                          participant.checkInStatus === 'checked'
+                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {participant.checkInStatus === 'checked' ? '접수완료' : '미접수'}
+                      </button>
+                    </td>
+                    {hasDormitory && (
+                      <td className="border p-2">
+                        {participant.roomType === '단체실' ? (
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            participant.gender === 'male'
+                              ? 'bg-blue-100 text-blue-700'
+                              : participant.gender === 'female'
+                              ? 'bg-pink-100 text-pink-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {participant.gender === 'male' ? '남' : participant.gender === 'female' ? '여' : '-'}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    )}
                     {hasAccommodation && (
                       <td className="border p-2">
                         {(() => {
@@ -1106,7 +1709,9 @@ export default function AttendeesPage() {
                       <td className="border p-2">
                         {participant.roomNumber ? (
                           <div className="text-xs">
-                            <div className="font-semibold text-blue-700">{participant.roomNumber}호</div>
+                            <div className="font-semibold text-blue-700">
+                              {participant.buildingName ? `${participant.buildingName} ${participant.roomNumber}호` : `${participant.roomNumber}호`}
+                            </div>
                             <div className="text-gray-500 text-[10px] mt-0.5">
                               {participant.accommodationDates?.length || 0}일 배정됨
                             </div>
@@ -1124,15 +1729,17 @@ export default function AttendeesPage() {
                             className="w-full border border-gray-300 rounded p-1 text-xs"
                           >
                             <option value="">방 선택</option>
-                            {uniqueRoomNumbers
-                              .filter(roomNum => {
+                            {uniqueRoomGroups
+                              .filter(([, data]) => {
                                 // 참가자의 방 타입과 일치하는 방만 표시
                                 const participantRoomType = participant.roomType;
                                 if (!participantRoomType) return true;
 
-                                const sampleRoom = rooms.find(r =>
-                                  (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum)
-                                );
+                                const sampleRoom = rooms.find(r => {
+                                  const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+                                  const rBuilding = r.buildingName || '';
+                                  return rNum === data.roomNum && rBuilding === data.building;
+                                });
 
                                 if (!sampleRoom) return false;
 
@@ -1142,10 +1749,13 @@ export default function AttendeesPage() {
                                 const requiredCapacity = parseInt(typeMatch[1]);
                                 return sampleRoom.capacity === requiredCapacity;
                               })
-                              .map(roomNum => {
-                                const sampleRoom = rooms.find(r =>
-                                  (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum)
-                                );
+                              .map(([groupKey, data]) => {
+                                const { roomNum, building } = data;
+                                const sampleRoom = rooms.find(r => {
+                                  const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+                                  const rBuilding = r.buildingName || '';
+                                  return rNum === roomNum && rBuilding === building;
+                                });
 
                                 const capacity = sampleRoom?.capacity || 0;
 
@@ -1176,15 +1786,16 @@ export default function AttendeesPage() {
                                 // 내 숙박 날짜들 중에서 각 날짜별 배정 인원 계산
                                 let maxOccupancy = 0;
                                 myStandardDates.forEach(standardDate => {
-                                  // 해당 날짜의 해당 방 번호 방 찾기
-                                  const roomOnDate = rooms.find(r =>
-                                    (r.roomNumber === roomNum || r.name?.replace(/[^\d]/g, '') === roomNum) &&
-                                    r.date === standardDate
-                                  );
+                                  // 해당 날짜의 해당 방 번호 + 숙소 방 찾기
+                                  const roomOnDate = rooms.find(r => {
+                                    const rNum = r.roomNumber || r.name?.replace(/[^\d]/g, '');
+                                    const rBuilding = r.buildingName || '';
+                                    return rNum === roomNum && rBuilding === building && r.date === standardDate;
+                                  });
 
                                   if (roomOnDate) {
                                     // 해당 날짜에 이 방에 배정된 참가자들 찾기 (자기 자신 제외)
-                                    const participantsInRoomOnDate = participants.filter(p => {
+                                    const participantsInRoomOnDate = allParticipants.filter(p => {
                                       if (p.id === participant.id) return false; // 자기 자신 제외
 
                                       // roomAssignments로 체크 (정확한 날짜별 매칭)
@@ -1210,17 +1821,18 @@ export default function AttendeesPage() {
                                 });
 
                                 const isOverCapacity = maxOccupancy >= capacity;
+                                const displayName = building ? `${building} ${roomNum}호` : `${roomNum}호`;
 
                                 return (
                                   <option
-                                    key={roomNum}
-                                    value={roomNum}
+                                    key={groupKey}
+                                    value={groupKey}
                                     style={{
                                       color: isOverCapacity ? '#dc2626' : '#000',
                                       fontWeight: isOverCapacity ? 'bold' : 'normal'
                                     }}
                                   >
-                                    {roomNum}호 ({maxOccupancy}/{capacity}명) {isOverCapacity ? '⚠️ 만실' : ''}
+                                    {displayName} ({maxOccupancy}/{capacity}명) {isOverCapacity ? '⚠️ 만실' : ''}
                                   </option>
                                 );
                               })}
@@ -1229,12 +1841,39 @@ export default function AttendeesPage() {
                       </td>
                     )}
                     <td className="border p-2">
-                      <button
-                        onClick={() => deleteParticipant(participant.id)}
-                        className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
-                      >
-                        삭제
-                      </button>
+                      <input
+                        type="text"
+                        defaultValue={participant.note || ''}
+                        placeholder="비고 입력..."
+                        onBlur={(e) => {
+                          const newNote = e.target.value.trim();
+                          if (newNote !== (participant.note || '')) {
+                            saveNote(participant.id, newNote);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.target.blur();
+                          }
+                        }}
+                        className="w-full min-w-[120px] border border-gray-300 rounded px-2 py-1 text-xs"
+                      />
+                    </td>
+                    <td className="border p-2">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(participant)}
+                          className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => deleteParticipant(participant.id)}
+                          className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                        >
+                          삭제
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1242,7 +1881,8 @@ export default function AttendeesPage() {
             </table>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -1317,9 +1957,12 @@ function renderFieldValue(field, value, participant) {
 
       return (
         <div className="whitespace-pre-line">
-          {paymentDates.map((date, idx) => (
-            <div key={idx}>{date}</div>
-          ))}
+          {paymentDates.map((date, idx) => {
+            // "1월 27일 (Day2)" 형식에서 "(Day2)" 부분만 추출
+            const dayMatch = date.match(/\((Day\d+)\)/i);
+            const displayText = dayMatch ? dayMatch[1].toUpperCase() : date;
+            return <span key={idx}>{displayText} </span>;
+          })}
           <div className="font-semibold mt-1 pt-1 border-t">{amountDisplay}</div>
         </div>
       );
@@ -1331,10 +1974,11 @@ function renderFieldValue(field, value, participant) {
       const accomAmount = participant.accommodationAmount?.total
         ? `${participant.accommodationAmount.total.toLocaleString()}원`
         : '-';
+      const peopleCount = participant.totalGroupMembers;
 
       // 인원수 가져오기
-      const roomOptionsFieldId = `${field.id}_roomOptions`;
-      const peopleCount = participant[roomOptionsFieldId]?.count || '-';
+      // const roomOptionsFieldId = `${field.id}_roomOptions`;
+      // const peopleCount = participant[roomOptionsFieldId]?.count || '-';
 
       if (!Array.isArray(accomDates) || accomDates.length === 0) {
         return `${roomType} / ${peopleCount}명 / ${accomAmount}`;
@@ -1342,9 +1986,12 @@ function renderFieldValue(field, value, participant) {
 
       return (
         <div className="whitespace-pre-line">
-          {accomDates.map((date, idx) => (
-            <div key={idx}>{date}</div>
-          ))}
+          {accomDates.map((date, idx) => {
+            // "1월 27일 (Day2)" 형식에서 "(Day2)" 부분만 추출
+            const dayMatch = date.match(/\((Day\d+)\)/i);
+            const displayText = dayMatch ? dayMatch[1].toUpperCase() : date;
+            return <span key={idx}>{displayText} </span>;
+          })}
           <div className="font-semibold mt-1 pt-1 border-t">
             {roomType} / {peopleCount}명 / {accomAmount}
           </div>

@@ -1,0 +1,14 @@
+Use case: ads-marketing
+Asset type: finished portrait Korean revival gathering poster, high-resolution web and print artwork, approximately 3:4 portrait composition.
+Primary request: Create an elegant, remarkably clean editorial poster for the sixth Again 1907 gathering. The attached image is a STYLE REFERENCE ONLY for the established revival-event identity: retain its spirit of scarlet and cobalt light and the memorable Again 1907 serif wordmark. Fully redesign the dense older poster into a spare, refined contemporary poster; do not carry over old facts, old speaker portraits or QR code.
+Scene/backdrop: deep midnight navy, very subtle matte paper grain. An abstract, elegant band of luminous scarlet and cobalt light/ribbon sweeps diagonally from the upper right through generous negative space into a soft ivory luminous center in the lower middle; restrained, beautiful, evocative of revival and light, no objects or people. Mostly dark navy and off-white, with controlled scarlet and cobalt accents.
+Style/medium: premium cultural-event editorial poster, sophisticated Swiss-inspired spacing paired with expressive old-style serif English lettering; clean typography, understated emotional atmosphere, sharp finished artwork.
+Composition: portrait, ample margins and air. Small '제6차' near the upper left. Below, prominent off-white serif 'Again' with '1907' as an equally expressive stacked second line, clearly reading Again 1907. Korean title '평양대부흥회' follows in clean bold Korean lettering with excellent readability. Place '주님의 이름만 높여지는' as a small restrained phrase above or near the title. The large abstract light field gives the center breathing room. Near the bottom, a fine light hairline and a spacious, carefully aligned information block with the date on one line and venue below. This must feel designed, intentional, simple, polished, solemn and hopeful.
+Text (verbatim, all and only these strings):
+'제6차'
+'주님의 이름만 높여지는'
+'Again 1907'
+'평양대부흥회'
+'2027. 01. 25 월 — 01. 30 토'
+'오산리기도원'
+Constraints: Every text string must be reproduced accurately and legibly, with fully correct Korean glyphs and no nonsense characters. Spell date exactly including 2027. Clearly sixth event only. Do not add any other copy. No presenters, people, sponsor logos, logos from reference, registration deadline, QR code, decorative Latin text, mockup frame or watermark. Avoid visual clutter, excessive glow, bevels, drop shadows, gratuitous borders and flat generic template design. Return only the finished full-bleed poster artwork at high resolution. Opaque background.

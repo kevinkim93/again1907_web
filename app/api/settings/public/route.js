@@ -16,6 +16,7 @@ export async function GET(req) {
     popupEnabled: settings.popupEnabled,
     noticeMessage: settings.noticeMessage,
     noticeEnabled: settings.noticeEnabled,
+    youtubeStreamUrl: settings.youtubeStreamUrl,
   };
 
   return NextResponse.json({ settings: publicSettings });

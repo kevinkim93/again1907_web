@@ -35,7 +35,7 @@ export async function GET(req) {
 // POST: 방 여러 개 생성 (날짜별로 개별 생성)
 export async function POST(req) {
   const deny = requireAdmin(req); if (deny) return deny;
-  const { start, end, startDate, endDate, group, capacity } = await req.json();
+  const { start, end, startDate, endDate, group, capacity, buildingName } = await req.json();
 
   const startNum = parseInt(start, 10);
   const endNum = parseInt(end, 10);
@@ -50,6 +50,9 @@ export async function POST(req) {
     dates.push(d.toISOString().split('T')[0]); // YYYY-MM-DD 형식
   }
 
+  // 숙소 이름 prefix 설정
+  const prefix = buildingName ? `${buildingName} ` : '';
+
   // 방 번호 × 날짜 조합으로 생성
   const batch = adminDb.batch();
   for (let roomNum = startNum; roomNum <= endNum; roomNum++) {
@@ -57,8 +60,9 @@ export async function POST(req) {
       const roomRef = adminDb.collection('rooms').doc();
       batch.set(roomRef, {
         roomNumber: roomNum.toString(),
+        buildingName: buildingName || '',
         date: date,
-        name: `${roomNum}호 (${date})`,
+        name: `${prefix}${roomNum}호 (${date})`,
         capacity: cap,
         group,
         createdAt: new Date()

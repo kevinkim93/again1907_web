@@ -1,0 +1,8 @@
+Gemini video generated through Google Gemini chat on 2026-10-19 (Asia/Seoul).
+Conversation: https://gemini.google.com/app/7eb42b293a1983d5
+Source: gemini_generated_video_91f04ea6.mp4, 1280x720, 24 fps, 8 seconds.
+Website asset: public/videos/again1907-6th-motion.mp4 (H.264, silent, fast-start).
+Fallback still: public/images/again1907-6th-motion.jpg (frame at 1.5 seconds).
+
+Prompt:
+Create an 8-second seamless looping 3D motion graphics film for the full-bleed background of an elegant Korean Christian revival gathering website, Again 1907. Landscape 16:9, high resolution. Art direction: one immense sculptural sheet of translucent ivory silk suspended in a deep charcoal architectural void. The fabric slowly rises and folds toward a narrow shaft of warm white light from the upper right, like a breath of hope. Its realistic fine weave and softly luminous edges catch understated midnight-blue reflections with just a trace of deep burgundy. Monumental scale, physical cloth simulation, museum-installation restraint, cinematic contrast, extremely slow graceful movement and subtle camera drift. Main fabric and light sit in the right two-thirds; keep the left third dark and spacious so large white typography can be overlaid on the website. The movement must flow naturally back to its starting pose for an unobtrusive loop. No text, no typography, no logos, no UI, no colored dots, no spheres, no particles, no neon, no lens-flare effects, no people. Silent background film. Please generate the actual video, not a storyboard or explanation.
