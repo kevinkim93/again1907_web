@@ -1,8 +1,9 @@
 # Again 1907 · 제6차 집회
 
-6차 집회 안내, 포스터, 참가 신청을 한 페이지로 제공합니다.
+6차 집회 안내, 시간표, 강사 소개, 포스터, 참가 신청을 한 페이지로 제공합니다. 포스터를 기준으로 명조체와 남색·아이보리·붉은색을 적용했습니다.
 
-- 일정: **2027년 1월 25일(월)–30일(토), 5박 6일**
+- 일정: **2027년 1월 25일(월) 오후–30일(토) 점심, 5박 6일**
+- 세부 시간표와 강사 명단: **미정, 확정 후 안내** (2026-10-19 사용자 확인)
 - 장소: **오산리기도원**, 경기도 파주시 조리읍 등원로391번길 42
 - 정보 출처: [공식 신청 화면](https://yjchae.github.io/room-assignment/?g=b5bf14ba-0263-43b7-b331-02dc393c07ec), 2026-10-18 확인
 - 확정되지 않은 강사와 접수 마감일은 표시하지 않습니다.
@@ -30,14 +31,19 @@ npm start -- --hostname 127.0.0.1 --port 3007
 - `app/page.js`: 집회 안내와 포스터 레이아웃
 - `app/globals.css`: 반응형 스타일
 - `lib/gathering.js`: 장소, 신청 URL, 포스터 및 문의 링크
-- `components/CinematicHero.js`: Gemini 영상 배경과 재생·일시정지
+- `components/CinematicHero.js`: 하늘에서 빛이 내려오는 Gemini 영상 배경
+- `components/MotionFilm.js`, `hooks/useAmbientVideo.js`: 아래 영상과 공통 재생 제어
+- `app/gathering-fonts.css`, `public/fonts/`: 자체 호스팅 명조체·세리프 글꼴과 OFL 라이선스
 - `components/ScrollReveal.js`: 스크롤 진입 효과
 - `components/GatheringEmbed.js`: 신청 화면 임베드와 새 창 열기
 - `public/images/again1907-6th-poster.png`: 새 포스터 원본 (1086×1448)
 - `docs/poster-prompt.txt`: ImageGen 생성 프롬프트
 - `public/videos/again1907-6th-motion.mp4`: Gemini 채팅으로 생성한 8초 영상 (무음, 약 782KB)
 - `public/images/again1907-6th-motion.jpg`: 영상 로딩 전 정지 이미지
-- `docs/gemini-motion.txt`: 영상 생성 프롬프트와 출처
+- `docs/gemini-motion.txt`: 기존 영상 생성 프롬프트와 출처
+- `docs/gemini-motion-update.txt`: 하늘·오순절 영상 출처
+- `public/videos/again1907-heaven-light.mp4`: 메인 하늘 영상
+- `public/videos/again1907-pentecost.mp4`: 오순절 성령 강림 영상
 
 신청 화면은 외부 앱을 iframe으로 표시합니다. 외부 앱이 차단되거나 입력이 불편한 환경에서는 항상 표시되는 **새 창에서 신청하기** 링크를 사용할 수 있습니다. 외부 서비스의 회비·신청 상태·조회 기능은 해당 서비스에서 관리합니다.
 

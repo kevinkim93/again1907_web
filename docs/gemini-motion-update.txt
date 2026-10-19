@@ -1,0 +1,20 @@
+Generated in Google Gemini chat on 2026-10-19 (Asia/Seoul).
+
+Heavenly light:
+Conversation: https://gemini.google.com/app/7eb42b293a1983d5
+Response: a0b9bad7bec2ae9a
+Prompt brief: An 8-second cinematic 3D sky of slate/silver clouds opening in the upper right, with warm ivory rays descending toward earth. Keep left third dark for titles. Calm motion, no text, no people, no fabric or decorative dots.
+Saved through the browser pageAssets capability from the rendered generated video.
+Asset: public/videos/again1907-heaven-light.mp4
+Fallback: public/images/again1907-heaven-light.jpg (5-second frame).
+
+Pentecost:
+Conversation: https://gemini.google.com/app/aef23f9abbc9eae8
+Response: c2333cc5d3bbf093
+Source download: gemini_generated_video_c499e360.mp4
+Prompt brief: An 8-second reverent cinematic interpretation of Acts 2:1–4. A group in a first-century Jerusalem upper room, praying as warm tongues of flame-like light appear above them and heavenly light descends. Simple linen robes, stone walls, painterly chiaroscuro, no burning people or objects, no text, no modern objects.
+Asset: public/videos/again1907-pentecost.mp4
+Fallback: public/images/again1907-pentecost.jpg (4-second frame).
+
+Both videos: 1280x720, 24fps, 8 seconds. H.264, audio removed, fast-start enabled.
+The original silk video is retained below the invitation.

@@ -1,0 +1,27 @@
+Again 1907 self-hosted gathering fonts
+Retrieved from the official Google Fonts repository on 2026-10-19.
+
+Gathering Myeongjo Regular / ExtraBold
+Original family: Nanum Myeongjo
+Copyright (c) 2010, NHN Corporation.
+Sources:
+https://github.com/google/fonts/tree/main/ofl/nanummyeongjo
+https://raw.githubusercontent.com/google/fonts/main/ofl/nanummyeongjo/NanumMyeongjo-Regular.ttf
+https://raw.githubusercontent.com/google/fonts/main/ofl/nanummyeongjo/NanumMyeongjo-ExtraBold.ttf
+License: SIL Open Font License 1.1, see NanumMyeongjo-OFL.txt.
+Changes: lossless WOFF packaging with all original glyphs retained;
+internal family names renamed to Gathering Myeongjo to respect reserved names.
+
+Gathering Display Black Italic
+Original family: Playfair Display
+Copyright 2017 The Playfair Display Project Authors.
+Sources:
+https://github.com/google/fonts/tree/main/ofl/playfairdisplay
+https://raw.githubusercontent.com/google/fonts/main/ofl/playfairdisplay/PlayfairDisplay-Italic%5Bwght%5D.ttf
+License: SIL Open Font License 1.1, see PlayfairDisplay-OFL.txt.
+Changes: static weight 900 instance of the variable italic source, packaged
+as WOFF; internal family names renamed to Gathering Display to respect
+reserved names. All original glyphs retained.
+
+Conversion tool: fontTools 4.66.0.
+The derived fonts remain licensed under SIL Open Font License 1.1.

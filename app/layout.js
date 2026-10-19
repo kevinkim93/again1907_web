@@ -1,4 +1,5 @@
 import './globals.css';
+import './gathering-fonts.css';
 import LegacySiteShell from '@/components/LegacySiteShell';
 
 export const metadata = {
