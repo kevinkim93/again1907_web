@@ -18,23 +18,38 @@ export default function HomePage() {
             <a href="#schedule">일정</a>
             <a href="#speakers">강사 소개</a>
             <a className="nav-register" href="#registration">참가 신청 <ArrowUpRight size={15} aria-hidden="true" /></a>
+            <a className="nav-external" href={gathering.youtubeChannelUrl} target="_blank" rel="noopener noreferrer">내래티비 <ArrowUpRight size={15} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
           </nav>
         </div>
       </header>
       <main>
         <CinematicHero>
-          <div className="hero-copy page-width">
-            <p className="hero-edition">제6차</p>
-            <h1 id="gathering-title">
-              <span className="hero-english">Again <span>1907</span></span>
-              <span className="hero-korean">평양대<span>부흥회</span></span>
-            </h1>
-            <div className="hero-event">
-              <p className="hero-date"><time dateTime="2027-01-25">2027. 01. 25 <small>월</small></time><span>—</span><time dateTime="2027-01-30">01. 30 <small>토</small></time></p>
-              <p className="hero-venue">{gathering.venue}</p>
-              <p className="hero-time-note">월요일 오후 – 토요일 점심</p>
+          <div className="hero-layout page-width">
+            <div className="hero-copy">
+              <p className="hero-edition">제6차</p>
+              <h1 id="gathering-title">
+                <span className="hero-english">Again <span>1907</span></span>
+                <span className="hero-korean">평양대<span>부흥회</span></span>
+              </h1>
+              <div className="hero-event">
+                <p className="hero-date"><time dateTime="2027-01-25">2027. 01. 25 <small>월</small></time><span>—</span><time dateTime="2027-01-30">01. 30 <small>토</small></time></p>
+                <p className="hero-venue">{gathering.venue}</p>
+                <p className="hero-time-note">월요일 오후 – 토요일 점심</p>
+              </div>
+              <a className="button button-light" href="#registration">참가 신청 <ArrowUpRight size={19} aria-hidden="true" /></a>
             </div>
-            <a className="button button-light" href="#registration">참가 신청 <ArrowUpRight size={19} aria-hidden="true" /></a>
+            <section className="hero-promo" aria-labelledby="promo-title">
+              <h2 id="promo-title">홍보 영상</h2>
+              <iframe
+                className="promo-player"
+                src={gathering.promoEmbedUrl}
+                title="내래티비 · 제6차 Again 1907 평양대부흥회 초청 영상"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+              <a className="promo-external" href={gathering.promoVideoUrl} target="_blank" rel="noopener noreferrer">YouTube에서 보기 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
+            </section>
           </div>
           <div className="hero-bottom page-width">
             <a className="hero-scroll" href="#schedule"><ArrowDown size={17} aria-hidden="true" /><span>일정</span></a>
