@@ -16,7 +16,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .gathering-page .page-width { width: min(1200px, calc(100% - 96px)); margin-inline: auto; }
 .gathering-page .skip-link { position: fixed; top: -100px; left: 20px; z-index: 100; padding: 14px 20px; color: var(--ink); background: var(--paper); }
 .gathering-page .skip-link:focus { top: 16px; }
-.gathering-page .eyebrow { font-size: 23px; font-weight: 800; line-height: 1.6; letter-spacing: -.5px; color: var(--red); }
 .gathering-page .button { min-height: 64px; display: inline-flex; align-items: center; justify-content: center; gap: 30px; padding: 16px 28px; border-radius: 3px; font-family: Arial, 'Apple SD Gothic Neo', sans-serif; font-size: 20px; font-weight: 700; line-height: 1.5; transition: background .2s, border-color .2s; }
 .gathering-page .button-light { background: var(--red); color: #fff8ed; border: 2px solid var(--red); box-shadow: 0 4px 16px #0002; }
 .gathering-page .button-light:hover { background: #841018; border-color: #841018; }
@@ -30,16 +29,14 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .gathering-header nav > a { min-height: 44px; display: inline-flex; align-items: center; padding-block: 10px; }
 .gathering-header nav > a:hover { text-decoration: underline; text-underline-offset: 7px; }
 .gathering-header .nav-register { gap: 9px; border-bottom: 2px solid #eadcc1; }
-.cinematic-hero { position: relative; isolation: isolate; min-height: max(900px, 100svh); display: flex; align-items: center; overflow: hidden; color: var(--paper); background: var(--night); }
+.cinematic-hero { position: relative; isolation: isolate; min-height: 760px; display: flex; align-items: center; overflow: hidden; color: var(--paper); background: var(--night); }
 .hero-media, .hero-shade { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .hero-media { background: var(--night) url('/images/again1907-heaven-light.jpg') center center / cover no-repeat; }
 .hero-film { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
 .hero-film[data-unavailable='true'] { visibility: hidden; }
 .hero-shade { background: linear-gradient(90deg, rgba(3,18,41,.82) 0%, rgba(3,18,41,.5) 52%, rgba(3,18,41,.1) 100%), linear-gradient(180deg, rgba(3,18,41,.18), transparent 50%, rgba(3,18,41,.58)); }
-.hero-copy { padding-top: 150px; padding-bottom: 115px; position: relative; z-index: 1; }
+.hero-copy { padding-top: 145px; padding-bottom: 100px; position: relative; z-index: 1; }
 .gathering-page .hero-edition { display: flex; align-items: center; gap: 24px; color: var(--paper); font-size: 31px; font-weight: 400; }
-.hero-edition > span { padding-left: 24px; border-left: 1px solid #c8d0d4; font-size: 23px; }
-.gathering-page .hero-invitation { margin-top: 15px; color: #fff7e6; font-size: 30px; line-height: 1.6; letter-spacing: 1.5px; }
 .gathering-page .hero-copy h1 { margin-top: 17px; }
 .hero-english { display: block; font-family: 'Gathering Display', 'Baskerville', 'Times New Roman', serif; font-size: clamp(76px, 8.5vw, 120px); line-height: 1.17; font-style: italic; font-weight: 900; letter-spacing: -3px; white-space: nowrap; color: #fff4df; }
 .hero-korean { display: block; margin-top: 15px; font-size: clamp(54px, 6.5vw, 90px); line-height: 1.3; font-weight: 800; letter-spacing: -4px; text-shadow: 0 3px 25px #00112577; }
@@ -57,79 +54,47 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .cinematic-hero[data-motion-ready='true'] .hero-motion-control { display: flex; }
 .motion-toggle { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; padding: 10px 0 10px 18px; background: none; border: 0; color: #f7f2e6; font-size: 16px !important; cursor: pointer; pointer-events: auto; }
 .motion-toggle:disabled { color: #c8d2d8; cursor: default; }
-.invitation-section { padding-block: 75px; }
-.invitation-layout { display: grid; grid-template-columns: .85fr 1.3fr; gap: 65px; align-items: center; }
-.gathering-page .invitation-aside h2 { margin-top: 16px; font-size: 49px; line-height: 1.5; font-weight: 800; letter-spacing: -2px; }
-.invitation-description { border-left: 3px solid var(--red); padding-left: 32px; }
-.gathering-page .invitation-description p { font-size: 24px; line-height: 1.9; font-weight: 800; }
-.gathering-page .invitation-description p + p { margin-top: 20px; color: var(--muted); font-size: 21px; font-weight: 400; }
-.invitation-film-wrap { margin-top: 45px !important; }
-.invitation-film { position: relative; aspect-ratio: 24 / 9; overflow: hidden; background: var(--night); }
-.gathering-page .film-caption { margin-top: 14px; color: var(--muted); font-size: 18px; line-height: 1.8; text-align: center; }
-.gathering-details { padding-block: 65px; background: #f0ecdf; border-block: 1px solid var(--line); }
-.details-layout, .speakers-layout { display: grid; grid-template-columns: .85fr 1.3fr; gap: 65px; }
-.gathering-page .details-heading h2, .gathering-page .section-heading h2 { margin-top: 15px; font-size: 38px; font-weight: 800; line-height: 1.55; letter-spacing: -1.5px; }
-.event-information-row { display: grid; grid-template-columns: 60px 1fr; gap: 22px; }
-.event-information-row + .event-information-row { border-top: 1px solid #c6c2b8; margin-top: 27px; padding-top: 27px; }
-.gathering-page .event-label { padding-top: 3px; font-size: 21px; font-weight: 800; color: var(--red); }
-.gathering-page .event-year { font-size: 24px; font-weight: 800; line-height: 1.4; }
-.gathering-page .event-date { display: flex; gap: 17px; align-items: baseline; font-size: clamp(31px, 3.2vw, 43px); font-weight: 800; letter-spacing: -.7px; margin-top: 5px; white-space: nowrap; line-height: 1.5; }
-.event-date > span { font-size: 29px; }
+.gathering-details { padding-block: 48px; background: #f0ecdf; border-block: 1px solid var(--line); }
+.details-layout, .speakers-layout { display: grid; grid-template-columns: .6fr 1.5fr; gap: 40px; align-items: start; }
+.gathering-page .details-heading h2, .gathering-page .section-heading h2 { margin-top: 0; font-size: 38px; font-weight: 800; line-height: 1.55; letter-spacing: -1.5px; }
+.event-information .text-link { margin-top: 16px; }
 .gathering-page .event-note { font-size: 20px; color: var(--muted); line-height: 1.8; margin-top: 9px; }
 .gathering-page .event-venue { font-size: 33px; line-height: 1.5; font-weight: 800; letter-spacing: -1px; }
-.event-information-row .text-link { margin-top: 18px; }
-.schedule-section { padding-block: 70px; }
-.gathering-page .section-description { margin-top: 21px; color: var(--muted); font-size: 20px; line-height: 1.8; }
-.gathering-page .schedule-notice { margin-top: 22px; padding: 18px 22px; border-left: 3px solid var(--red); background: #f0ecdf; font-size: 19px; color: var(--muted); line-height: 1.8; }
-.pentecost-section { background: var(--night); color: var(--paper); padding-block: 65px; }
-.pentecost-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 35px; margin-bottom: 35px; }
-.pentecost-heading .eyebrow { color: #ffb4a6; }
-.gathering-page .pentecost-heading h2 { margin-top: 12px; font-size: 43px; font-weight: 800; line-height: 1.5; letter-spacing: -1.6px; }
-.gathering-page .pentecost-heading > p { margin-bottom: 6px; font-size: 19px; line-height: 1.8; color: #d9dfdf; }
-.pentecost-film { position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #041024; }
-.speakers-section { padding-block: 70px; }
-.speakers-announcement { border-top: 3px solid var(--ink); padding-top: 25px; }
-.gathering-page .speakers-coming { font-size: 32px; font-weight: 800; line-height: 1.6; letter-spacing: -1px; color: var(--red); }
-.gathering-page .speakers-announcement > p:nth-child(2) { margin-top: 16px; font-size: 21px; line-height: 1.9; }
-.poster-section { background: var(--night); color: var(--paper); padding-block: 70px; }
-.poster-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 70px; }
-.poster-copy .eyebrow { color: #ffb4a6; }
-.gathering-page .poster-copy h2 { margin-top: 18px; font-size: 40px; font-weight: 800; line-height: 1.55; letter-spacing: -1.5px; }
-.gathering-page .poster-description { margin-top: 22px; font-size: 21px; line-height: 1.9; color: #e0e5e4; }
+.schedule-section { padding-block: 48px; }
+.speakers-section { padding-block: 40px; border-top: 1px solid var(--line); }
+.gathering-page .speakers-coming { font-size: 24px; font-weight: 400; line-height: 1.6; color: var(--muted); }
+.films-section { padding-bottom: 40px; }
+.films-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.gathering-film { aspect-ratio: 16 / 9; }
+.poster-section { background: var(--night); color: var(--paper); padding-block: 48px; }
+.poster-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 40px; }
+.gathering-page .poster-copy h2 { margin-top: 0; font-size: 38px; font-weight: 800; line-height: 1.55; letter-spacing: -1.5px; }
 .poster-copy .button { margin-top: 30px; }
 .poster-art { width: 100%; max-width: 440px; justify-self: end; }
 .poster-image-link { display: block; background: #06172d; border: 1px solid #647084; }
 .poster-image { display: block; width: 100%; height: auto; }
-.poster-art figcaption { display: flex; justify-content: space-between; gap: 14px; margin-top: 14px; font-size: 16px; color: #d9dfdf; }
-.registration-section { padding-block: 75px; }
-.registration-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; padding-bottom: 35px; }
-.gathering-page .registration-heading h2 { margin-top: 15px; font-size: 40px; line-height: 1.5; font-weight: 800; letter-spacing: -1.5px; }
-.gathering-page .registration-heading > p { margin-bottom: 5px; color: var(--muted); font-size: 20px; line-height: 1.8; }
+.registration-section { padding-block: 48px; }
+.registration-heading { padding-bottom: 24px; }
+.gathering-page .registration-heading h2 { margin-top: 0; font-size: 38px; line-height: 1.5; font-weight: 800; letter-spacing: -1.5px; }
 .gathering-embed { overflow: hidden; border: 1px solid #9fabb8; background: white; }
 .embed-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 20px 24px; border-bottom: 1px solid #c3cbd3; background: #e9edf1; }
 .gathering-page .embed-status { color: #354c64; font-size: 18px; line-height: 1.6; }
 .embed-external-link { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-size: 18px; font-weight: 800; text-decoration: underline !important; text-underline-offset: 4px; }
 .registration-frame { display: block; width: 100%; height: 980px; border: 0; background: white; }
-.gathering-page .embed-help { padding: 18px 24px; border-top: 1px solid #c3cbd3; color: #354c64; background: #e9edf1; font-size: 18px; line-height: 1.8; }
 .gathering-footer { color: var(--paper); background: var(--night); }
 .footer-main { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding-block: 45px; }
 .gathering-footer .wordmark { font-size: 37px; }
-.gathering-page .gathering-footer p { margin-top: 12px; font-size: 18px; color: #d9dfdf; }
 .footer-contact { display: inline-flex; align-items: center; gap: 20px; min-height: 44px; font-size: 20px; font-weight: 800; padding-block: 10px; border-bottom: 1px solid #d1d4d5; }
 .footer-bottom { border-top: 1px solid #506077; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 20px; color: #d6dfeb; font-size: 16px; }
 .footer-bottom > a { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 17px; }
-/* Content remains visible before JavaScript and when motion is disabled. */
-@keyframes editorialReveal { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-.scroll-reveal.is-revealed { animation: editorialReveal .8s cubic-bezier(.16, 1, .3, 1) var(--reveal-delay, 0ms) both; }
 @media (max-width: 1100px) {
   .gathering-page .page-width { width: calc(100% - 64px); }
   .gathering-header nav { gap: 22px; }
   .hero-english { font-size: 95px; }
   .hero-korean { font-size: 72px; }
-  .invitation-layout, .details-layout, .speakers-layout { grid-template-columns: .8fr 1.3fr; gap: 38px; }
+  .details-layout, .speakers-layout { grid-template-columns: .6fr 1.5fr; gap: 30px; }
   .poster-layout { gap: 40px; }
   .gathering-page .details-heading h2, .gathering-page .section-heading h2 { font-size: 34px; }
-  .gathering-page .event-date { gap: 12px; font-size: 34px; }
 }
 @media (max-width: 760px) {
   html { scroll-padding-top: 16px; }
@@ -141,14 +106,12 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .gathering-header nav > a { justify-content: center; padding-block: 8px; white-space: nowrap; }
   .gathering-header .nav-register { gap: 4px; }
   .gathering-header .nav-register svg { display: none; }
-  .cinematic-hero { min-height: max(830px, 100svh); align-items: center; }
-  .hero-copy { padding-top: 190px; padding-bottom: 110px; }
+  .cinematic-hero { min-height: 710px; align-items: center; }
+  .hero-copy { padding-top: 165px; padding-bottom: 100px; }
   .hero-media { background-position: 62% center; }
   .hero-film { object-position: 62% center; }
   .hero-shade { background: linear-gradient(90deg, rgba(3,18,41,.62), rgba(3,18,41,.22)), linear-gradient(180deg, rgba(3,18,41,.25), rgba(3,18,41,.1) 40%, rgba(3,18,41,.8)); }
   .gathering-page .hero-edition { font-size: 27px; gap: 19px; }
-  .hero-edition > span { font-size: 20px; padding-left: 19px; }
-  .gathering-page .hero-invitation { margin-top: 17px; font-size: clamp(21px, 5.7vw, 29px); line-height: 1.6; letter-spacing: 0; }
   .gathering-page .hero-copy h1 { margin-top: 14px; }
   .hero-english { font-size: clamp(52px, 14vw, 94px); line-height: 1.2; letter-spacing: -2px; }
   .hero-korean { margin-top: 18px; font-size: clamp(43px, 11.7vw, 75px); line-height: 1.5; letter-spacing: -2.7px; white-space: nowrap; }
@@ -162,60 +125,31 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .hero-bottom, .hero-motion-control { bottom: 25px; }
   .hero-scroll { gap: 8px; font-size: 15px; }
   .motion-toggle { gap: 7px; font-size: 15px !important; }
-  .gathering-page .eyebrow { font-size: 21px; }
-  .invitation-section { padding-block: 50px; }
-  .invitation-layout { grid-template-columns: 1fr; gap: 28px; }
-  .gathering-page .invitation-aside h2 { margin-top: 13px; font-size: 38px; line-height: 1.5; letter-spacing: -1.4px; }
-  .invitation-description { padding-left: 20px; }
-  .gathering-page .invitation-description p { font-size: 21px; line-height: 1.9; }
-  .gathering-page .invitation-description p + p { margin-top: 18px; font-size: 18px; line-height: 1.9; }
-  .invitation-film-wrap { margin-top: 32px !important; }
-  .invitation-film { aspect-ratio: 16 / 10; }
-  .gathering-page .film-caption { font-size: 17px; }
-  .gathering-details { padding-block: 50px; }
-  .details-layout, .speakers-layout { grid-template-columns: 1fr; gap: 30px; }
-  .gathering-page .details-heading h2, .gathering-page .section-heading h2 { margin-top: 12px; font-size: 33px; line-height: 1.5; letter-spacing: -1px; }
-  .event-information-row { grid-template-columns: 45px 1fr; gap: 15px; }
-  .event-information-row + .event-information-row { margin-top: 24px; padding-top: 24px; }
-  .gathering-page .event-label { font-size: 19px; }
-  .gathering-page .event-year { font-size: 22px; }
-  .gathering-page .event-date { gap: 10px; font-size: clamp(26px, 7vw, 37px); letter-spacing: -.5px; }
-  .event-date > span { font-size: 24px; }
+  .gathering-details { padding-block: 36px; }
+  .details-layout, .speakers-layout { grid-template-columns: 1fr; gap: 20px; }
+  .gathering-page .details-heading h2, .gathering-page .section-heading h2 { margin-top: 0; font-size: 33px; line-height: 1.5; letter-spacing: -1px; }
   .gathering-page .event-note { font-size: 18px; margin-top: 9px; }
   .gathering-page .event-venue { font-size: 29px; }
-  .event-information-row .text-link { margin-top: 16px; font-size: 18px; }
-  .schedule-section { padding-block: 50px; }
-  .gathering-page .section-description { margin-top: 16px; font-size: 18px; }
-  .gathering-page .schedule-notice { font-size: 18px; margin-top: 20px; padding: 16px 18px; }
-  .pentecost-section { padding-block: 50px; }
-  .pentecost-heading { display: block; margin-bottom: 27px; }
-  .gathering-page .pentecost-heading h2 { margin-top: 12px; font-size: 35px; letter-spacing: -1px; }
-  .gathering-page .pentecost-heading > p { margin-top: 18px; margin-bottom: 0; font-size: 18px; }
-  .pentecost-film { aspect-ratio: 4 / 3; }
-  .speakers-section { padding-block: 50px; }
-  .speakers-announcement { padding-top: 22px; }
-  .gathering-page .speakers-coming { font-size: 29px; }
-  .gathering-page .speakers-announcement > p:nth-child(2) { margin-top: 15px; font-size: 19px; }
-  .poster-section { padding-block: 50px; }
+  .schedule-section { padding-block: 36px; }
+  .speakers-section { padding-block: 36px; }
+  .gathering-page .speakers-coming { font-size: 22px; }
+  .films-section { padding-bottom: 30px; }
+  .films-layout { grid-template-columns: 1fr; gap: 16px; }
+  .poster-section { padding-block: 36px; }
   .poster-layout { grid-template-columns: 1fr; gap: 33px; }
-  .gathering-page .poster-copy h2 { margin-top: 14px; font-size: 33px; letter-spacing: -1px; line-height: 1.55; }
-  .gathering-page .poster-description { margin-top: 19px; font-size: 19px; }
+  .gathering-page .poster-copy h2 { margin-top: 0; font-size: 33px; letter-spacing: -1px; line-height: 1.55; }
   .poster-copy .button { margin-top: 24px; }
   .poster-art { width: 100%; max-width: 440px; justify-self: center; }
-  .poster-art figcaption { font-size: 15px; margin-top: 13px; }
-  .registration-section { padding-block: 50px; }
-  .registration-heading { display: block; padding-bottom: 28px; }
-  .gathering-page .registration-heading h2 { margin-top: 14px; font-size: 33px; letter-spacing: -1.2px; }
-  .gathering-page .registration-heading > p { margin-top: 20px; font-size: 18px; }
+  .registration-section { padding-block: 36px; }
+  .registration-heading { padding-bottom: 20px; }
+  .gathering-page .registration-heading h2 { margin-top: 0; font-size: 33px; letter-spacing: -1.2px; }
   .gathering-embed { margin-inline: -4px; }
   .embed-toolbar { padding: 16px; gap: 8px; }
   .gathering-page .embed-status, .embed-external-link { font-size: 17px; }
   .embed-external-link { gap: 7px; }
   .registration-frame { height: max(880px, 100svh); }
-  .gathering-page .embed-help { padding: 16px; font-size: 17px; }
   .footer-main { display: block; padding-block: 38px 30px; }
   .gathering-footer .wordmark { font-size: 35px; }
-  .gathering-page .gathering-footer p { font-size: 17px; }
   .footer-contact { font-size: 19px; gap: 16px; margin-top: 22px; }
   .footer-bottom { font-size: 14px; padding-block: 15px; }
   .footer-bottom > a { font-size: 16px; white-space: nowrap; }
@@ -227,8 +161,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .gathering-page .hero-time-note { font-size: 17px; }
   .hero-english { font-size: 14.3vw; letter-spacing: -1.8px; }
   .hero-korean { font-size: 11.9vw; letter-spacing: -2.5px; }
-  .gathering-page .event-date { gap: 8px; font-size: 25px; }
-  .event-information-row { grid-template-columns: 39px 1fr; gap: 11px; }
   .gathering-page .registration-heading h2 { font-size: 30px; }
   .hero-scroll { font-size: 14px; }
   .motion-toggle { font-size: 14px !important; }

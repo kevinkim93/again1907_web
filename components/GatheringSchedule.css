@@ -1,9 +1,7 @@
 .gathering-page .schedule-layout { display: block; width: min(1500px, calc(100% - 80px)); }
-.schedule-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; margin-bottom: 32px; }
-.gathering-page .schedule-heading h2 { margin-top: 12px; }
-.gathering-page .schedule-heading .section-description { margin-top: 12px; }
-.schedule-status { flex: 0 0 auto; padding: 5px 17px; border: 1px solid var(--red); color: var(--red); font-size: 20px; font-weight: 800; }
-.gathering-page .schedule-notice { margin-top: 0; margin-bottom: 24px; }
+.schedule-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 22px; }
+.gathering-page .schedule-heading h2 { margin: 0; }
+.schedule-status { flex: 0 0 auto; color: var(--muted); font-size: 18px; }
 .gathering-timetable { min-width: 0; }
 .timetable-day-picker { display: none; }
 .gathering-page .timetable-scroll-hint { margin-bottom: 12px; font-size: 18px; color: var(--muted); }
@@ -28,13 +26,16 @@
 .timetable-person { display: block; margin-top: 4px; font-weight: 800; }
 .timetable-note { display: block; margin-top: 5px; color: var(--muted); font-size: 18px; line-height: 1.7; }
 .timetable-empty { display: block; color: var(--muted); text-align: center; }
-.timetable-notes { margin-top: 22px; padding-left: 20px; border-left: 3px solid var(--red); color: var(--muted); font-size: 19px; }
-.gathering-page .timetable-notes p + p { margin-top: 10px; }
+.timetable-notes { margin-top: 16px; color: var(--muted); font-size: 18px; }
+
+@media (min-width: 1460px) {
+  .gathering-page .timetable-scroll-hint { display: none; }
+}
 
 @media (max-width: 760px) {
   .gathering-page .schedule-layout { width: calc(100% - 40px); }
-  .schedule-heading { align-items: flex-start; gap: 16px; margin-bottom: 24px; }
-  .schedule-status { margin-top: 8px; padding: 4px 9px; font-size: 18px; }
+  .schedule-heading { flex-wrap: wrap; gap: 8px 16px; margin-bottom: 20px; }
+  .schedule-status { font-size: 17px; }
   .gathering-page .schedule-heading h2 { font-size: 31px; }
   .gathering-timetable[data-enhanced] .timetable-day-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 18px; }
   .timetable-day-picker button { display: flex; flex-direction: column; align-items: center; min-height: 68px; padding: 8px; border: 1px solid #9da6ae; background: transparent; color: var(--ink); font-size: 19px; line-height: 1.5; cursor: pointer; }
@@ -53,7 +54,7 @@
   .timetable th, .timetable td { padding: 17px 12px; }
   .timetable tbody th { font-size: 18px; }
   .timetable thead th { font-size: 21px; }
-  .timetable-notes { font-size: 18px; padding-left: 15px; }
+  .timetable-notes { font-size: 18px; }
 }
 
 @media print {

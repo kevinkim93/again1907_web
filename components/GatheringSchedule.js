@@ -15,16 +15,16 @@ export default function GatheringSchedule() {
 
   return (
     <div ref={timetableRef} className="gathering-timetable" data-selected-day={selectedDay}>
-      <div className="timetable-day-picker" role="group" aria-label="시간표 요일 선택">
+      <div className="timetable-day-picker" role="group" aria-label="일정 요일 선택">
         {scheduleDays.map((day) => (
           <button key={day.id} type="button" aria-pressed={selectedDay === day.id} aria-controls="gathering-timetable" onClick={() => setSelectedDay(day.id)}>
             <span>{day.label}</span><span>{day.date}</span>
           </button>
         ))}
-        <button className="timetable-all-days" type="button" aria-pressed={selectedDay === 'all'} aria-controls="gathering-timetable" onClick={() => setSelectedDay('all')}>한 주 전체 보기</button>
+        <button className="timetable-all-days" type="button" aria-pressed={selectedDay === 'all'} aria-controls="gathering-timetable" onClick={() => setSelectedDay('all')}>전체 일정</button>
       </div>
-      <p className="timetable-scroll-hint" id="timetable-scroll-hint">표가 화면보다 넓으면 좌우로 밀어 확인하세요.</p>
-      <div className="timetable-scroll" role="region" aria-label="집회 시간표" aria-describedby="timetable-scroll-hint" tabIndex={0}>
+      <p className="timetable-scroll-hint" id="timetable-scroll-hint">좌우로 보기</p>
+      <div className="timetable-scroll" role="region" aria-label="집회 일정" aria-describedby="timetable-scroll-hint" tabIndex={0}>
         <table id="gathering-timetable" className="timetable">
           <caption className="sr-only">제6차 Again 1907 집회 시간표 예정안 · 2027년 1월 25일 월요일부터 30일 토요일까지</caption>
           <thead>
@@ -64,8 +64,7 @@ export default function GatheringSchedule() {
         </table>
       </div>
       <div className="timetable-notes">
-        <p>금요일 밤 기도는 새벽까지 이어질 예정입니다. 세부 진행 시각은 추후 안내합니다.</p>
-        <p>월요일 오후 일정, 토요일 강사와 일부 찬양팀은 정해지는 대로 안내하겠습니다.</p>
+        <p>금요일 밤 기도: 새벽까지 예정</p>
       </div>
     </div>
   );
