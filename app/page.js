@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { ArrowDown, ArrowUpRight, Download } from 'lucide-react';
 import CinematicHero from '@/components/CinematicHero';
 import GatheringEmbed from '@/components/GatheringEmbed';
+import GatheringSchedule from '@/components/GatheringSchedule';
 import MotionFilm from '@/components/MotionFilm';
 import ScrollReveal from '@/components/ScrollReveal';
 import { gathering } from '@/lib/gathering';
@@ -90,27 +91,17 @@ export default function HomePage() {
 
         <section className="schedule-section" id="schedule" aria-labelledby="schedule-title">
           <div className="page-width schedule-layout">
-            <ScrollReveal className="section-heading">
-              <p className="eyebrow">시간표</p>
-              <h2 id="schedule-title">함께하는<br />5박 6일.</h2>
-              <p className="section-description">월요일 오후에 시작해<br />토요일 점심까지 함께합니다.</p>
+            <ScrollReveal className="section-heading schedule-heading">
+              <div>
+                <p className="eyebrow">시간표</p>
+                <h2 id="schedule-title">함께하는 5박 6일.</h2>
+                <p className="section-description">2027년 1월 25일 월요일 오후부터<br />30일 토요일 점심까지 함께합니다.</p>
+              </div>
+              <span className="schedule-status">예정안</span>
             </ScrollReveal>
             <ScrollReveal className="schedule-content" delay={80}>
-              <ol className="schedule-list" aria-label="집회 일정">
-                <li>
-                  <div className="schedule-date"><time dateTime="2027-01-25">01. 25</time><span>월요일</span></div>
-                  <div className="schedule-session"><h3>오후, 집회 시작</h3><p>첫날 오후부터 함께합니다.</p></div>
-                </li>
-                <li>
-                  <div className="schedule-date"><span>01. 26 — 29</span><span>화요일 — 금요일</span></div>
-                  <div className="schedule-session"><h3>집회 기간</h3><p>세부 시간표는 추후 안내합니다.</p></div>
-                </li>
-                <li>
-                  <div className="schedule-date"><time dateTime="2027-01-30">01. 30</time><span>토요일</span></div>
-                  <div className="schedule-session"><h3>점심, 집회 마침</h3><p>토요일 점심까지 진행됩니다.</p></div>
-                </li>
-              </ol>
-              <p className="schedule-notice">세부 일정과 정확한 시작·종료 시각은 아직 미정입니다.<br />확정되는 대로 이곳에 안내하겠습니다.</p>
+              <p className="schedule-notice">아래는 준비 중인 시간표 예정안입니다.<br />강사·찬양팀과 세부 일정은 확정 후 안내하며, 변경될 수 있습니다.</p>
+              <GatheringSchedule />
             </ScrollReveal>
           </div>
         </section>

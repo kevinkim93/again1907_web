@@ -67,7 +67,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .invitation-film { position: relative; aspect-ratio: 24 / 9; overflow: hidden; background: var(--night); }
 .gathering-page .film-caption { margin-top: 14px; color: var(--muted); font-size: 18px; line-height: 1.8; text-align: center; }
 .gathering-details { padding-block: 65px; background: #f0ecdf; border-block: 1px solid var(--line); }
-.details-layout, .schedule-layout, .speakers-layout { display: grid; grid-template-columns: .85fr 1.3fr; gap: 65px; }
+.details-layout, .speakers-layout { display: grid; grid-template-columns: .85fr 1.3fr; gap: 65px; }
 .gathering-page .details-heading h2, .gathering-page .section-heading h2 { margin-top: 15px; font-size: 38px; font-weight: 800; line-height: 1.55; letter-spacing: -1.5px; }
 .event-information-row { display: grid; grid-template-columns: 60px 1fr; gap: 22px; }
 .event-information-row + .event-information-row { border-top: 1px solid #c6c2b8; margin-top: 27px; padding-top: 27px; }
@@ -80,13 +80,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .event-information-row .text-link { margin-top: 18px; }
 .schedule-section { padding-block: 70px; }
 .gathering-page .section-description { margin-top: 21px; color: var(--muted); font-size: 20px; line-height: 1.8; }
-.schedule-list { padding: 0; margin: 0; list-style: none; border-top: 3px solid var(--ink); }
-.schedule-list > li { display: grid; grid-template-columns: minmax(175px, .95fr) 1.2fr; gap: 26px; padding-block: 24px; border-bottom: 1px solid var(--line); }
-.schedule-date { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
-.schedule-date > :first-child { font-size: 27px; font-weight: 800; line-height: 1.5; white-space: nowrap; letter-spacing: -.7px; }
-.schedule-date > :last-child { color: var(--muted); font-size: 20px; line-height: 1.6; }
-.gathering-page .schedule-session h3 { margin-top: 2px; font-size: 23px; font-weight: 800; line-height: 1.55; letter-spacing: -.5px; }
-.gathering-page .schedule-session p { margin-top: 8px; font-size: 20px; color: var(--muted); line-height: 1.8; }
 .gathering-page .schedule-notice { margin-top: 22px; padding: 18px 22px; border-left: 3px solid var(--red); background: #f0ecdf; font-size: 19px; color: var(--muted); line-height: 1.8; }
 .pentecost-section { background: var(--night); color: var(--paper); padding-block: 65px; }
 .pentecost-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 35px; margin-bottom: 35px; }
@@ -133,10 +126,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .gathering-header nav { gap: 22px; }
   .hero-english { font-size: 95px; }
   .hero-korean { font-size: 72px; }
-  .invitation-layout, .details-layout, .schedule-layout, .speakers-layout { grid-template-columns: .8fr 1.3fr; gap: 38px; }
+  .invitation-layout, .details-layout, .speakers-layout { grid-template-columns: .8fr 1.3fr; gap: 38px; }
   .poster-layout { gap: 40px; }
-  .schedule-list > li { grid-template-columns: 1fr; gap: 12px; }
-  .schedule-date { flex-direction: row; align-items: baseline; gap: 18px; }
   .gathering-page .details-heading h2, .gathering-page .section-heading h2 { font-size: 34px; }
   .gathering-page .event-date { gap: 12px; font-size: 34px; }
 }
@@ -182,7 +173,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .invitation-film { aspect-ratio: 16 / 10; }
   .gathering-page .film-caption { font-size: 17px; }
   .gathering-details { padding-block: 50px; }
-  .details-layout, .schedule-layout, .speakers-layout { grid-template-columns: 1fr; gap: 30px; }
+  .details-layout, .speakers-layout { grid-template-columns: 1fr; gap: 30px; }
   .gathering-page .details-heading h2, .gathering-page .section-heading h2 { margin-top: 12px; font-size: 33px; line-height: 1.5; letter-spacing: -1px; }
   .event-information-row { grid-template-columns: 45px 1fr; gap: 15px; }
   .event-information-row + .event-information-row { margin-top: 24px; padding-top: 24px; }
@@ -195,12 +186,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .event-information-row .text-link { margin-top: 16px; font-size: 18px; }
   .schedule-section { padding-block: 50px; }
   .gathering-page .section-description { margin-top: 16px; font-size: 18px; }
-  .schedule-list > li { padding-block: 23px; gap: 12px; }
-  .schedule-date { flex-wrap: wrap; gap: 15px; }
-  .schedule-date > :first-child { font-size: 25px; }
-  .schedule-date > :last-child { font-size: 18px; }
-  .gathering-page .schedule-session h3 { font-size: 22px; }
-  .gathering-page .schedule-session p { margin-top: 7px; font-size: 18px; }
   .gathering-page .schedule-notice { font-size: 18px; margin-top: 20px; padding: 16px 18px; }
   .pentecost-section { padding-block: 50px; }
   .pentecost-heading { display: block; margin-bottom: 27px; }
