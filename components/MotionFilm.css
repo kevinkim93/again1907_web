@@ -1,9 +1,3 @@
 .motion-film { position: relative; isolation: isolate; overflow: hidden; background-color: #081e3c; background-position: center; background-size: cover; }
 .motion-film-video { display: block; width: 100%; height: 100%; object-fit: cover; }
 .motion-film-video[data-unavailable='true'] { visibility: hidden; }
-.motion-film-toggle { position: absolute; right: 20px; bottom: 20px; display: none; align-items: center; gap: 10px; min-height: 48px; padding: 12px 18px; border: 1px solid #ffffff80; border-radius: 5px; color: white; background: #071b36e8; font-size: 16px !important; font-weight: 700 !important; cursor: pointer; }
-.motion-film[data-motion-ready='true'] .motion-film-toggle { display: inline-flex; }
-.motion-film-toggle:hover { background: #15385b; }
-.motion-film-toggle:focus-visible { outline: 3px solid white !important; outline-offset: 4px !important; }
-.motion-film-toggle:disabled { cursor: default; }
-@media (max-width: 760px) { .motion-film-toggle { right: 12px; bottom: 12px; padding: 10px 14px; } }

@@ -17,11 +17,10 @@ export default function GatheringSchedule() {
     <div ref={timetableRef} className="gathering-timetable" data-selected-day={selectedDay}>
       <div className="timetable-day-picker" role="group" aria-label="일정 요일 선택">
         {scheduleDays.map((day) => (
-          <button key={day.id} type="button" aria-pressed={selectedDay === day.id} aria-controls="gathering-timetable" onClick={() => setSelectedDay(day.id)}>
-            <span>{day.label}</span><span>{day.date}</span>
+          <button key={day.id} type="button" aria-label={`${day.label} ${day.date}`} aria-pressed={selectedDay === day.id} aria-controls="gathering-timetable" onClick={() => setSelectedDay(day.id)}>
+            {day.shortLabel}
           </button>
         ))}
-        <button className="timetable-all-days" type="button" aria-pressed={selectedDay === 'all'} aria-controls="gathering-timetable" onClick={() => setSelectedDay('all')}>전체 일정</button>
       </div>
       <p className="timetable-scroll-hint" id="timetable-scroll-hint">좌우로 보기</p>
       <div className="timetable-scroll" role="region" aria-label="집회 일정" aria-describedby="timetable-scroll-hint" tabIndex={0}>
@@ -32,15 +31,15 @@ export default function GatheringSchedule() {
               <th scope="col" className="timetable-period">구분</th>
               {scheduleDays.map((day) => (
                 <th key={day.id} scope="col" data-day={day.id}>
-                  <span className="timetable-day">{day.label}</span>
-                  <time dateTime={day.dateTime}>{day.date}</time>
+                  <span className="timetable-day">{day.shortLabel}</span>{' '}
+                  <time dateTime={day.dateTime}>({day.date})</time>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {scheduleRows.map((row) => (
-              <tr key={row.id} className={`timetable-row timetable-row-${row.kind}`}>
+              <tr key={row.id} className={`timetable-row timetable-row-${row.kind}`} data-active={Boolean(row.days[selectedDay]?.length)}>
                 <th scope="row" className="timetable-period">{row.label}</th>
                 {scheduleDays.map((day) => (
                   <td key={day.id} data-day={day.id}>

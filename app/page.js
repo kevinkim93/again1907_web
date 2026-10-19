@@ -34,12 +34,11 @@ export default function HomePage() {
               <div className="hero-event">
                 <p className="hero-date"><time dateTime="2027-01-25">2027. 01. 25 <small>월</small></time><span>—</span><time dateTime="2027-01-30">01. 30 <small>토</small></time></p>
                 <p className="hero-venue">{gathering.venue}</p>
-                <p className="hero-time-note">월요일 오후 – 토요일 점심</p>
+                <p className="hero-time-note">월요일 오후 3시 등록 시작</p>
               </div>
               <a className="button button-light" href="#registration">참가 신청 <ArrowUpRight size={19} aria-hidden="true" /></a>
             </div>
-            <section className="hero-promo" aria-labelledby="promo-title">
-              <h2 id="promo-title">홍보 영상</h2>
+            <section className="hero-promo" aria-label="제6차 집회 초청 영상">
               <iframe
                 className="promo-player"
                 src={gathering.promoEmbedUrl}
@@ -62,7 +61,7 @@ export default function HomePage() {
             <div className="event-information">
               <h3 className="event-venue">{gathering.venue}</h3>
               <p className="event-note">{gathering.address}</p>
-              <a className="text-link" href={gathering.mapUrl} target="_blank" rel="noopener noreferrer">지도 보기 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
+              <a className="text-link" href={gathering.mapUrl} target="_blank" rel="noopener noreferrer">오시는 길 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
             </div>
           </div>
         </section>

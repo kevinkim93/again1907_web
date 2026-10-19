@@ -1,10 +1,9 @@
 'use client';
 
-import { Pause, Play } from 'lucide-react';
 import useAmbientVideo from '@/hooks/useAmbientVideo';
 
 export default function CinematicHero({ children }) {
-  const { containerRef, videoRef, playing, unavailable, togglePlayback, videoEvents } = useAmbientVideo();
+  const { containerRef, videoRef, unavailable, videoEvents } = useAmbientVideo();
   return (
     <section ref={containerRef} className="cinematic-hero" aria-labelledby="gathering-title">
       <div className="hero-media" aria-hidden="true">
@@ -15,13 +14,6 @@ export default function CinematicHero({ children }) {
       </div>
       <div className="hero-shade" aria-hidden="true" />
       {children}
-      <div className="hero-motion-control page-width">
-        <button className="motion-toggle" type="button" onClick={togglePlayback} disabled={unavailable}
-          aria-label={unavailable ? '배경 영상 재생 불가' : playing ? '배경 영상 일시정지' : '배경 영상 재생'}>
-          {playing ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
-          <span>{unavailable ? '배경 이미지' : playing ? '영상 일시정지' : '영상 재생'}</span>
-        </button>
-      </div>
     </section>
   );
 }
