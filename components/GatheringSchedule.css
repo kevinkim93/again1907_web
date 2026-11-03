@@ -27,7 +27,6 @@
 .timetable-person { display: block; margin-top: 4px; font-weight: 800; }
 .timetable-note { display: block; margin-top: 5px; color: var(--muted); font-size: 18px; line-height: 1.7; }
 .timetable-empty { display: block; color: var(--muted); text-align: center; }
-.timetable-notes { margin-top: 16px; color: var(--muted); font-size: 18px; }
 
 @media (min-width: 1460px) {
   .gathering-page .timetable-scroll-hint { display: none; }
@@ -59,7 +58,6 @@
   .timetable tbody th { font-size: 18px; }
   .timetable thead th { font-size: 21px; }
   .timetable-time { font-size: 17px; }
-  .timetable-notes { font-size: 18px; }
 }
 
 @media print {

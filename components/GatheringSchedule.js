@@ -62,9 +62,6 @@ export default function GatheringSchedule() {
           </tbody>
         </table>
       </div>
-      <div className="timetable-notes">
-        <p>금요일 밤 기도: 새벽까지 예정</p>
-      </div>
     </div>
   );
 }
