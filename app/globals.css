@@ -105,8 +105,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .gathering-page .details-heading h2, .gathering-page .section-heading h2 { font-size: 34px; }
 }
 @media (max-width: 760px) {
-  html { scroll-padding-top: 16px; scroll-padding-bottom: 88px; }
-  .gathering-page { font-size: 18px; padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  html { scroll-padding-top: 16px; scroll-padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+  .gathering-page { font-size: 18px; padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
   .gathering-page .page-width { width: calc(100% - 40px); }
   .header-inner { min-height: 124px; padding-block: 16px 10px; gap: 10px; flex-wrap: wrap; }
   .gathering-page .wordmark { font-size: 27px; }

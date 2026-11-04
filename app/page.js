@@ -33,7 +33,6 @@ export default function HomePage() {
         <CinematicHero>
           <div className="hero-layout page-width">
             <div className="hero-copy">
-              <p className="hero-tagline"><span>주님이 역사하시는</span>{' '}<strong>초자연적 부흥집회</strong></p>
               <p className="hero-edition">제6차</p>
               <h1 id="gathering-title">
                 <span className="hero-english">Again <span>1907</span></span>
@@ -46,27 +45,38 @@ export default function HomePage() {
               </div>
               <a className="button button-light" href="#registration">참가 신청 <ArrowUpRight size={19} aria-hidden="true" /></a>
             </div>
-            <div className="hero-presentation">
-              <figure className="hero-scripture">
-                <figcaption>주제말씀 <span aria-hidden="true">·</span> 호세아 6:1</figcaption>
-                <blockquote>
-                  <p className="scripture-invitation">오라 우리가 여호와께로 돌아가자.</p>
-                  <p>여호와께서 우리를 찢으셨으나 도로 낫게 하실 것이요. 우리를 치셨으나 싸매어 주실 것임이라.</p>
-                </blockquote>
-              </figure>
-              <section className="hero-promo" aria-label="제6차 집회 초청 영상">
-                <iframe
-                  className="promo-player"
-                  src={gathering.promoEmbedUrl}
-                  title="내래티비 · 제6차 Again 1907 평양대부흥회 초청 영상"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                />
-              </section>
-            </div>
+            <section className="hero-promo" aria-label="제6차 집회 초청 영상">
+              <iframe
+                className="promo-player"
+                src={gathering.promoEmbedUrl}
+                title="내래티비 · 제6차 Again 1907 평양대부흥회 초청 영상"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </section>
           </div>
         </CinematicHero>
+
+        <section className="gathering-theme" aria-labelledby="gathering-theme-title">
+          <ScrollReveal className="theme-artwork">
+            <figure>
+              <Image
+                src="/images/again1907-theme-typography-v1.png"
+                alt=""
+                width={1024}
+                height={1536}
+                sizes="(max-width: 760px) 100vw, 640px"
+                className="theme-typography-image"
+              />
+              <figcaption className="sr-only">
+                <h2 id="gathering-theme-title">주님이 역사하시는 초자연적 부흥집회</h2>
+                <p>주제말씀 · 호세아 6:1</p>
+                <blockquote>오라 우리가 여호와께로 돌아가자. 여호와께서 우리를 찢으셨으나 도로 낫게 하실 것이요. 우리를 치셨으나 싸매어 주실 것임이라.</blockquote>
+              </figcaption>
+            </figure>
+          </ScrollReveal>
+        </section>
 
         <section className="gathering-details" id="gathering" aria-labelledby="details-title">
           <ScrollReveal className="page-width details-layout">

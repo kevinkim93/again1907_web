@@ -89,9 +89,8 @@ export default function FloatingGatheringActions() {
 
   return (
     <>
-      <nav className="floating-gathering-actions" aria-label="문의 및 참여">
+      <nav className="floating-gathering-actions" aria-label="후원 및 문의">
         <button ref={triggerRef} type="button" className="floating-action floating-action-secondary" aria-haspopup="dialog" aria-controls={dialogId} aria-expanded={isOpen} onClick={openDonation}>후원 계좌</button>
-        <a className="floating-action floating-action-secondary" href={gathering.contactUrl} target="_blank" rel="noopener noreferrer">스태프 신청<span className="sr-only"> · 카카오톡 (새 탭)</span></a>
         <a className="floating-action floating-action-kakao" href={gathering.contactUrl} target="_blank" rel="noopener noreferrer">
           <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 3C8.82 3 3 7.48 3 13c0 3.57 2.44 6.7 6.12 8.47l-1.5 5.5c-.15.54.45.97.92.64l6.64-4.64c.27.02.54.03.82.03 7.18 0 13-4.48 13-10S23.18 3 16 3Z" /></svg>
           <span>문의하기</span><span className="sr-only"> · 카카오톡 (새 탭)</span>

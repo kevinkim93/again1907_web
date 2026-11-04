@@ -1,25 +1,6 @@
-.gathering-page .hero-tagline {
-  margin-bottom: 28px;
-  color: #f4e3c2;
-  font-size: clamp(24px, 2.5vw, 32px);
-  font-weight: 400;
-  line-height: 1.65;
-  letter-spacing: -.8px;
-  text-shadow: 0 2px 20px #071b3666;
-}
-.hero-tagline > span, .hero-tagline > strong { display: block; }
-.hero-tagline > strong { font-weight: 800; }
-.hero-presentation { min-width: 0; display: grid; gap: 36px; }
-.gathering-page .hero-scripture { padding: 22px 26px; border-left: 2px solid #cfb989; background: linear-gradient(90deg, #071b36ba, #071b3670); }
-.hero-scripture figcaption { margin-bottom: 16px; color: #e2cda5; font-size: 18px; letter-spacing: .3px; }
-.hero-scripture figcaption > span { margin-inline: 8px; }
-.hero-scripture blockquote { margin: 0; color: #f6eee1; font-size: 21px; line-height: 1.9; }
-.gathering-page .hero-scripture .scripture-invitation { margin-bottom: 12px; color: #fff4df; font-size: 27px; font-weight: 800; line-height: 1.65; }
+.gathering-theme { padding: 32px 20px 44px; color: #fff4df; background: #06182d; border-top: 1px solid #d6c29a33; }
+.theme-artwork { width: min(640px, 100%); margin-inline: auto; }
+.theme-typography-image { display: block; width: 100%; height: auto; }
 @media (max-width: 760px) {
-  .gathering-page .hero-tagline { margin-bottom: 24px; font-size: clamp(23px, 6.4vw, 29px); line-height: 1.6; letter-spacing: -.5px; }
-  .hero-presentation { gap: 28px; }
-  .gathering-page .hero-scripture { padding: 18px; }
-  .hero-scripture figcaption { margin-bottom: 12px; font-size: 16px; }
-  .hero-scripture blockquote { font-size: 19px; line-height: 1.9; }
-  .gathering-page .hero-scripture .scripture-invitation { font-size: 23px; line-height: 1.7; }
+  .gathering-theme { padding: 12px 0 24px; }
 }

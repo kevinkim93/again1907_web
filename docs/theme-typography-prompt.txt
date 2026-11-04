@@ -1,0 +1,19 @@
+Tool: built-in image_gen (not CLI/API fallback).
+Asset: public/images/again1907-theme-typography-v1.png
+Source: /Users/mac/.codex/generated_images/01a14f71-cfe2-7993-8315-3fedb6c086b2/exec-e0b2f97e-c0df-446c-806d-1197fa2a686f.png
+
+Use case: ads-marketing. Create a finished Korean typographic artwork for the Again 1907 Christian revival gathering website, displayed BELOW its invitation video, primarily on phones. Portrait 1024 x 1536 composition, premium traditional Korean book typography and confident hand-brushed calligraphy, adult church audience. Deep midnight navy background (#071b36) with subtle paper/ink grain, warm ivory lettering, restrained muted coral accent on the main headline. Very faint light/cloud texture near the bottom only. A reverent, beautiful, restrained typographic composition, not futuristic, no neon, no colored dots, no icons or extra symbols, no people, no devices or mockup. Top headline is beautifully drawn Korean calligraphy, supporting Bible verse is clear large Myeongjo serif lettering with excellent contrast. All text must be exactly correct Korean and fully legible at 350px image display width: large lettering throughout, body glyphs at least 60px on the 1024px wide canvas. Modest generous margins about 60px, no tiny fine print. Render only this text with these intended line breaks and hierarchy:
+주님이 역사하시는
+초자연적 부흥집회
+
+주제말씀 · 호세아 6:1
+
+오라 우리가
+여호와께로 돌아가자.
+
+여호와께서 우리를 찢으셨으나
+도로 낫게 하실 것이요.
+우리를 치셨으나
+싸매어 주실 것임이라.
+
+Headline most expressive and large, invitation sentence second most prominent, remaining scripture in large clear regular Korean serif. Subtle hairline divider around the scripture citation is allowed. Do not add Again1907, dates, venue, logos, borders, English translations, decorative quotations, invented words, or extra text. Everything must be within safe margins, beautiful optical alignment, no cropping.
