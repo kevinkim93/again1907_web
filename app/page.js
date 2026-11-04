@@ -61,7 +61,11 @@ export default function HomePage() {
             <div className="event-information">
               <h3 className="event-venue">{gathering.venue}</h3>
               <p className="event-note">{gathering.address}</p>
-              <a className="text-link" href={gathering.mapUrl} target="_blank" rel="noopener noreferrer">오시는 길 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
+              <div className="venue-links">
+                <a className="text-link" href={gathering.venueWebsiteUrl} target="_blank" rel="noopener noreferrer">오시는 길 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> · 오산리기도원 홈페이지 (새 탭)</span></a>
+                <a className="text-link" href={gathering.mapUrl} target="_blank" rel="noopener noreferrer">카카오맵 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
+              </div>
+              <iframe className="venue-map" src="/osanri-map.html" title="오산리기도원 위치 · 카카오맵" loading="lazy" />
             </div>
           </div>
         </section>

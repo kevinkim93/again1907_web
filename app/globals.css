@@ -60,6 +60,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .details-layout, .speakers-layout { display: grid; grid-template-columns: .6fr 1.5fr; gap: 40px; align-items: start; }
 .gathering-page .details-heading h2, .gathering-page .section-heading h2 { margin-top: 0; font-size: 38px; font-weight: 800; line-height: 1.55; letter-spacing: -1.5px; }
 .event-information .text-link { margin-top: 16px; }
+.event-information { min-width: 0; }
+.venue-links { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.venue-map { display: block; width: 100%; height: 394px; margin-top: 24px; border: 1px solid var(--line); background: #fff; }
+@media (max-width: 380px) { .venue-map { height: 426px; } }
 .gathering-page .event-note { font-size: 20px; color: var(--muted); line-height: 1.8; margin-top: 9px; }
 .gathering-page .event-venue { font-size: 33px; line-height: 1.5; font-weight: 800; letter-spacing: -1px; }
 .schedule-section { padding-block: 48px; }
