@@ -1,35 +1,34 @@
 import './globals.css';
 import './gathering-fonts.css';
 import LegacySiteShell from '@/components/LegacySiteShell';
-
-const shareDescription = 'Again 1907 평양대부흥회 공식 사이트';
+import { siteUrl, siteName, shareDescription, searchDescription, shareImage } from '@/lib/site-metadata';
 
 export const metadata = {
-  metadataBase: new URL('https://again1907.kr'),
-  title: '제6차 Again 1907 평양대부흥회',
-  description: shareDescription,
+  metadataBase: new URL(siteUrl),
+  applicationName: siteName,
+  verification: { other: { 'naver-site-verification': '88517d28849267343db7a67762a8d4ebfe243295' } },
+  title: { default: `${siteName} 공식 사이트 | 2027 제6차 집회`, template: `%s | ${siteName}` },
+  description: searchDescription,
+  alternates: { canonical: `${siteUrl}/` },
+  robots: { index: true, follow: true, 'max-image-preview': 'large' },
+  icons: {
+    shortcut: [{ url: `${siteUrl}/icons/again1907-icon-96.png`, type: 'image/png', sizes: '96x96' }],
+    apple: [{ url: `${siteUrl}/icons/apple-touch-icon.png`, type: 'image/png', sizes: '180x180' }],
+  },
   openGraph: {
     title: '제6차 Again 1907 평양대부흥회',
     description: shareDescription,
-    url: 'https://again1907.kr/',
+    siteName,
+    url: `${siteUrl}/`,
     locale: 'ko_KR',
     type: 'website',
-    images: [{
-      url: '/images/again1907-6th-share-official-v2.png',
-      width: 1734,
-      height: 907,
-      type: 'image/png',
-      alt: '제6차 Again 1907 평양대부흥회 · 2027년 1월 25일–30일 · 오산리기도원',
-    }],
+    images: [shareImage],
   },
   twitter: {
     card: 'summary_large_image',
     title: '제6차 Again 1907 평양대부흥회',
     description: shareDescription,
-    images: [{
-      url: '/images/again1907-6th-share-official-v2.png',
-      alt: '제6차 Again 1907 평양대부흥회 · 2027년 1월 25일–30일 · 오산리기도원',
-    }],
+    images: [shareImage],
   },
 };
 

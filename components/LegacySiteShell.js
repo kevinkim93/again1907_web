@@ -18,7 +18,7 @@ export default function LegacySiteShell({ children }) {
     { name: "등록조회", href: "/lookup" },
   ];
 
-  if (pathname === "/") return children;
+  if (pathname === "/" || pathname.startsWith("/gathering/")) return children;
 
   return (
       <div className="min-h-screen flex flex-col bg-gray-50">

@@ -41,7 +41,11 @@ npm start -- --hostname 127.0.0.1 --port 3007
 - `components/GatheringEmbed.js`: 신청 화면 임베드와 새 창 열기
 - `public/images/again1907-6th-poster.png`: 새 포스터 원본 (1086×1448)
 - `public/images/again1907-6th-share-official-v2.png`: 공식 사이트 전용 가로 공유 썸네일 (1734×907, 날짜 포함)
-- `app/layout.js`: 공유 이미지와 초청 설명문 (Open Graph·Twitter 카드)
+- `app/layout.js`, `lib/site-metadata.js`: 검색 제목·설명, 소유확인, 공유 이미지와 짧은 공유 설명 (Open Graph·Twitter 카드)
+- `lib/site-structured-data.js`: 공식 사이트·주최·집회 구조화 데이터
+- `app/gathering/`: 일정·강사·오시는 길·신청·영상과 포스터의 개별 검색 안내 페이지
+- `app/sitemap.js`, `app/robots.js`: 공개 안내 URL·이미지 사이트맵과 검색봇 안내
+- `app/favicon.ico`, `public/icons/`: 기존 한반도 로고로 만든 파비콘과 정사각형 로고
 - `docs/poster-prompt.txt`: ImageGen 생성 프롬프트
 - `public/videos/again1907-6th-motion.mp4`: Gemini 채팅으로 생성한 8초 영상 (무음, 약 782KB)
 - `public/images/again1907-6th-motion.jpg`: 영상 로딩 전 정지 이미지
@@ -52,7 +56,9 @@ npm start -- --hostname 127.0.0.1 --port 3007
 
 신청 화면은 외부 앱을 iframe으로 표시합니다. 외부 앱이 차단되거나 입력이 불편한 환경에서는 항상 표시되는 **새 창에서 신청하기** 링크를 사용할 수 있습니다. 외부 서비스의 회비·신청 상태·조회 기능은 해당 서비스에서 관리합니다.
 
-기존 등록·관리자 경로와 데이터 파일은 보존했습니다. 메인 페이지에서는 새 신청 화면을 안내하며, 기존 경로는 `components/LegacySiteShell.js`로 기존 화면 틀을 유지합니다. 이 페이지 작업에는 Firebase 자격 증명이 필요하지 않습니다. 기존 관리자 기능 실행에는 해당 프로젝트의 Firebase 설정이 필요합니다.
+기존 `/register`와 `/schedule` 주소는 최신 집회 안내 페이지로 영구 이동합니다. `/index.html`의 Firebase 기본 화면은 홈페이지로 이동합니다. 관리자·이전 FAQ·이전 신청 조회는 검색 제외 처리하며, 참가자 목록 `/attendees`는 인증된 관리자 경로로 이동합니다. API와 기존 데이터는 유지합니다. 새 안내 페이지는 같은 명조체·집회 디자인을 사용하고, 남아 있는 이전 기능은 `components/LegacySiteShell.js`를 사용합니다.
+
+검색용 description에는 집회 날짜·장소·안내 항목을 담으며, 홈페이지 OG/Twitter 설명은 “Again 1907 평양대부흥회 공식 사이트”를 유지합니다. 검색 결과의 제목·이미지·하위 링크와 반영 시점은 검색엔진이 결정합니다. 네이버 소유확인은 `app/layout.js`의 공개 메타 태그로 진행하며, 사이트맵은 `https://again1907.kr/sitemap.xml`입니다.
 
 ## 운영 배포
 

@@ -1,6 +1,7 @@
 'use client';
 
 import useAmbientVideo from '@/hooks/useAmbientVideo';
+import './HeroMessage.css';
 
 export default function CinematicHero({ children }) {
   const { containerRef, videoRef, unavailable, videoEvents } = useAmbientVideo();

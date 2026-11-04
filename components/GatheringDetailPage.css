@@ -1,0 +1,42 @@
+.gathering-page-links { display: flex; flex-wrap: wrap; gap: 4px 28px; padding-bottom: 22px; font-size: 17px; }
+.gathering-page-links a { display: inline-flex; min-height: 44px; align-items: center; }
+.gathering-page-links a:hover, .gathering-page-links a[aria-current='page'] { text-decoration: underline; text-underline-offset: 6px; }
+.gathering-detail-page { min-height: 100vh; }
+.detail-header { background: var(--night); color: var(--paper); }
+.detail-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 24px; }
+.detail-brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; font-weight: 800; }
+.detail-brand > span:last-child { font-size: 21px; }
+.detail-header nav { display: flex; flex-wrap: wrap; gap: 10px 28px; font-size: 18px; font-weight: 800; }
+.detail-header nav a { display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap; }
+.detail-header nav a:hover, .detail-header nav a[aria-current='page'] { text-decoration: underline; text-underline-offset: 8px; }
+.gathering-detail-page .detail-main { padding-block: 26px 60px; min-height: 55vh; }
+.detail-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--muted); font-size: 16px; }
+.detail-breadcrumb a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: underline; text-underline-offset: 4px; }
+.detail-heading { margin: 26px 0 32px; }
+.gathering-detail-page .detail-edition { color: var(--muted); font-size: 18px; }
+.gathering-detail-page .detail-heading h1 { margin-top: 8px; font-size: 44px; font-weight: 800; line-height: 1.5; }
+.gathering-detail-page .detail-intro { margin-top: 14px; max-width: 48em; color: var(--muted); font-size: 21px; }
+.detail-facts { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 12px 24px; margin: 0 0 28px; padding: 24px 0; border-block: 1px solid var(--line); }
+.detail-facts dt { font-weight: 800; }
+.detail-facts dd { margin: 0; min-width: 0; word-break: keep-all; }
+.gathering-detail-page .detail-speakers h2 { font-size: 25px; font-weight: 800; line-height: 1.5; }
+.detail-section-title { font-size: 29px; font-weight: 800; line-height: 1.5; }
+.detail-registration .gathering-embed { margin-top: 30px; }
+.gathering-detail-page .detail-schedule-note { margin-bottom: 24px; color: var(--muted); }
+@media (max-width: 1100px) {
+  .detail-header-inner { align-items: flex-start; flex-direction: column; gap: 12px; }
+}
+@media (max-width: 760px) {
+  .detail-header-inner { padding-block: 20px 14px; gap: 14px; }
+  .detail-header nav { display: flex; width: 100%; flex-wrap: wrap; gap: 4px 20px; font-size: 17px; }
+  .detail-brand { gap: 4px 12px; }
+  .detail-brand > span:last-child { font-size: 19px; }
+  .gathering-detail-page .detail-main { padding-block: 18px 40px; }
+  .detail-heading { margin: 20px 0 26px; }
+  .gathering-detail-page .detail-heading h1 { font-size: 36px; }
+  .gathering-detail-page .detail-edition { font-size: 16px; }
+  .gathering-detail-page .detail-intro { font-size: 19px; }
+  .detail-facts { grid-template-columns: 60px minmax(0, 1fr); gap: 12px 14px; padding-block: 20px; }
+  .detail-registration .gathering-embed { margin-inline: -20px; }
+  .gathering-page-links { gap: 4px 22px; font-size: 16px; }
+}

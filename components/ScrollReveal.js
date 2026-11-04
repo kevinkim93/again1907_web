@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import './ScrollReveal.css';
 
-export default function ScrollReveal({ children, className = '', delay = 0 }) {
+export default function ScrollReveal({ children, as: Element = 'div', className = '', delay = 0, ...props }) {
   const elementRef = useRef(null);
 
   useEffect(() => {
     const element = elementRef.current;
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (motionPreference.matches || !('IntersectionObserver' in window)) return;
+    if (!element || motionPreference.matches || !('IntersectionObserver' in window)) return;
 
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
@@ -20,5 +21,5 @@ export default function ScrollReveal({ children, className = '', delay = 0 }) {
     return () => observer.disconnect();
   }, []);
 
-  return <div ref={elementRef} className={`scroll-reveal ${className}`.trim()} style={{ '--reveal-delay': `${delay}ms` }}>{children}</div>;
+  return <Element {...props} ref={elementRef} className={`scroll-reveal ${className}`.trim()} style={{ '--reveal-delay': `${Math.min(240, Math.max(0, delay))}ms` }}>{children}</Element>;
 }

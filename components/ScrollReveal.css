@@ -1,0 +1,20 @@
+/* Content stays readable before hydration and when observers are unavailable. */
+.scroll-reveal { min-width: 0; }
+.scroll-reveal:focus-within { animation: none !important; }
+@keyframes gathering-reveal {
+  from { opacity: .65; transform: translate3d(0, 18px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes gathering-reveal-mobile {
+  from { opacity: .72; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .scroll-reveal.is-revealed { animation: gathering-reveal 700ms cubic-bezier(.2, .7, .2, 1) var(--reveal-delay, 0ms) both; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .scroll-reveal.is-revealed { animation-name: gathering-reveal-mobile; animation-duration: 560ms; }
+}
+@media print {
+  .scroll-reveal { animation: none !important; opacity: 1 !important; transform: none !important; }
+}

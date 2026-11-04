@@ -1,0 +1,6 @@
+Favicon and organization logo: existing public/images/again_logo.png, fitted on a white square and exported as ICO/PNG. No logo artwork was redrawn.
+Main website representative image: public/images/again1907-6th-share-official-v2.png (see share-thumbnail-source.txt).
+Invitation video image: official original YouTube thumbnail already preserved as public/images/again1907-6th-share-youtube-v1.jpg, from https://i.ytimg.com/vi/REWZCuOpR34/maxresdefault.jpg.
+Musical teaser image: https://i.ytimg.com/vi/ZkFnuxlPKlI/hqdefault.jpg, returned by YouTube oEmbed for https://www.youtube.com/watch?v=ZkFnuxlPKlI on 2026-11-05; preserved at public/images/again1907-musical-teaser.jpg (480x360).
+Poster: existing public/images/again1907-6th-poster.png.
+The visible /gathering/media gallery and its ItemList describe these three actual resources. No stock or invented speaker portraits are used. Search engines decide whether and how to show images or sitelinks.

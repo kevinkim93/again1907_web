@@ -1,0 +1,9 @@
+.media-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; list-style: none; margin: 0; padding: 0; }
+.media-gallery li { min-width: 0; }
+.media-gallery a { display: block; }
+.media-gallery-image { aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; background: #e9e3d5; border: 1px solid var(--line); }
+.media-gallery-image img { width: 100%; height: 100%; object-fit: contain; }
+.gathering-page .media-gallery h2 { display: flex; align-items: baseline; gap: 8px; margin-top: 16px; font-size: 24px; font-weight: 800; line-height: 1.5; }
+.media-gallery h2 svg { flex-shrink: 0; }
+.gathering-page .media-gallery p { margin-top: 6px; color: var(--muted); font-size: 18px; }
+@media (max-width: 760px) { .media-gallery { grid-template-columns: 1fr; gap: 32px; } }

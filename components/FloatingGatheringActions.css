@@ -1,0 +1,31 @@
+.floating-gathering-actions { position: fixed; z-index: 50; right: max(20px, env(safe-area-inset-right, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 7px; max-width: calc(100% - 24px); }
+.gathering-page .floating-action { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; gap: 6px; margin: 0; border: 1px solid; border-radius: 9px; padding: 8px 12px; font: 700 14px/1.4 Arial, 'Apple SD Gothic Neo', sans-serif; white-space: nowrap; cursor: pointer; box-shadow: 0 3px 14px #0002; }
+.gathering-page .floating-action-secondary { min-height: 42px; border-color: #c9c3b3; color: #102a4c; background: #fffaf0; }
+.gathering-page .floating-action-kakao { min-height: 46px; border-color: #e1ca00; color: #251c00; background: #fee500; font-size: 15px; }
+.floating-action-kakao svg { width: 22px; height: 22px; flex: 0 0 auto; }
+.gathering-page .floating-action:focus-visible { outline: 3px solid #a5141d; outline-offset: 3px; }
+.donation-dialog { position: fixed; inset: 0; width: min(420px, calc(100% - 32px)); max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); margin: auto; padding: 24px; border: 1px solid #cdc7b8; border-radius: 16px; overflow-y: auto; color: #102a4c; background: #fffaf0; box-shadow: 0 24px 70px #0005; font-family: Arial, 'Apple SD Gothic Neo', sans-serif; }
+.donation-dialog::backdrop { background: #071b36a6; }
+.donation-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.gathering-page .donation-dialog h2 { font-size: 24px; font-weight: 800; line-height: 1.5; }
+.gathering-page .donation-dialog-close { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; min-height: 40px; padding: 0; border: 1px solid #d8d2c5; border-radius: 50%; color: #102a4c; background: transparent; cursor: pointer; }
+.donation-account { margin-top: 22px; padding-block: 20px; border-block: 1px solid #d8d2c5; }
+.gathering-page .donation-bank { font-size: 17px; line-height: 1.5; }
+.gathering-page .donation-number { margin-top: 7px; font-size: clamp(20px, 6.2vw, 26px); font-weight: 800; line-height: 1.6; letter-spacing: .2px; user-select: all; overflow-wrap: anywhere; }
+.gathering-page .donation-holder { margin-top: 8px; font-size: 15px; line-height: 1.7; color: #4b5a6b; overflow-wrap: anywhere; }
+.gathering-page .donation-copy-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; margin-top: 22px; border: 1px solid #102a4c; border-radius: 8px; padding: 12px; color: #fffaf0; background: #102a4c; font: 700 17px/1.4 Arial, 'Apple SD Gothic Neo', sans-serif; cursor: pointer; }
+.gathering-page .donation-copy-status { min-height: 23px; margin-top: 10px; font-size: 14px; line-height: 1.6; color: #4b5a6b; }
+.donation-copy-field { position: fixed; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; font-size: 16px; }
+@media (max-width: 760px) {
+  .floating-gathering-actions { right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
+  .gathering-page .floating-action-secondary { min-height: 40px; padding: 8px 10px; font-size: 13px; }
+  .gathering-page .floating-action-kakao { min-height: 44px; padding: 8px 10px; font-size: 14px; }
+  .floating-action-kakao svg { width: 20px; height: 20px; }
+  .donation-dialog { padding: 20px; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .gathering-page .floating-action-secondary:hover { background: #ede7d9; }
+  .gathering-page .floating-action-kakao:hover { background: #f4da00; }
+  .gathering-page .donation-copy-button:hover { background: #1c3c63; }
+}
+@media print { .floating-gathering-actions, .donation-dialog { display: none !important; } }
