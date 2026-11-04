@@ -122,6 +122,13 @@ export default function HomePage() {
         </div>
         <div className="page-width footer-bottom"><span>2027년 제6차 평양대부흥회</span><a href="#top">맨 위로 <ArrowUpRight size={13} aria-hidden="true" /></a></div>
       </footer>
+      <a className="floating-kakao" href={gathering.contactUrl} target="_blank" rel="noopener noreferrer" aria-label="카카오톡 문의 (새 탭)">
+        <svg className="kakao-icon" viewBox="0 0 32 32" aria-hidden="true">
+          <path fill="currentColor" d="M16 3C8.82 3 3 7.48 3 13c0 3.57 2.44 6.7 6.12 8.47l-1.5 5.5c-.15.54.45.97.92.64l6.64-4.64c.27.02.54.03.82.03 7.18 0 13-4.48 13-10S23.18 3 16 3Z" />
+        </svg>
+        <span>카카오톡 문의</span>
+        <ArrowUpRight size={16} aria-hidden="true" />
+      </a>
     </div>
   );
 }
