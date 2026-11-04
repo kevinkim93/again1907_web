@@ -25,7 +25,7 @@ export default function GatheringSchedule() {
       <p className="timetable-scroll-hint" id="timetable-scroll-hint">좌우로 보기</p>
       <div className="timetable-scroll" role="region" aria-label="집회 일정" aria-describedby="timetable-scroll-hint" tabIndex={0}>
         <table id="gathering-timetable" className="timetable">
-          <caption className="sr-only">제6차 Again 1907 집회 시간표 예정안 · 2027년 1월 25일 월요일부터 30일 토요일까지</caption>
+          <caption className="sr-only">제6차 Again 1907 집회 시간표 · 2027년 1월 25일 월요일부터 30일 토요일까지</caption>
           <thead>
             <tr>
               <th scope="col" className="timetable-period">구분</th>

@@ -74,7 +74,6 @@ export default function HomePage() {
           <div className="page-width schedule-layout">
             <div className="section-heading schedule-heading">
               <h2 id="schedule-title">일정</h2>
-              <span className="schedule-status">예정안 · 변경 가능</span>
             </div>
             <GatheringSchedule />
           </div>
