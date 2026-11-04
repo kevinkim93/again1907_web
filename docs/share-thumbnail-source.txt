@@ -1,10 +1,10 @@
-Production share image: public/images/again1907-6th-share-youtube-v1.jpg
-Dimensions: 1280 x 720, original JPEG preserved without cropping.
-Source: https://www.youtube.com/watch?v=REWZCuOpR34
-Title: 제 6차 [ AGAIN 1907 평양대부흥회] 초청 영상
-Channel: 최광선교사의 내래TV
-Original thumbnail: https://i.ytimg.com/vi/REWZCuOpR34/maxresdefault.jpg
-Selected by the user for the Again 1907 website share preview on 2026-11-05.
-The image includes the event date 27.01.25 MON - 30 SAT.
+Production share image: public/images/again1907-6th-share-official-v2.png
+Dimensions: 1734 x 907 (approximately 1.91:1), original PNG preserved without cropping.
+Source: built-in image_gen, newly generated official website cover on 2026-11-05.
+Original output: /Users/mac/.codex/generated_images/01a1a78c-df15-7612-a807-fddadf7174fe/exec-d22edad2-8dc1-4d88-b24a-478947fa2c17.png
+Prompt: docs/share-official-thumbnail-prompt.txt
+The user requested a distinct official-site thumbnail instead of the YouTube video thumbnail.
+Text includes 제6차, Again 1907, 평양대부흥회, 2027. 01. 25 월 — 01. 30 토, 오산리기도원, 공식 사이트.
+Requested canvas: 1200 x 630; native generated canvas retained at 1734 x 907 for sharp text and the same landscape ratio.
 
-Metadata: app/layout.js declares the original width/height and the user's full invitation text for description, og:description, and twitter:description. Messenger services control preview truncation and caching.
+Metadata: app/layout.js declares the actual width/height and the requested description, Again 1907 평양대부흥회 공식 사이트. Messenger services control preview truncation and caching.

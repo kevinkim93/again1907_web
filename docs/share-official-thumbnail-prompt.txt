@@ -1,0 +1,13 @@
+Use case: ads-marketing.
+Asset type: Korean Christian gathering official website Open Graph messenger share thumbnail.
+Create a NEW distinctive horizontal official website cover, not a video thumbnail. Wide 1.91:1 composition, requested final canvas 1200 x 630 pixels. The audience is older adult churchgoers. Traditional, restrained, dignified, clear at thumbnail size.
+Backdrop: very deep ink navy, subtle soft ivory heavenly light descending from upper right, faint painterly clouds only at the margins. Keep the center calm and dark for legibility.
+Typography-led design: centered generous composition, cream elegant large italic high-contrast serif “Again 1907”, strong traditional Korean Myeongjo serif below. Small restrained muted red accent on the final three Korean syllables 부흥회. Thin warm ivory divider under event name. Date must be large and exceptionally readable, not tiny secondary copy. Tiny “공식 사이트” label at top right within safe area.
+Exact visible text, no additional words:
+“제6차”
+“Again 1907”
+“평양대부흥회”
+“2027. 01. 25 월 — 01. 30 토”
+“오산리기도원”
+“공식 사이트”
+Hierarchy: 제6차 small centered above Again 1907. Again 1907 and 평양대부흥회 dominate upper-middle; date line and venue below, comfortably separated. Preserve at least 70px blank margins at left and right and 40px at top and bottom at 1200x630 scale. Keep all text intact and uncut, Korean spelling exact. Avoid crowd, people, collage, fire, sparks, neon, modern geometric dots, ornate frames, YouTube logo, video player triangle, playback UI, channel logos, badges, watermarks. Opaque background. This must read clearly as an official event website preview and look distinctly different from a dramatic YouTube promo thumbnail.

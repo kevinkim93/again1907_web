@@ -6,7 +6,7 @@
 - 세부 시간표와 강사 명단: **사용자가 제공한 일정** (2026-11-05 수정)
 - 장소: **오산리기도원**, 경기도 파주시 조리읍 등원로391번길 42
 - 정보 출처: [공식 신청 화면](https://yjchae.github.io/room-assignment/?g=b5bf14ba-0263-43b7-b331-02dc393c07ec), 2026-10-18 확인
-- 시간표의 강사·찬양팀 빈칸은 임의로 채우지 않습니다. 강사 소개와 접수 마감일은 확정 후 안내합니다.
+- 시간표와 강사 소개는 사용자가 제공한 이름·소속을 함께 사용합니다. 강사·찬양팀 빈칸과 접수 마감일은 임의로 채우지 않습니다.
 
 ## 실행
 
@@ -40,7 +40,7 @@ npm start -- --hostname 127.0.0.1 --port 3007
 - `components/ScrollReveal.js`: 스크롤 진입 효과
 - `components/GatheringEmbed.js`: 신청 화면 임베드와 새 창 열기
 - `public/images/again1907-6th-poster.png`: 새 포스터 원본 (1086×1448)
-- `public/images/again1907-6th-share-youtube-v1.jpg`: 공식 초청 영상의 가로 공유 썸네일 (1280×720, 날짜 포함)
+- `public/images/again1907-6th-share-official-v2.png`: 공식 사이트 전용 가로 공유 썸네일 (1734×907, 날짜 포함)
 - `app/layout.js`: 공유 이미지와 초청 설명문 (Open Graph·Twitter 카드)
 - `docs/poster-prompt.txt`: ImageGen 생성 프롬프트
 - `public/videos/again1907-6th-motion.mp4`: Gemini 채팅으로 생성한 8초 영상 (무음, 약 782KB)

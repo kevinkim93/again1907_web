@@ -5,6 +5,7 @@ import GatheringEmbed from '@/components/GatheringEmbed';
 import GatheringSchedule from '@/components/GatheringSchedule';
 import MotionFilm from '@/components/MotionFilm';
 import { gathering } from '@/lib/gathering';
+import { gatheringSpeakers } from '@/lib/gathering-schedule';
 
 export default function HomePage() {
   return (
@@ -59,6 +60,7 @@ export default function HomePage() {
               <p className="event-note">{gathering.address}</p>
               <div className="venue-links">
                 <a className="text-link" href={gathering.venueWebsiteUrl} target="_blank" rel="noopener noreferrer">오시는 길 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> · 오산리기도원 홈페이지 (새 탭)</span></a>
+                <a className="text-link" href={gathering.venueBusUrl} target="_blank" rel="noopener noreferrer">기도원 버스 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> · 운행시간 안내 (새 탭)</span></a>
                 <a className="text-link" href={gathering.mapUrl} target="_blank" rel="noopener noreferrer">카카오맵 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
               </div>
               <iframe className="venue-map" src="/osanri-map.html" title="오산리기도원 위치 · 카카오맵" loading="lazy" />
@@ -78,7 +80,14 @@ export default function HomePage() {
         <section className="speakers-section" id="speakers" aria-labelledby="speakers-title">
           <div className="page-width speakers-layout">
             <div className="section-heading"><h2 id="speakers-title">강사 소개</h2></div>
-            <p className="speakers-coming">추후 안내</p>
+            <ul className="speaker-list">
+              {gatheringSpeakers.map(({ name, affiliation }) => (
+                <li key={name}>
+                  <h3>{name}</h3>
+                  <p>{affiliation}</p>
+                </li>
+              ))}
+            </ul>
           </div>
         </section>
 
@@ -117,7 +126,7 @@ export default function HomePage() {
 
       <footer className="gathering-footer">
         <div className="page-width footer-main">
-          <a className="wordmark" href="#top">Again 1907</a>
+          <a className="footer-brand" href="#top"><span className="wordmark">Again1907</span><span className="footer-brand-title">평양대부흥회</span></a>
           <a className="footer-contact" href={gathering.contactUrl} target="_blank" rel="noopener noreferrer">카카오톡 문의 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
         </div>
         <div className="page-width footer-bottom"><span>2027년 제6차 평양대부흥회</span><a href="#top">맨 위로 <ArrowUpRight size={13} aria-hidden="true" /></a></div>
