@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { ArrowDown, ArrowUpRight, Download } from 'lucide-react';
+import { ArrowUpRight, Download } from 'lucide-react';
 import CinematicHero from '@/components/CinematicHero';
 import GatheringEmbed from '@/components/GatheringEmbed';
 import GatheringSchedule from '@/components/GatheringSchedule';
@@ -47,11 +47,7 @@ export default function HomePage() {
                 referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
               />
-              <a className="promo-external" href={gathering.promoVideoUrl} target="_blank" rel="noopener noreferrer">YouTube에서 보기 <ArrowUpRight size={17} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
             </section>
-          </div>
-          <div className="hero-bottom page-width">
-            <a className="hero-scroll" href="#schedule"><ArrowDown size={17} aria-hidden="true" /><span>일정</span></a>
           </div>
         </CinematicHero>
 

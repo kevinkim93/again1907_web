@@ -1,0 +1,10 @@
+Production share image: public/images/again1907-6th-share-youtube-v1.jpg
+Dimensions: 1280 x 720, original JPEG preserved without cropping.
+Source: https://www.youtube.com/watch?v=REWZCuOpR34
+Title: 제 6차 [ AGAIN 1907 평양대부흥회] 초청 영상
+Channel: 최광선교사의 내래TV
+Original thumbnail: https://i.ytimg.com/vi/REWZCuOpR34/maxresdefault.jpg
+Selected by the user for the Again 1907 website share preview on 2026-11-05.
+The image includes the event date 27.01.25 MON - 30 SAT.
+
+Metadata: app/layout.js declares the original width/height and the user's full invitation text for description, og:description, and twitter:description. Messenger services control preview truncation and caching.

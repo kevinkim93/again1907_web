@@ -51,6 +51,12 @@ export default function GatheringSchedule() {
                             <strong className="timetable-session-title">{entry.title}</strong>
                             {entry.person && <span className="timetable-person">{entry.person}</span>}
                             {entry.note && <span className="timetable-note">{entry.note}</span>}
+                            {entry.videoUrl && (
+                              <a className="timetable-video-link" href={entry.videoUrl} target="_blank" rel="noopener noreferrer">
+                                <span aria-hidden="true">▶</span> 티저 영상 <span aria-hidden="true">↗</span>
+                                <span className="sr-only"> (새 탭)</span>
+                              </a>
+                            )}
                           </li>
                         ))}
                       </ul>

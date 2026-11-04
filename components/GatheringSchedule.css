@@ -25,6 +25,9 @@
 .timetable-session-title { display: block; color: var(--red); font-size: 20px; font-weight: 800; }
 .timetable-person { display: block; margin-top: 4px; font-weight: 800; }
 .timetable-note { display: block; margin-top: 5px; color: var(--muted); font-size: 18px; line-height: 1.7; }
+.timetable-video-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 6px 10px; border: 1px solid var(--ink); border-radius: 3px; color: var(--ink); font-size: 15px; font-weight: 700; line-height: 1.6; text-decoration: none; white-space: nowrap; }
+.timetable-video-link:hover { background: var(--ink); color: var(--paper); }
+.timetable-video-link:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
 .timetable-empty { display: block; color: var(--muted); text-align: center; }
 
 @media (min-width: 1460px) {

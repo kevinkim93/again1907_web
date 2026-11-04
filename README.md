@@ -40,6 +40,8 @@ npm start -- --hostname 127.0.0.1 --port 3007
 - `components/ScrollReveal.js`: 스크롤 진입 효과
 - `components/GatheringEmbed.js`: 신청 화면 임베드와 새 창 열기
 - `public/images/again1907-6th-poster.png`: 새 포스터 원본 (1086×1448)
+- `public/images/again1907-6th-share-youtube-v1.jpg`: 공식 초청 영상의 가로 공유 썸네일 (1280×720, 날짜 포함)
+- `app/layout.js`: 공유 이미지와 초청 설명문 (Open Graph·Twitter 카드)
 - `docs/poster-prompt.txt`: ImageGen 생성 프롬프트
 - `public/videos/again1907-6th-motion.mp4`: Gemini 채팅으로 생성한 8초 영상 (무음, 약 782KB)
 - `public/images/again1907-6th-motion.jpg`: 영상 로딩 전 정지 이미지
