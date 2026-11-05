@@ -59,23 +59,18 @@ export default function HomePage() {
         </CinematicHero>
 
         <section className="gathering-theme" aria-labelledby="gathering-theme-title">
-          <ScrollReveal className="theme-artwork">
-            <figure>
-              <Image
-                src="/images/again1907-theme-typography-v1.png"
-                alt=""
-                width={1024}
-                height={1536}
-                sizes="(max-width: 760px) 100vw, 640px"
-                className="theme-typography-image"
-              />
-              <figcaption className="sr-only">
-                <h2 id="gathering-theme-title">주님이 역사하시는 초자연적 부흥집회</h2>
-                <p>주제말씀 · 호세아 6:1</p>
-                <blockquote>오라 우리가 여호와께로 돌아가자. 여호와께서 우리를 찢으셨으나 도로 낫게 하실 것이요. 우리를 치셨으나 싸매어 주실 것임이라.</blockquote>
-              </figcaption>
-            </figure>
-          </ScrollReveal>
+          <div className="theme-copy">
+            <h2 id="gathering-theme-title">
+              <span>주님이 역사하시는</span>{' '}
+              <span>초자연적 부흥집회</span>
+            </h2>
+            <p className="theme-scripture-reference">주제말씀 · 호세아 6:1</p>
+            <blockquote className="theme-scripture">
+              <p>오라 우리가 여호와께로 돌아가자.</p>
+              <p>여호와께서 우리를 찢으셨으나 도로 낫게 하실 것이요.</p>
+              <p>우리를 치셨으나 싸매어 주실 것임이라.</p>
+            </blockquote>
+          </div>
         </section>
 
         <section className="gathering-details" id="gathering" aria-labelledby="details-title">

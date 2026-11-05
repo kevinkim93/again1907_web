@@ -1,6 +1,12 @@
-.gathering-theme { padding: 32px 20px 44px; color: #fff4df; background: #06182d; border-top: 1px solid #d6c29a33; }
-.theme-artwork { width: min(640px, 100%); margin-inline: auto; }
-.theme-typography-image { display: block; width: 100%; height: auto; }
+.gathering-theme { padding: 64px 24px; color: var(--paper); background: var(--night); }
+.theme-copy { width: min(760px, 100%); margin-inline: auto; text-align: center; }
+.gathering-page .theme-copy h2 { font-size: clamp(28px, 4vw, 38px); font-weight: 800; line-height: 1.65; letter-spacing: -.8px; }
+.theme-copy h2 > span { display: block; }
+.gathering-page .theme-scripture-reference { margin-top: 30px; color: #d1c7b4; font-size: 17px; }
+.theme-scripture { margin: 16px 0 0; font-size: 22px; line-height: 1.9; }
+.theme-scripture p { text-wrap: balance; }
+.gathering-page .theme-scripture p + p { margin-top: 8px; }
 @media (max-width: 760px) {
-  .gathering-theme { padding: 12px 0 24px; }
+  .gathering-theme { padding: 44px 24px; }
+  .theme-scripture { font-size: 20px; }
 }
