@@ -24,7 +24,6 @@ export default function GatheringSchedule() {
           </button>
         ))}
       </div>
-      <p className="timetable-day-hint">요일을 선택하면 해당 날짜의 일정을 볼 수 있습니다.</p>
       <p className="timetable-scroll-hint">표를 좌우로 스크롤하면 모든 요일을 볼 수 있습니다.</p>
       <div className="timetable-scroll" role="region" aria-label="집회 일정표" tabIndex={0}>
         <table id={timetableId} className="timetable">

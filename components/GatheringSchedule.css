@@ -2,8 +2,8 @@
 .schedule-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 22px; }
 .gathering-page .schedule-heading h2 { margin: 0; }
 .gathering-timetable { min-width: 0; container: timetable / inline-size; }
-.timetable-day-picker, .timetable-day-hint { display: none; }
-.gathering-page .timetable-scroll-hint, .gathering-page .timetable-day-hint { margin-bottom: 12px; font-size: 16px; line-height: 1.7; color: var(--muted); }
+.timetable-day-picker { display: none; }
+.gathering-page .timetable-scroll-hint { margin-bottom: 12px; font-size: 16px; line-height: 1.7; color: var(--muted); }
 .timetable-scroll { position: relative; overflow-x: auto; border: 1px solid var(--line); border-top: 3px solid var(--ink); overscroll-behavior-x: contain; scrollbar-color: #718093 #e9e4d8; }
 .timetable-scroll:focus-visible { outline: 3px solid var(--red); outline-offset: 4px; }
 .timetable { width: 100%; min-width: 1340px; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 19px; line-height: 1.65; }
@@ -49,7 +49,6 @@
   .gathering-page .timetable-day-picker button:last-child { border-right: 0; border-radius: 0 2px 2px 0; }
   .gathering-page .timetable-day-picker button[aria-pressed='true'] { background: var(--ink); color: var(--paper); font-weight: 800; }
   .gathering-page .timetable-day-picker button:focus-visible { position: relative; outline-offset: -5px; }
-  .gathering-timetable[data-enhanced] .timetable-day-hint { display: block; }
   .gathering-timetable[data-enhanced] .timetable-scroll-hint { display: none; }
   .gathering-timetable[data-enhanced] .timetable { min-width: 0; }
   .gathering-timetable[data-enhanced] [data-day] { display: none; }
@@ -68,7 +67,7 @@
 }
 
 @media print {
-  .gathering-timetable .timetable-day-picker, .gathering-timetable .timetable-scroll-hint, .gathering-timetable .timetable-day-hint { display: none !important; }
+  .gathering-timetable .timetable-day-picker, .gathering-timetable .timetable-scroll-hint { display: none !important; }
   .timetable-scroll { overflow: visible; }
   .gathering-timetable .timetable { min-width: 0; }
   .gathering-timetable [data-day] { display: table-cell !important; }

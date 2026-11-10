@@ -36,11 +36,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .hero-film { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
 .hero-film[data-unavailable='true'] { visibility: hidden; }
 .hero-shade { background: linear-gradient(90deg, rgba(3,18,41,.82) 0%, rgba(3,18,41,.5) 52%, rgba(3,18,41,.1) 100%), linear-gradient(180deg, rgba(3,18,41,.18), transparent 50%, rgba(3,18,41,.58)); }
-/* Keep the wider responsive grid, with room for the overlaid navigation. */
-.hero-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); align-items: center; gap: 64px; padding-block: 162px 80px; position: relative; z-index: 1; }
-.hero-copy { min-width: 0; }
-.hero-poster { display: block; width: 100%; max-width: 420px; justify-self: end; border: 1px solid #efe3c77a; background: var(--night); box-shadow: 0 14px 40px #00102433; }
-.hero-poster img { display: block; width: 100%; height: auto; }
+/* Leave room for the overlaid navigation above the single-column introduction. */
+.hero-layout { padding-block: 162px 80px; position: relative; z-index: 1; }
+.hero-copy { min-width: 0; max-width: 680px; }
 .promo-player { display: block; width: 100%; aspect-ratio: 16 / 9; border: 1px solid #efe3c77a; background: #071b36; box-shadow: 0 14px 40px #00102433; }
 .gathering-page .hero-edition { color: var(--paper); font-size: 31px; font-weight: 400; }
 .gathering-page .hero-copy h1 { margin-top: 17px; }
@@ -65,8 +63,8 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .gathering-page .event-venue { font-size: 33px; line-height: 1.5; font-weight: 800; letter-spacing: -1px; }
 .schedule-section { padding-block: 48px; }
 .speakers-section { padding-block: 40px; border-top: 1px solid var(--line); }
-.speaker-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 32px; min-width: 0; margin: 0; padding: 0; list-style: none; }
-.speaker-list > li { min-width: 0; padding-bottom: 18px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.speaker-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 32px; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.speaker-list > li { min-width: 0; padding-bottom: 12px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
 .gathering-page .speaker-list h3 { font-size: 24px; font-weight: 800; line-height: 1.5; }
 .gathering-page .speaker-list p { margin-top: 5px; color: var(--muted); font-size: 18px; line-height: 1.7; }
 .films-section { padding-block: 48px; border-top: 1px solid var(--line); }
@@ -98,7 +96,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 @media (max-width: 1100px) {
   .gathering-page .page-width { width: calc(100% - 64px); }
   .gathering-header nav { gap: 20px; }
-  .hero-layout { gap: 32px; }
   .hero-english { font-size: clamp(58px, 6.4vw, 65px); }
   .hero-korean { font-size: 52px; }
   .gathering-page .hero-date { font-size: 25px; gap: 10px; }
@@ -106,12 +103,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .poster-layout { gap: 40px; }
   .gathering-page .details-heading h2, .gathering-page .section-heading h2 { font-size: 34px; }
 }
-/* Stack before the two-column title and poster become cramped on tablets. */
+/* Allow the navigation to wrap on tablets. */
 @media (min-width: 761px) and (max-width: 960px) {
   .header-inner { flex-wrap: wrap; padding-block: 20px; gap: 12px; }
   .gathering-header nav { width: 100%; justify-content: space-between; }
-  .hero-layout { grid-template-columns: 1fr; gap: 40px; padding-block: 184px 48px; }
-  .hero-poster { justify-self: center; }
+  .hero-layout { padding-block: 184px 48px; }
   .hero-english { font-size: 76px; }
   .hero-korean { font-size: 64px; }
   .details-layout, .speakers-layout, .films-layout { grid-template-columns: 1fr; gap: 24px; }
@@ -128,11 +124,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .gathering-header .nav-external { gap: 3px; }
   .gathering-header .nav-register svg { display: none; }
   .cinematic-hero { min-height: 710px; }
-  .hero-layout { grid-template-columns: 1fr; gap: 36px; padding-block: 160px 44px; }
+  .hero-layout { padding-block: 160px 44px; }
   .hero-media { background-position: 62% center; }
   .hero-film { object-position: 62% center; }
   .hero-shade { background: linear-gradient(90deg, rgba(3,18,41,.62), rgba(3,18,41,.22)), linear-gradient(180deg, rgba(3,18,41,.25), rgba(3,18,41,.1) 40%, rgba(3,18,41,.8)); }
-  .hero-poster { justify-self: center; }
   .gathering-page .hero-edition { font-size: 27px; }
   .gathering-page .hero-copy h1 { margin-top: 14px; }
   .hero-english { font-size: clamp(52px, 14vw, 76px); line-height: 1.2; letter-spacing: -2px; }
@@ -150,8 +145,9 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .gathering-page .event-note { font-size: 18px; margin-top: 9px; }
   .gathering-page .event-venue { font-size: 29px; }
   .schedule-section { padding-block: 44px; }
-  .speakers-section { padding-block: 44px; }
-  .speaker-list { grid-template-columns: 1fr; gap: 18px; }
+  .speakers-section { padding-block: 28px; }
+  .speakers-layout { gap: 14px; }
+  .speaker-list { grid-template-columns: 1fr; gap: 12px; }
   .films-section { padding-bottom: 30px; }
   .films-layout { grid-template-columns: 1fr; gap: 16px; }
   .poster-section { padding-block: 44px; }

@@ -24,7 +24,7 @@ export default function HomePage() {
             <a href="#schedule">일정</a>
             <a href="#speakers">강사 소개</a>
             <a className="nav-register" href="#registration">참가 신청 <ArrowUpRight size={15} aria-hidden="true" /></a>
-            <a className="nav-external" href={gathering.youtubeChannelUrl} target="_blank" rel="noopener noreferrer">내래티비 <ArrowUpRight size={15} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
+            <a className="nav-external" href={gathering.youtubeChannelUrl} target="_blank" rel="noopener noreferrer">YouTube <ArrowUpRight size={15} aria-hidden="true" /><span className="sr-only"> (새 탭)</span></a>
           </nav>
         </div>
       </header>
@@ -44,9 +44,6 @@ export default function HomePage() {
               </div>
               <a className="button button-light" href="#registration">참가 신청 <ArrowUpRight size={19} aria-hidden="true" /></a>
             </div>
-            <a className="hero-poster" href="#poster" aria-label="제6차 집회 포스터 보기 및 다운로드">
-              <Image src={gathering.poster} alt="제6차 Again 1907 평양대부흥회 · 2027.01.25–01.30 · 오산리기도원" width={1080} height={1350} sizes="(max-width: 760px) 90vw, 420px" priority unoptimized />
-            </a>
           </div>
         </CinematicHero>
 
