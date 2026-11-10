@@ -1,0 +1,56 @@
+[
+  {
+    "id": "go-seongjun",
+    "source": "고성준프로필 - 고성준.jpg",
+    "asset": "public/images/speakers/go-seongjun.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "jang-seungmin",
+    "source": "장승민 목사님.png",
+    "asset": "public/images/speakers/jang-seungmin.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "lee-ho",
+    "source": "이호목사님.jpg",
+    "asset": "public/images/speakers/lee-ho.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "yohannes-nahuway",
+    "source": "요하네스 목사님.jpg",
+    "asset": "public/images/speakers/yohannes-nahuway.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "kim-gwonneung",
+    "source": "김권능 목사님.jpeg",
+    "asset": "public/images/speakers/kim-gwonneung.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "choi-gwang",
+    "source": "최광목사님.JPG",
+    "asset": "public/images/speakers/choi-gwang.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "cho-jihoon",
+    "source": "조지훈 목사님.jpg",
+    "asset": "public/images/speakers/cho-jihoon.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "lim-seongil",
+    "source": "임성일 선교사님.jpg",
+    "asset": "public/images/speakers/lim-seongil.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "sung-hyunkyung",
+    "source": "성현경 목사님.jpg",
+    "asset": "public/images/speakers/sung-hyunkyung.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  }
+]

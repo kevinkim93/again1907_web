@@ -73,7 +73,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .poster-layout { display: grid; grid-template-columns: 1fr 1fr; align-items: start; gap: 40px; }
 .gathering-page .poster-copy h2 { margin-top: 0; font-size: 38px; font-weight: 800; line-height: 1.55; letter-spacing: -1.5px; }
 .poster-copy .button { margin-top: 30px; }
-.theme-download { display: flex; align-items: center; gap: 12px; width: fit-content; min-height: 44px; margin-top: 18px; border-bottom: 1px solid currentColor; font-size: 18px; }
 .poster-art { width: 100%; max-width: 520px; justify-self: end; }
 .poster-image-link { display: block; background: #06172d; border: 1px solid #647084; box-shadow: 0 14px 34px #0003; }
 .poster-image { display: block; width: 100%; height: auto; }
@@ -189,4 +188,14 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   html { scroll-behavior: auto; }
   .hero-film { visibility: hidden; }
   .gathering-page *, .gathering-page *::before, .gathering-page *::after { animation: none !important; transition: none !important; }
+}
+
+
+
+.speaker-list > .speaker-with-photo { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 18px; align-items: center; }
+.speaker-photo { display: block; width: 112px; height: 126px; object-fit: contain; object-position: center bottom; background: #eee7d9; border-radius: 3px; }
+.speaker-description { min-width: 0; }
+@media (max-width: 760px) {
+  .speaker-list > .speaker-with-photo { grid-template-columns: 88px minmax(0, 1fr); gap: 14px; }
+  .speaker-photo { width: 88px; height: 100px; }
 }

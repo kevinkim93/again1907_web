@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import GatheringDetailPage from '@/components/GatheringDetailPage';
 import { gatheringSpeakers } from '@/lib/gathering-schedule';
 import { createPageMetadata } from '@/lib/site-metadata';
@@ -14,8 +15,8 @@ export default function SpeakersPage() {
   return (
     <GatheringDetailPage title="강사 소개" path={path} intro="2027년 1월 25일(월)–30일(토) · 오산리기도원">
       <ul className="speaker-list detail-speakers">
-        {gatheringSpeakers.map(({ name, affiliation }) => (
-          <li key={name}><h2>{name}</h2><p>{affiliation}</p></li>
+        {gatheringSpeakers.map(({ name, affiliation, photo }) => (
+          <li key={name} className={photo ? "speaker-with-photo" : undefined}>{photo && <Image src={photo} alt={`${name} 프로필 사진`} width={128} height={144} className="speaker-photo" unoptimized />}<div className="speaker-description"><h2>{name}</h2><p>{affiliation}</p></div></li>
         ))}
       </ul>
     </GatheringDetailPage>
