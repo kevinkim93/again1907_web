@@ -1,4 +1,11 @@
-.gathering-theme { padding: 64px 24px; color: var(--paper); background: var(--night); }
+.gathering-theme {
+  padding: 64px 24px;
+  color: var(--paper);
+  background-color: var(--night);
+  background-image: linear-gradient(rgba(7, 27, 54, .78), rgba(7, 27, 54, .88)), url('/images/again1907-photo.webp');
+  background-position: center;
+  background-size: cover;
+}
 .theme-copy { width: min(760px, 100%); margin-inline: auto; text-align: center; }
 .theme-copy::before { content: ''; display: block; width: 48px; height: 3px; margin: 0 auto 28px; background: var(--red); }
 .gathering-page .theme-copy h2 { font-size: clamp(28px, 4vw, 38px); font-weight: 800; line-height: 1.65; letter-spacing: -.8px; }

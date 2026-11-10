@@ -45,7 +45,7 @@ export default function HomePage() {
               <a className="button button-light" href="#registration">참가 신청 <ArrowUpRight size={19} aria-hidden="true" /></a>
             </div>
             <a className="hero-poster" href="#poster" aria-label="제6차 집회 포스터 보기 및 다운로드">
-              <Image src={gathering.poster} alt="제6차 Again 1907 평양대부흥회 · 2027.01.25–01.30 · 오산리기도원" width={1086} height={1448} sizes="(max-width: 760px) 90vw, 420px" priority unoptimized />
+              <Image src={gathering.poster} alt="제6차 Again 1907 평양대부흥회 · 2027.01.25–01.30 · 오산리기도원" width={1080} height={1350} sizes="(max-width: 760px) 90vw, 420px" priority unoptimized />
             </a>
           </div>
         </CinematicHero>
@@ -117,13 +117,13 @@ export default function HomePage() {
           <div className="page-width poster-layout">
             <ScrollReveal className="poster-copy">
               <h2 id="poster-title">포스터</h2>
-              <a className="button button-outline" href={gathering.poster} download="Again1907-제6차-포스터.svg">포스터 다운로드 <Download size={17} aria-hidden="true" /></a>
-              <a className="theme-download" href="/images/again1907-theme.svg" download="Again1907-제6차-주제.svg">주제 아트워크 다운로드 <Download size={17} aria-hidden="true" /></a>
+              <a className="button button-outline" href={gathering.poster} download="Again1907-제6차-포스터.webp">포스터 다운로드 <Download size={17} aria-hidden="true" /></a>
+              <a className="theme-download" href="/images/again1907-theme.webp" download="Again1907-제6차-주제.webp">주제 아트워크 다운로드 <Download size={17} aria-hidden="true" /></a>
             </ScrollReveal>
             <ScrollReveal className="poster-art" delay={80}>
               <figure>
                 <a className="poster-image-link" href={gathering.poster} target="_blank" rel="noopener noreferrer" aria-label="제6차 Again 1907 포스터 크게 보기 (새 탭)">
-                  <Image src={gathering.poster} alt="제6차 Again 1907 평양대부흥회. 2027년 1월 25일 월요일부터 30일 토요일까지, 오산리기도원." width={1086} height={1448} sizes="(max-width: 760px) 86vw, 520px" className="poster-image" unoptimized />
+                  <Image src={gathering.poster} alt="제6차 Again 1907 평양대부흥회. 2027년 1월 25일 월요일부터 30일 토요일까지, 오산리기도원." width={1080} height={1350} sizes="(max-width: 760px) 86vw, 520px" className="poster-image" unoptimized />
                 </a>
               </figure>
             </ScrollReveal>
