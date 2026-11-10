@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { scheduleDays, scheduleRows } from '@/lib/gathering-schedule';
 import './GatheringSchedule.css';
 
@@ -8,6 +8,7 @@ export default function GatheringSchedule() {
   // All six columns remain visible on desktop. Mobile starts with Monday.
   const [selectedDay, setSelectedDay] = useState('mon');
   const timetableRef = useRef(null);
+  const timetableId = useId();
 
   useEffect(() => {
     timetableRef.current.dataset.enhanced = 'true';
@@ -17,14 +18,16 @@ export default function GatheringSchedule() {
     <div ref={timetableRef} className="gathering-timetable" data-selected-day={selectedDay}>
       <div className="timetable-day-picker" role="group" aria-label="일정 요일 선택">
         {scheduleDays.map((day) => (
-          <button key={day.id} type="button" aria-label={`${day.label} ${day.date}`} aria-pressed={selectedDay === day.id} aria-controls="gathering-timetable" onClick={() => setSelectedDay(day.id)}>
-            {day.shortLabel}
+          <button key={day.id} type="button" aria-label={`${day.label} ${day.date}`} aria-pressed={selectedDay === day.id} aria-controls={timetableId} onClick={() => setSelectedDay(day.id)}>
+            <span>{day.shortLabel}</span>
+            <time dateTime={day.dateTime}>{day.date}</time>
           </button>
         ))}
       </div>
-      <p className="timetable-scroll-hint" id="timetable-scroll-hint">좌우로 보기</p>
-      <div className="timetable-scroll" role="region" aria-label="집회 일정" aria-describedby="timetable-scroll-hint" tabIndex={0}>
-        <table id="gathering-timetable" className="timetable">
+      <p className="timetable-day-hint">요일을 선택하면 해당 날짜의 일정을 볼 수 있습니다.</p>
+      <p className="timetable-scroll-hint">표를 좌우로 스크롤하면 모든 요일을 볼 수 있습니다.</p>
+      <div className="timetable-scroll" role="region" aria-label="집회 일정표" tabIndex={0}>
+        <table id={timetableId} className="timetable">
           <caption className="sr-only">제6차 Again 1907 집회 시간표 · 2027년 1월 25일 월요일부터 30일 토요일까지</caption>
           <thead>
             <tr>

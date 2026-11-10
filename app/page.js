@@ -5,7 +5,6 @@ import GatheringEmbed from '@/components/GatheringEmbed';
 import GatheringSchedule from '@/components/GatheringSchedule';
 import GatheringPageLinks from '@/components/GatheringPageLinks';
 import FloatingGatheringActions from '@/components/FloatingGatheringActions';
-import MotionFilm from '@/components/MotionFilm';
 import ScrollReveal from '@/components/ScrollReveal';
 import { gathering } from '@/lib/gathering';
 import { gatheringSpeakers } from '@/lib/gathering-schedule';
@@ -45,16 +44,9 @@ export default function HomePage() {
               </div>
               <a className="button button-light" href="#registration">참가 신청 <ArrowUpRight size={19} aria-hidden="true" /></a>
             </div>
-            <section className="hero-promo" aria-label="제6차 집회 초청 영상">
-              <iframe
-                className="promo-player"
-                src={gathering.promoEmbedUrl}
-                title="내래티비 · 제6차 Again 1907 평양대부흥회 초청 영상"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-              />
-            </section>
+            <a className="hero-poster" href="#poster" aria-label="제6차 집회 포스터 보기 및 다운로드">
+              <Image src={gathering.poster} alt="제6차 Again 1907 평양대부흥회 · 2027.01.25–01.30 · 오산리기도원" width={1086} height={1448} sizes="(max-width: 760px) 90vw, 420px" priority unoptimized />
+            </a>
           </div>
         </CinematicHero>
 
@@ -111,10 +103,13 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="films-section" aria-label="집회 영상">
+        <section className="films-section" aria-labelledby="invitation-title">
           <ScrollReveal className="page-width films-layout">
-            <MotionFilm src="/videos/again1907-6th-motion.mp4" poster="/images/again1907-6th-motion.jpg" label="기도" className="gathering-film" />
-            <MotionFilm src="/videos/again1907-pentecost.mp4" poster="/images/again1907-pentecost.jpg" label="오순절 성령 강림" className="gathering-film" />
+            <div className="section-heading"><h2 id="invitation-title">초청 영상</h2></div>
+            <iframe className="promo-player" src={gathering.promoEmbedUrl}
+              title="내래티비 · 제6차 Again 1907 평양대부흥회 초청 영상"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin" loading="lazy" allowFullScreen />
           </ScrollReveal>
         </section>
 
@@ -122,7 +117,8 @@ export default function HomePage() {
           <div className="page-width poster-layout">
             <ScrollReveal className="poster-copy">
               <h2 id="poster-title">포스터</h2>
-              <a className="button button-outline" href={gathering.poster} download="Again1907-제6차-포스터.png">포스터 다운로드 <Download size={17} aria-hidden="true" /></a>
+              <a className="button button-outline" href={gathering.poster} download="Again1907-제6차-포스터.svg">포스터 다운로드 <Download size={17} aria-hidden="true" /></a>
+              <a className="theme-download" href="/images/again1907-theme.svg" download="Again1907-제6차-주제.svg">주제 아트워크 다운로드 <Download size={17} aria-hidden="true" /></a>
             </ScrollReveal>
             <ScrollReveal className="poster-art" delay={80}>
               <figure>
