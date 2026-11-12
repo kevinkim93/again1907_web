@@ -42,3 +42,9 @@ python3 scripts/generate-speaker-poster.py
 ```
 
 Portrait delivery assets: `public/images/speakers/*.webp`.
+
+## Completed roster — 2026-11-12
+
+The new Downloads archive supplies 김정민 목사님.jpg, 이에녹님.png and 최상훈 목사님.jpg. All twelve speakers now have photographs. The same built-in background-extraction workflow and prompt above were applied to these three files.
+
+The v2 poster is 1080 × 2200, with all twelve photographs and a registration QR. PNG and WebP versions plus the standalone PNG/SVG QR are in public/images. QR payload is the exact registrationUrl from lib/gathering.js; decoded standalone and embedded QR outputs were verified.

@@ -52,5 +52,23 @@
     "source": "성현경 목사님.jpg",
     "asset": "public/images/speakers/sung-hyunkyung.webp",
     "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "kim-jeongmin",
+    "source": "김정민 목사님.jpg",
+    "asset": "public/images/speakers/kim-jeongmin.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "lee-enoch",
+    "source": "이에녹님.png",
+    "asset": "public/images/speakers/lee-enoch.webp",
+    "tool": "image_gen (built-in), background-extraction"
+  },
+  {
+    "id": "choi-sanghoon",
+    "source": "최상훈 목사님.jpg",
+    "asset": "public/images/speakers/choi-sanghoon.webp",
+    "tool": "image_gen (built-in), background-extraction"
   }
 ]

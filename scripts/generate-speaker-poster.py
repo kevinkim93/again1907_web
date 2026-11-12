@@ -21,7 +21,7 @@ for entry in re.findall(r'\{([^{}]+)\}', roster):
     fields = dict(re.findall(r"(name|affiliation|photo): '([^']+)'", entry))
     speakers.append(fields)
 
-W, H = 1080, 1800
+W, H = 1080, 2200
 paper, ink, red = '#f7f2e7', '#142b45', '#96483e'
 canvas = Image.new('RGB', (W, H), paper)
 canvas.paste(base.photograph(W, 690, 'poster'), (0, 0))
@@ -57,19 +57,18 @@ for index, speaker in enumerate(with_photos):
         art.text(speaker['name'], cx, top + 204, 26, 'bold', fill=ink, anchor='middle')
         art.text(speaker['affiliation'], cx, top + 235, 18, fill=ink, anchor='middle')
 
-art.rule(60, 1546, 960, '#bfb6a5')
-without_photos = [s for s in speakers if not s.get('photo')]
-for index, speaker in enumerate(without_photos):
-    cx = 222 + index * 318
-    art.text(speaker['name'], cx, 1589, 25, 'bold', fill=ink, anchor='middle')
-    art.text(speaker['affiliation'], cx, 1621, 18, fill=ink, anchor='middle')
+art.rule(60, 1798, 960, '#bfb6a5')
+art.text('찬양팀', 60, 1842, 25, 'bold', fill=red)
+art.text('수원하나교회 · 금란교회 · 기쁨이 있는 교회 · 화양교회', 60, 1885, 26, 'bold', fill=ink)
+qr = Image.open(ROOT / 'public/images/again1907-registration-qr.png').convert('RGB')
+qr = qr.resize((216,216), Image.Resampling.NEAREST)
+art.canvas.paste(qr, (804, 1930))
+art.text('참가 신청', 60, 1996, 37, 'bold', fill=ink)
+art.text('QR 코드를 스캔해 신청해 주세요.', 60, 2043, 25, fill=ink)
+art.text('2027.01.25–01.30 · 오산리기도원', 60, 2088, 23, fill=ink)
+art.text('again1907.kr', 1020, 2175, 22, fill=ink, anchor='end')
 
-art.rule(60, 1654, 960, '#bfb6a5')
-art.text('찬양팀', 60, 1698, 25, 'bold', fill=red)
-art.text('수원하나교회 · 금란교회 · 기쁨이 있는 교회 · 화양교회', 60, 1741, 26, 'bold', fill=ink)
-art.text('again1907.kr', 1020, 1780, 22, fill=ink, anchor='end')
-
-stem = ROOT / 'public/images/again1907-6th-poster-speakers-v1'
+stem = ROOT / 'public/images/again1907-6th-poster-speakers-v2'
 art.canvas.save(stem.with_suffix('.webp'), quality=94, method=6)
 art.canvas.save(stem.with_suffix('.png'), optimize=True)
 print(json.dumps({'poster': str(stem.with_suffix('.webp')), 'size': [W, H],
