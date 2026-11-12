@@ -1,0 +1,7 @@
+Built-in image_gen edits, 2026-11-12.
+
+First edit: Edit only the small rounded capsule heading near the lower part of this exact supplied poster. Replace the text '찬양팀 4팀' with exactly '찬 양' (with one space). Preserve the entire rest of the supplied poster exactly: same design, images, Korean words, dates, names, blank speaker portrait placeholders, QR, colors, borders, aspect ratio, and spacing. Do not redesign, retype other text, fill the placeholders, add anything, or change any person. This is a precise local text replacement only.
+
+Final background edit: Precise edit only: Remove all 12 empty blue rounded-square portrait placeholder boxes in the lower speaker section. Replace these shapes with seamless matching dark navy poster background so there are no boxes, no borders, no shapes behind the future portraits. Leave all speaker names and other text, lines, imagery and poster composition EXACTLY unchanged. Also replace only the capsule text '찬양팀 4팀' with '찬 양'. Do not add any portraits or people. Preserve original resolution/aspect ratio and all other parts.
+
+The local compositor inserts the existing twelve transparent portraits without frames, softens their bottom edge, and inserts the validated registration QR. Source and working images remain local; only the completed poster is published.

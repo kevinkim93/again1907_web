@@ -20,26 +20,30 @@ canvas.paste(heading.resize((box[2]-box[0], box[3]-box[1]), Image.Resampling.LAN
 roster = (root/'lib/gathering-schedule.js').read_text().split('export const gatheringSpeakers = [',1)[1].split('];',1)[0]
 photos = re.findall(r"photo: '([^']+)'", roster)
 assert len(photos) == 12
-clean = Image.open(source / 'clean-template.png').convert('RGB').resize((w,h), Image.Resampling.LANCZOS)
+clean = Image.open(source / 'blank-speaker-panel.png').convert('RGB').resize((w,h), Image.Resampling.LANCZOS)
 canvas.paste(clean.crop((0,1580,w,2320)),(0,1580))
-for index, path in enumerate(photos):
-    row, col = divmod(index, 6)
-    x, y = 194 + 300*col, (1620 if row == 0 else 1980)
-    size = (220,220)
-    im = Image.open(root/'public'/path.lstrip('/')).convert('RGBA')
-    im = ImageOps.fit(im,size,method=Image.Resampling.LANCZOS,centering=(.5,0))
-    mask = Image.new('L',size,255)
-    draw = ImageDraw.Draw(mask)
-    for line in range(196,220):
-        draw.line((0,line,219,line),fill=round(255*(219-line)/23))
-    alpha=ImageChops.multiply(im.getchannel('A'),mask)
-    canvas.paste(im,(x,y),alpha)
+names=['고성준','장승민','이호','Yohannes Nahuway','김권능','김정민','이에녹','최광','조지훈','임성일','성현경','최상훈']
+roles=['목사','목사','목사','목사','목사','목사','형제','목사','목사','선교사','목사','목사']
+from PIL import ImageFont
+bold=ImageFont.truetype('/System/Library/Fonts/AppleSDGothicNeo.ttc',42,index=6)
+regular=ImageFont.truetype('/System/Library/Fonts/AppleSDGothicNeo.ttc',31,index=0)
+draw=ImageDraw.Draw(canvas)
+for index,path in enumerate(photos):
+    row,col=divmod(index,6)
+    cx,top=304+300*col,1605+360*row
+    im=Image.open(root/'public'/path.lstrip('/')).convert('RGBA')
+    canvas.paste(im,(cx-130,top),im)
+    name=names[index]
+    lines=name.split(' ') if name=='Yohannes Nahuway' else [name]
+    for li,line in enumerate(lines):
+        draw.text((cx,top+264+43*li),line,font=bold,fill='#fff6df',anchor='ms')
+    draw.text((cx,top+344),roles[index],font=regular,fill='#fff6df',anchor='ms')
 
 # Replace the illustrative QR in the reference with the tested registration QR.
 qr=Image.open(root/'public/images/again1907-registration-qr.png').convert('RGB')
 qr=qr.resize((190,190),Image.Resampling.NEAREST)
 canvas.paste(qr,(1761,2692))
-stem=root/'public/images/again1907-6th-poster-reference-v3'
+stem=root/'public/images/again1907-6th-poster-reference-v4'
 canvas.save(stem.with_suffix('.png'),optimize=True)
 canvas.save(stem.with_suffix('.webp'),quality=96,method=6)
 print(json.dumps({'size':canvas.size,'portraits':len(photos),'poster':str(stem)},ensure_ascii=False))
