@@ -115,7 +115,7 @@ export default function HomePage() {
           <div className="page-width poster-layout">
             <ScrollReveal className="poster-copy">
               <h2 id="poster-title">포스터</h2>
-              <a className="button button-outline" href={gathering.poster} download="Again1907-제6차-포스터.webp">포스터 다운로드 <Download size={17} aria-hidden="true" /></a>
+              <a className="button button-outline" href={gathering.poster} download="Again1907-제6차-강사사진-포스터-v5.webp">포스터 다운로드 <Download size={17} aria-hidden="true" /></a>
             </ScrollReveal>
             <ScrollReveal className="poster-art" delay={80}>
               <figure>

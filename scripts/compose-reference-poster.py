@@ -40,10 +40,10 @@ for index,path in enumerate(photos):
     draw.text((cx,top+344),roles[index],font=regular,fill='#fff6df',anchor='ms')
 
 # Replace the illustrative QR in the reference with the tested registration QR.
-qr=Image.open(root/'public/images/again1907-registration-qr.png').convert('RGB')
+qr=Image.open(root/'public/images/again1907-registration-qr-v2.png').convert('RGB')
 qr=qr.resize((190,190),Image.Resampling.NEAREST)
 canvas.paste(qr,(1761,2692))
-stem=root/'public/images/again1907-6th-poster-reference-v4'
+stem=root/'public/images/again1907-6th-poster-reference-v5'
 canvas.save(stem.with_suffix('.png'),optimize=True)
 canvas.save(stem.with_suffix('.webp'),quality=96,method=6)
 print(json.dumps({'size':canvas.size,'portraits':len(photos),'poster':str(stem)},ensure_ascii=False))
