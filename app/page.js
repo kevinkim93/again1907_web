@@ -62,6 +62,19 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="prayer-section" id="prayer" aria-labelledby="prayer-title">
+          <ScrollReveal className="page-width prayer-layout">
+            <div className="section-heading"><h2 id="prayer-title">말씀으로 함께 기도해요</h2></div>
+            <div className="prayer-copy">
+              <p>제6차 집회를 기다리며, 이 말씀으로 날마다 하나님 앞에 함께 나아갑시다. 기도 말씀을 한 파일로 모아 두었으니, 내려받아 함께 읽어 주세요.</p>
+              <a className="button button-light" href={gathering.prayerScriptures} download="Again1907-제6차-기도말씀.pdf">기도 말씀 다운로드 <Download size={17} aria-hidden="true" /></a>
+              <a className="prayer-preview-link" href={gathering.prayerScriptures} download="Again1907-제6차-기도말씀.pdf">
+                <Image src={gathering.prayerScripturesPreview} alt="6차 집회 함께 읽는 말씀 첫 장. 하나님께로, 말씀으로 돌아가자." width={360} height={540} className="prayer-preview" unoptimized />
+              </a>
+            </div>
+          </ScrollReveal>
+        </section>
+
         <section className="gathering-details" id="gathering" aria-labelledby="details-title">
           <ScrollReveal className="page-width details-layout">
             <div className="details-heading"><h2 id="details-title">장소</h2></div>

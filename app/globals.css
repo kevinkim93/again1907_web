@@ -51,6 +51,13 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
 .hero-date > span { font-size: 24px; }
 .gathering-page .hero-venue { margin-top: 8px; font-size: 30px; font-weight: 800; }
 .gathering-page .hero-time-note { margin-top: 6px; font-size: 20px; color: #e0e6e9; }
+.prayer-section { padding-block: 48px; }
+.prayer-layout { display: grid; grid-template-columns: .6fr 1.5fr; gap: 40px; align-items: start; }
+.prayer-copy { min-width: 0; }
+.gathering-page .prayer-copy p { max-width: 38em; }
+.prayer-copy .button { margin-top: 28px; }
+.prayer-preview-link { display: block; width: fit-content; margin-top: 28px; background: #fff; border: 1px solid var(--line); box-shadow: 0 10px 24px #102a4c14; }
+.prayer-preview { display: block; width: 200px; height: auto; }
 .gathering-details { padding-block: 48px; background: #f0ecdf; border-block: 1px solid var(--line); }
 .details-layout, .speakers-layout { display: grid; grid-template-columns: .6fr 1.5fr; gap: 40px; align-items: start; }
 .gathering-page .details-heading h2, .gathering-page .section-heading h2 { margin-top: 0; font-size: 38px; font-weight: 800; line-height: 1.55; letter-spacing: -1.5px; }
@@ -98,7 +105,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .hero-english { font-size: clamp(58px, 6.4vw, 65px); }
   .hero-korean { font-size: 52px; }
   .gathering-page .hero-date { font-size: 25px; gap: 10px; }
-  .details-layout, .speakers-layout { grid-template-columns: .6fr 1.5fr; gap: 30px; }
+  .details-layout, .speakers-layout, .prayer-layout { grid-template-columns: .6fr 1.5fr; gap: 30px; }
   .poster-layout { gap: 40px; }
   .gathering-page .details-heading h2, .gathering-page .section-heading h2 { font-size: 34px; }
 }
@@ -109,7 +116,7 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .hero-layout { padding-block: 184px 48px; }
   .hero-english { font-size: 76px; }
   .hero-korean { font-size: 64px; }
-  .details-layout, .speakers-layout, .films-layout { grid-template-columns: 1fr; gap: 24px; }
+  .details-layout, .speakers-layout, .films-layout, .prayer-layout { grid-template-columns: 1fr; gap: 24px; }
 }
 @media (max-width: 760px) {
   html { scroll-padding-top: 16px; scroll-padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
@@ -138,8 +145,11 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   .gathering-page .hero-venue { margin-top: 13px; font-size: 27px; }
   .gathering-page .hero-time-note { font-size: 18px; margin-top: 7px; }
   .gathering-page .button { min-height: 60px; font-size: 19px; padding: 15px 23px; gap: 24px; }
+  .prayer-section { padding-block: 44px; }
+  .prayer-copy .button { margin-top: 24px; }
+  .prayer-preview { width: 180px; }
   .gathering-details { padding-block: 44px; }
-  .details-layout, .speakers-layout { grid-template-columns: 1fr; gap: 24px; }
+  .details-layout, .speakers-layout, .prayer-layout { grid-template-columns: 1fr; gap: 24px; }
   .gathering-page .details-heading h2, .gathering-page .section-heading h2 { margin-top: 0; font-size: 33px; line-height: 1.5; letter-spacing: -1px; }
   .gathering-page .event-note { font-size: 18px; margin-top: 9px; }
   .gathering-page .event-venue { font-size: 29px; }
