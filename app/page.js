@@ -115,11 +115,11 @@ export default function HomePage() {
           <div className="page-width poster-layout">
             <ScrollReveal className="poster-copy">
               <h2 id="poster-title">포스터</h2>
-              <a className="button button-outline" href={gathering.poster} download="Again1907-제6차-강사사진-포스터-v5.webp">포스터 다운로드 <Download size={17} aria-hidden="true" /></a>
+              <a className="button button-outline" href={gathering.posterDownload} download="Again1907-제6차-확정포스터-A안.png">포스터 다운로드 <Download size={17} aria-hidden="true" /></a>
             </ScrollReveal>
             <ScrollReveal className="poster-art" delay={80}>
               <figure>
-                <a className="poster-image-link" href={gathering.poster} target="_blank" rel="noopener noreferrer" aria-label="제6차 Again 1907 포스터 크게 보기 (새 탭)">
+                <a className="poster-image-link" href={gathering.posterDownload} target="_blank" rel="noopener noreferrer" aria-label="제6차 Again 1907 포스터 크게 보기 (새 탭)">
                   <Image src={gathering.poster} alt="제6차 Again 1907 평양대부흥회. 2027년 1월 25일 월요일부터 30일 토요일까지, 오산리기도원." width={2108} height={2984} sizes="(max-width: 760px) 86vw, 520px" className="poster-image" unoptimized />
                 </a>
               </figure>
