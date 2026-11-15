@@ -69,7 +69,7 @@ export default function HomePage() {
               <p>제6차 집회를 기다리며, 이 말씀으로 날마다 하나님 앞에 함께 나아갑시다. 기도 말씀을 한 파일로 모아 두었으니, 내려받아 함께 읽어 주세요.</p>
               <a className="button button-light" href={gathering.prayerScriptures} download="Again1907-제6차-기도말씀.pdf">기도 말씀 다운로드 <Download size={17} aria-hidden="true" /></a>
               <a className="prayer-preview-link" href={gathering.prayerScriptures} download="Again1907-제6차-기도말씀.pdf">
-                <Image src={gathering.prayerScripturesPreview} alt="6차 집회 함께 읽는 말씀 첫 장. 하나님께로, 말씀으로 돌아가자." width={360} height={540} className="prayer-preview" unoptimized />
+                <Image src={gathering.prayerScripturesPreview} alt="6차 집회 함께 읽는 말씀 첫 장. 하나님께로 돌아오라, 말씀으로 돌아오라." width={360} height={540} className="prayer-preview" unoptimized />
               </a>
             </div>
           </ScrollReveal>
