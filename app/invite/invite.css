@@ -1,0 +1,96 @@
+/* Keep the shared legacy layout untouched. Only suppress its chrome while
+   this invitation is present; client navigation to other routes is unaffected. */
+.min-h-screen:has(> main > .invite-page) > :not(main) { display: none; }
+
+.gathering-page.invite-page { padding-bottom: 0; }
+.invite-page .page-width { width: calc(100% - 40px); max-width: 1180px; }
+.invite-header { background: var(--ink); color: var(--paper); }
+.invite-header-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 84px; border-bottom: 1px solid #fbf6e933; }
+.invite-page .wordmark { font-size: 29px; }
+.invite-home-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 16px; }
+.invite-hero { position: relative; color: var(--paper); background: var(--ink); }
+.invite-hero-layout { position: relative; display: grid; gap: 44px; padding-block: 42px 40px; }
+.invite-copy { min-width: 0; }
+.invite-page .invite-edition { font-size: 16px; letter-spacing: -.3px; color: #e5d6b8; }
+.invite-page .invite-copy h1 { margin-top: 22px; font-size: clamp(44px, 12vw, 62px); font-weight: 800; letter-spacing: -2px; line-height: 1.45; }
+.invite-copy h1 > span { display: block; margin-bottom: 4px; font-size: 25px; letter-spacing: -1px; font-weight: 400; }
+.invite-letter { margin-top: 27px; color: #f3ecdc; font-size: 17px; line-height: 1.95; }
+.invite-page .invite-letter p + p { margin-top: 16px; }
+.invite-desktop-break { display: none; }
+.invite-event-summary { margin-top: 30px; padding-top: 22px; border-top: 1px solid #fbf6e940; }
+.invite-date { display: flex; flex-wrap: wrap; gap: 4px 7px; font-size: 18px; font-weight: 800; letter-spacing: -.5px; }
+.invite-page .invite-venue { margin-top: 5px; font-size: 24px; font-weight: 800; }
+.invite-primary-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; margin-top: 22px; }
+.invite-share-anchor { display: inline-flex; align-items: center; min-height: 44px; gap: 7px; font-size: 16px; border-bottom: 1px solid #fbf6e980; }
+.invite-page .invite-poster { width: 100%; max-width: 440px; justify-self: center; }
+.invite-poster .poster-image-link { border-color: #fbf6e945; box-shadow: 0 16px 44px #0003; }
+.invite-poster figcaption { margin-top: 12px; text-align: center; font-size: 14px; color: #dfd5c3; }
+.invite-page .invite-eyebrow { margin-bottom: 7px; color: var(--muted); font-size: 15px; }
+.invite-details, .invite-speakers, .invite-prayer { padding-block: 42px; }
+.invite-page .details-layout, .invite-page .speakers-layout, .invite-page .prayer-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.invite-page .section-heading h2, .invite-page .prayer-layout .section-heading h2 { font-size: 30px; letter-spacing: -1px; white-space: normal; }
+.invite-facts { margin: 0; }
+.invite-facts > div { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 16px; padding-block: 15px; border-bottom: 1px solid var(--line); }
+.invite-facts > div:first-child { padding-top: 0; }
+.invite-facts dt { color: var(--muted); font-size: 16px; }
+.invite-facts dd { margin: 0; font-weight: 800; font-size: 18px; word-break: keep-all; }
+.invite-fact-note { display: block; margin-top: 4px; color: var(--muted); font-weight: 400; font-size: 16px; }
+.invite-page .venue-links { display: flex; flex-wrap: wrap; gap: 16px 28px; margin-top: 20px; }
+.invite-page .text-link { min-height: 44px; font-size: 17px; }
+.invite-page .speaker-list { grid-template-columns: minmax(0, 1fr); gap: 18px 28px; }
+.invite-page .speaker-list h3 { font-size: 21px; }
+.invite-page .speaker-list p { margin-top: 3px; font-size: 16px; }
+.invite-prayer { border-top: 1px solid var(--line); }
+.invite-page .prayer-copy p { font-size: 18px; line-height: 1.9; }
+.invite-page .prayer-copy .button { gap: 16px; font-size: 18px; }
+.invite-share-section { padding-block: 48px 42px; background: var(--ink); color: var(--paper); text-align: center; }
+.invite-share-inner { max-width: 760px; }
+.invite-page .invite-share-section .invite-eyebrow { color: #dfd5c3; }
+.invite-page .invite-share-section h2 { max-width: 19em; margin: 15px auto 0; font-size: 29px; font-weight: 800; line-height: 1.6; letter-spacing: -1px; }
+.invite-page .invite-share-copy { margin-top: 19px; font-size: 17px; color: #f3ecdc; }
+.invite-share-actions { margin: 25px auto 0; max-width: 440px; }
+.invite-page .invite-share-actions .button { min-width: 210px; cursor: pointer; }
+.invite-share-actions button:disabled { opacity: .65; cursor: wait; }
+.invite-page .invite-share-status { min-height: 30px; margin-top: 12px; font-size: 16px; color: #f3ecdc; }
+.invite-share-manual { display: grid; gap: 8px; text-align: left; margin-top: 12px; font-size: 16px; }
+.invite-share-manual input { width: 100%; min-width: 0; padding: 12px; border: 1px solid #dfd5c3; border-radius: 3px; background: var(--paper); color: var(--ink); font-family: Arial, sans-serif; font-size: 16px; }
+.invite-share-manual input:focus-visible { outline: 3px solid var(--paper); outline-offset: 4px; }
+.invite-registration-link { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; margin-top: 9px; font-size: 16px; border-bottom: 1px solid #fbf6e980; }
+.invite-footer .footer-bottom { border-color: #fbf6e933; gap: 20px; padding-block: 20px; font-size: 13px; }
+.invite-footer .footer-bottom > a { font-size: 14px; }
+
+@media (min-width: 540px) {
+  .invite-page .page-width { width: calc(100% - 64px); }
+  .invite-page .invite-copy h1 { font-size: 64px; }
+  .invite-copy h1 > span { font-size: 31px; }
+  .invite-letter { font-size: 19px; }
+  .invite-desktop-break { display: inline; }
+  .invite-page .speaker-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 900px) {
+  .invite-header-inner { min-height: 94px; }
+  .invite-page .wordmark { font-size: 33px; }
+  .invite-hero-layout { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 56px; align-items: center; padding-block: 52px 64px; }
+  .invite-page .invite-edition { font-size: 18px; }
+  .invite-page .invite-copy h1 { margin-top: 22px; font-size: 68px; }
+  .invite-copy h1 > span { font-size: 31px; }
+  .invite-letter { font-size: 19px; }
+  .invite-date { font-size: 22px; }
+  .invite-page .invite-venue { font-size: 27px; }
+  .invite-page .invite-poster { justify-self: end; }
+  .invite-details, .invite-speakers, .invite-prayer { padding-block: 56px; }
+  .invite-page .details-layout, .invite-page .speakers-layout, .invite-page .prayer-layout { grid-template-columns: minmax(0, .7fr) minmax(0, 1.7fr); gap: 64px; }
+  .invite-page .section-heading h2, .invite-page .prayer-layout .section-heading h2 { font-size: 32px; }
+  .invite-facts > div { grid-template-columns: 56px minmax(0, 1fr); gap: 22px; }
+  .invite-facts dd { font-size: 20px; }
+  .invite-share-section { padding-block: 64px 48px; }
+  .invite-page .invite-share-section h2 { max-width: none; font-size: 38px; }
+  .invite-footer .footer-bottom { font-size: 16px; }
+}
+
+@media (min-width: 1200px) {
+  .invite-hero-layout { gap: 88px; }
+  .invite-page .invite-copy h1 { font-size: 76px; }
+  .invite-copy h1 > span { font-size: 34px; }
+}
