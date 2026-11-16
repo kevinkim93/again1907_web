@@ -17,6 +17,9 @@
 .invite-letter { margin-top: 27px; color: #f3ecdc; font-size: 17px; line-height: 1.95; }
 .invite-page .invite-letter p + p { margin-top: 16px; }
 .invite-desktop-break { display: none; }
+.invite-video { margin-top: 26px; }
+.invite-video .promo-player { height: auto; }
+.invite-video-link { display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-height: 36px; width: fit-content; margin-left: auto; color: #dfd5c3; font-size: 14px; }
 .invite-event-summary { margin-top: 30px; padding-top: 22px; border-top: 1px solid #fbf6e940; }
 .invite-date { display: flex; flex-wrap: wrap; gap: 4px 7px; font-size: 18px; font-weight: 800; letter-spacing: -.5px; }
 .invite-page .invite-venue { margin-top: 5px; font-size: 24px; font-weight: 800; }
@@ -29,8 +32,13 @@
 .invite-details, .invite-speakers, .invite-prayer { padding-block: 42px; }
 .invite-page .details-layout, .invite-page .speakers-layout, .invite-page .prayer-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
 .invite-page .section-heading h2, .invite-page .prayer-layout .section-heading h2 { font-size: 30px; letter-spacing: -1px; white-space: normal; }
+.invite-introduction { margin-bottom: 30px; }
+.invite-page .invite-introduction h3 { font-size: 27px; font-weight: 800; line-height: 1.6; letter-spacing: -1px; }
+.invite-page .invite-introduction > p { margin-top: 18px; font-size: 18px; line-height: 1.9; }
+.invite-introduction blockquote { margin: 24px 0 0; padding-left: 18px; border-left: 2px solid var(--line); font-size: 18px; }
+.invite-introduction cite { display: block; margin-top: 5px; color: var(--muted); font-size: 15px; font-style: normal; }
 .invite-facts { margin: 0; }
-.invite-facts > div { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 16px; padding-block: 15px; border-bottom: 1px solid var(--line); }
+.invite-facts > div { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 16px; padding-block: 15px; border-bottom: 1px solid var(--line); }
 .invite-facts > div:first-child { padding-top: 0; }
 .invite-facts dt { color: var(--muted); font-size: 16px; }
 .invite-facts dd { margin: 0; font-weight: 800; font-size: 18px; word-break: keep-all; }
@@ -46,7 +54,8 @@
 .invite-share-section { padding-block: 48px 42px; background: var(--ink); color: var(--paper); text-align: center; }
 .invite-share-inner { max-width: 760px; }
 .invite-page .invite-share-section .invite-eyebrow { color: #dfd5c3; }
-.invite-page .invite-share-section h2 { max-width: 19em; margin: 15px auto 0; font-size: 29px; font-weight: 800; line-height: 1.6; letter-spacing: -1px; }
+.invite-page .invite-share-section h2 { max-width: 19em; margin: 15px auto 0; font-size: clamp(24px, 7.4vw, 29px); font-weight: 800; line-height: 1.6; letter-spacing: -1px; }
+.invite-page .invite-share-section h2 > span { white-space: nowrap; }
 .invite-page .invite-share-copy { margin-top: 19px; font-size: 17px; color: #f3ecdc; }
 .invite-share-actions { margin: 25px auto 0; max-width: 440px; }
 .invite-page .invite-share-actions .button { min-width: 210px; cursor: pointer; }
@@ -82,6 +91,7 @@
   .invite-details, .invite-speakers, .invite-prayer { padding-block: 56px; }
   .invite-page .details-layout, .invite-page .speakers-layout, .invite-page .prayer-layout { grid-template-columns: minmax(0, .7fr) minmax(0, 1.7fr); gap: 64px; }
   .invite-page .section-heading h2, .invite-page .prayer-layout .section-heading h2 { font-size: 32px; }
+  .invite-page .invite-introduction h3 { font-size: 34px; }
   .invite-facts > div { grid-template-columns: 56px minmax(0, 1fr); gap: 22px; }
   .invite-facts dd { font-size: 20px; }
   .invite-share-section { padding-block: 64px 48px; }

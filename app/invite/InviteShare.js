@@ -58,8 +58,8 @@ export default function InviteShare({ title, text, url }) {
 
     setShowManualCopy(!copied);
     setStatus(copied
-      ? '초청장 링크를 복사했습니다. 카카오톡이나 문자에 붙여넣어 전해 주세요.'
-      : '자동 복사가 어려워요. 아래 링크를 길게 눌러 복사해 주세요.');
+      ? '초청장 링크를 복사했습니다. 카카오톡이나 문자에 붙여넣어 전해 주십시오.'
+      : '자동 복사가 어렵습니다. 아래 링크를 길게 눌러 복사해 주십시오.');
   }
 
   async function handleShare() {
