@@ -20,6 +20,7 @@ export default function HomePage() {
         <div className="page-width header-inner">
           <a className="wordmark" href="#top" aria-label="Again 1907 처음으로">Again 1907</a>
           <nav aria-label="주요 메뉴">
+            <a href="/history">부흥의 역사</a>
             <a href="#gathering">장소</a>
             <a href="#schedule">일정</a>
             <a href="#speakers">강사 소개</a>

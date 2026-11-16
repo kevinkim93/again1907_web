@@ -5,7 +5,7 @@ import GatheringPageLinks, { gatheringPageLinks } from '@/components/GatheringPa
 import StructuredData from '@/components/StructuredData';
 import FloatingGatheringActions from '@/components/FloatingGatheringActions';
 
-export default function GatheringDetailPage({ title, path, intro, children, className = '' }) {
+export default function GatheringDetailPage({ title, path, intro, children, className = '', edition = gathering.name, showFloatingActions = true }) {
   const breadcrumbs = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -34,7 +34,7 @@ export default function GatheringDetailPage({ title, path, intro, children, clas
       <main id="detail-content" className="page-width detail-main">
         <nav className="detail-breadcrumb" aria-label="현재 위치"><Link href="/">홈</Link><span aria-hidden="true">/</span><span aria-current="page">{title}</span></nav>
         <div className="detail-heading">
-          <p className="detail-edition">제6차 Again 1907 평양대부흥회</p>
+          <p className="detail-edition">{edition}</p>
           <h1>{title}</h1>
           <p className="detail-intro">{intro}</p>
         </div>
@@ -48,7 +48,7 @@ export default function GatheringDetailPage({ title, path, intro, children, clas
         <GatheringPageLinks currentPath={path} />
         <div className="page-width footer-bottom"><span>2027년 제6차 평양대부흥회</span><Link href="/">공식 홈 <ArrowUpRight size={13} aria-hidden="true" /></Link></div>
       </footer>
-      <FloatingGatheringActions />
+      {showFloatingActions && <FloatingGatheringActions />}
     </div>
   );
 }

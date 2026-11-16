@@ -122,15 +122,15 @@ html { scroll-behavior: smooth; scroll-padding-top: 24px; }
   html { scroll-padding-top: 16px; scroll-padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
   .gathering-page { font-size: 18px; padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
   .gathering-page .page-width { width: calc(100% - 40px); }
-  .header-inner { min-height: 124px; padding-block: 16px 10px; gap: 10px; flex-wrap: wrap; }
+  .header-inner { min-height: 168px; padding-block: 16px 10px; gap: 10px; flex-wrap: wrap; }
   .gathering-page .wordmark { font-size: 27px; }
-  .gathering-header nav { width: 100%; display: grid; grid-template-columns: repeat(5, max-content); justify-content: space-between; gap: 3px; font-size: 16px; letter-spacing: -.2px; }
+  .gathering-header nav { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px 8px; font-size: 16px; letter-spacing: -.2px; }
   .gathering-header nav > a { justify-content: center; min-height: 44px; padding: 10px 0; line-height: 1.5; white-space: nowrap; }
   .gathering-header .nav-register { gap: 0; border-bottom: 0; }
   .gathering-header .nav-external { gap: 3px; }
   .gathering-header .nav-register svg { display: none; }
   .cinematic-hero { min-height: 710px; }
-  .hero-layout { padding-block: 160px 44px; }
+  .hero-layout { padding-block: 204px 44px; }
   .hero-media { background-position: 62% center; }
   .hero-film { object-position: 62% center; }
   .hero-shade { background: linear-gradient(90deg, rgba(3,18,41,.62), rgba(3,18,41,.22)), linear-gradient(180deg, rgba(3,18,41,.25), rgba(3,18,41,.1) 40%, rgba(3,18,41,.8)); }

@@ -12,13 +12,14 @@ export default function LegacySiteShell({ children }) {
 
   const navItems = [
     { name: "홈", href: "/" },
+    { name: "부흥의 역사", href: "/history" },
     { name: "등록", href: "/register" },
     { name: "일정", href: "/schedule" },
     { name: "FAQ", href: "/faq" },
     { name: "등록조회", href: "/lookup" },
   ];
 
-  if (pathname === "/" || pathname.startsWith("/gathering/")) return children;
+  if (pathname === "/" || pathname === "/history" || pathname.startsWith("/gathering/")) return children;
 
   return (
       <div className="min-h-screen flex flex-col bg-gray-50">

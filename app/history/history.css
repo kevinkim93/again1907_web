@@ -1,0 +1,67 @@
+.gathering-page.history-page { padding-bottom: 0; }
+.history-page .detail-main { max-width: 1060px; }
+.history-page .detail-heading { max-width: 800px; margin-bottom: 48px; }
+.history-page .detail-heading h1 { font-size: clamp(38px, 5vw, 54px); letter-spacing: -1.5px; }
+.history-page .detail-intro { line-height: 1.9; }
+.history-section { padding-block: 44px; border-top: 1px solid var(--line); }
+.history-section-heading { margin-bottom: 30px; }
+.history-page .history-kicker { margin-bottom: 7px; color: var(--muted); font-family: Arial, 'Apple SD Gothic Neo', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: .3px; }
+.history-page .history-section h2 { font-size: 32px; font-weight: 800; line-height: 1.5; letter-spacing: -1px; }
+.history-timeline { margin: 0; padding: 0; list-style: none; }
+.history-timeline > li { position: relative; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 32px; padding-bottom: 32px; }
+.history-timeline > li::before { content: ''; position: absolute; left: 161px; top: 16px; bottom: -16px; border-left: 1px solid var(--line); }
+.history-timeline > li::after { content: ''; position: absolute; left: 157px; top: 12px; width: 9px; height: 9px; border-radius: 50%; background: var(--red); }
+.history-timeline > li:last-child { padding-bottom: 0; }
+.history-timeline > li:last-child::before { display: none; }
+.history-page .history-date { padding-top: 1px; font-family: Arial, 'Apple SD Gothic Neo', sans-serif; font-size: 19px; font-weight: 700; color: var(--red); }
+.history-page .history-timeline h3 { font-size: 23px; font-weight: 800; line-height: 1.5; letter-spacing: -.5px; }
+.history-page .history-timeline-copy > p { margin-top: 9px; color: var(--muted); font-size: 18px; line-height: 1.9; }
+.history-citations { display: inline-flex; gap: 6px; margin-left: 6px; white-space: nowrap; font-family: Arial, sans-serif; font-size: 13px; vertical-align: super; }
+.history-citations a { color: var(--red); text-decoration: underline; text-underline-offset: 3px; }
+.history-characteristics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px 40px; }
+.history-characteristic { padding-left: 20px; border-left: 2px solid var(--line); }
+.history-page .history-characteristic h3 { font-size: 25px; font-weight: 800; line-height: 1.5; }
+.history-page .history-characteristic-subtitle { margin-top: 5px; font-size: 17px; font-weight: 800; }
+.history-page .history-characteristic > p:last-child { margin-top: 12px; color: var(--muted); font-size: 18px; line-height: 1.9; }
+.history-today { display: grid; grid-template-columns: .8fr 1.5fr; gap: 40px; }
+.history-today .history-section-heading { margin-bottom: 0; }
+.history-today-copy { min-width: 0; font-size: 19px; line-height: 1.9; }
+.history-page .history-today-copy p + p { margin-top: 18px; }
+.history-today .text-link { margin-top: 22px; font-size: 17px; }
+.history-invitation { padding: 36px; background: var(--night); color: var(--paper); }
+.history-page .history-invitation .history-kicker { color: #e5d6b8; }
+.history-page .history-invitation h2 { max-width: 22em; font-size: 30px; font-weight: 800; line-height: 1.6; letter-spacing: -.8px; }
+.history-page .history-invitation-facts { margin-top: 12px; font-size: 17px; color: #e5d6b8; }
+.history-invitation-facts > span { display: inline-block; }
+.history-invitation .button { margin-top: 24px; min-height: 54px; font-size: 18px; gap: 18px; }
+.history-sources { margin-top: 34px; color: var(--muted); font-family: Arial, 'Apple SD Gothic Neo', sans-serif; font-size: 14px; line-height: 1.8; }
+.history-page .history-sources h2 { font-size: 16px; font-weight: 700; }
+.history-sources ol { margin: 10px 0 0; padding-left: 22px; list-style: decimal; }
+.history-sources li { padding-block: 4px; overflow-wrap: anywhere; }
+.history-sources a { text-decoration: underline; text-underline-offset: 4px; }
+.history-sources li:target { background: #eee5d2; }
+
+@media (max-width: 760px) {
+  .history-page .detail-heading { margin-bottom: 30px; }
+  .history-page .detail-intro { font-size: 18px; }
+  .history-section { padding-block: 30px; }
+  .history-section-heading { margin-bottom: 24px; }
+  .history-page .history-section h2 { font-size: 27px; letter-spacing: -.8px; }
+  .history-timeline > li { grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 0 0 28px 22px; }
+  .history-timeline > li::before { left: 4px; top: 16px; bottom: -16px; }
+  .history-timeline > li::after { left: 0; top: 12px; }
+  .history-page .history-date { font-size: 17px; }
+  .history-page .history-timeline h3 { font-size: 21px; }
+  .history-page .history-timeline-copy > p { margin-top: 8px; font-size: 17px; }
+  .history-characteristics { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  .history-characteristic { padding-left: 18px; }
+  .history-page .history-characteristic h3 { font-size: 23px; }
+  .history-page .history-characteristic > p:last-child { font-size: 17px; }
+  .history-today { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .history-today-copy { font-size: 17px; }
+  .history-invitation { padding: 26px 22px; }
+  .history-page .history-invitation .history-kicker { font-size: 13px; letter-spacing: 0; }
+  .history-page .history-invitation h2 { font-size: 25px; }
+  .history-page .history-invitation-facts { font-size: 15px; }
+  .history-invitation .button { width: 100%; font-size: 17px; padding-inline: 16px; }
+}
