@@ -105,7 +105,7 @@ export default function HomePage() {
             <ul className="speaker-list">
               {gatheringSpeakers.map(({ name, affiliation, photo }, index) => (
                 <ScrollReveal as="li" key={name} className={photo ? "speaker-with-photo" : undefined} delay={(index % 2) * 60}>
-                  {photo && <Image src={photo} alt={`${name} 프로필 사진`} width={128} height={144} className="speaker-photo" unoptimized />}
+                  {photo && <span className="speaker-photo-frame"><Image src={photo} alt={`${name} 프로필 사진`} width={128} height={144} className="speaker-photo" unoptimized /></span>}
                   <div className="speaker-description"><h3>{name}</h3>
                   <p>{affiliation}</p></div>
                 </ScrollReveal>
