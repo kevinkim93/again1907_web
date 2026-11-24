@@ -16,7 +16,15 @@ export default function SpeakersPage() {
     <GatheringDetailPage title="강사 소개" path={path} intro="2027년 1월 25일(월)–30일(토) · 오산리기도원">
       <ul className="speaker-list detail-speakers">
         {gatheringSpeakers.map(({ name, affiliation, photo }) => (
-          <li key={name} className={photo ? "speaker-with-photo" : undefined}>{photo && <span className="speaker-photo-frame"><Image src={photo} alt={`${name} 프로필 사진`} width={128} height={144} className="speaker-photo" unoptimized /></span>}<div className="speaker-description"><h2>{name}</h2><p>{affiliation}</p></div></li>
+          <li key={name} className="speaker-with-photo">
+            <span className="speaker-photo-frame" aria-hidden={photo ? undefined : true}>
+              {photo && <Image src={photo} alt={`${name} 프로필 사진`} width={128} height={144} className="speaker-photo" unoptimized />}
+            </span>
+            <div className="speaker-description">
+              <h2>{name}</h2>
+              {affiliation && <p>{affiliation}</p>}
+            </div>
+          </li>
         ))}
       </ul>
     </GatheringDetailPage>

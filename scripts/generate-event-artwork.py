@@ -158,10 +158,10 @@ def poster():
     schedule = (ROOT / 'lib' / 'gathering-schedule.js').read_text(encoding='utf-8')
     roster = schedule.split('export const gatheringSpeakers = [',1)[1].split('];',1)[0]
     names = re.findall(r"name: '([^']+)'",roster)
-    if len(names) != 12:
-        raise ValueError('Speaker roster changed; review the three speaker lines.')
     for row in range(3):
-        art.text(' · '.join(names[row*4:(row+1)*4]),540,1244+row*30,21,fill='#ddd7cb',anchor='middle')
+        start = row * len(names) // 3
+        end = (row + 1) * len(names) // 3
+        art.text(' · '.join(names[start:end]),540,1244+row*30,21,fill='#ddd7cb',anchor='middle')
     art.write('again1907-6th-poster',png=True)
 
 def share():

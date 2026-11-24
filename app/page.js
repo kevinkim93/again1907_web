@@ -105,10 +105,12 @@ export default function HomePage() {
             <ScrollReveal className="section-heading"><h2 id="speakers-title">강사 소개</h2></ScrollReveal>
             <ul className="speaker-list">
               {gatheringSpeakers.map(({ name, affiliation, photo }, index) => (
-                <ScrollReveal as="li" key={name} className={photo ? "speaker-with-photo" : undefined} delay={(index % 2) * 60}>
-                  {photo && <span className="speaker-photo-frame"><Image src={photo} alt={`${name} 프로필 사진`} width={128} height={144} className="speaker-photo" unoptimized /></span>}
+                <ScrollReveal as="li" key={name} className="speaker-with-photo" delay={(index % 2) * 60}>
+                  <span className="speaker-photo-frame" aria-hidden={photo ? undefined : true}>
+                    {photo && <Image src={photo} alt={`${name} 프로필 사진`} width={128} height={144} className="speaker-photo" unoptimized />}
+                  </span>
                   <div className="speaker-description"><h3>{name}</h3>
-                  <p>{affiliation}</p></div>
+                  {affiliation && <p>{affiliation}</p>}</div>
                 </ScrollReveal>
               ))}
             </ul>
