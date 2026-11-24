@@ -1,0 +1,175 @@
+신청 완료 시 Google Ads 전환 알림 (again1907.kr)
+
+Base: yjchae/room-assignment main f2163c5 (Merge pull request #13)
+Apply: git apply room-assignment-conversion.patch   (or: patch -p1 < room-assignment-conversion.patch)
+
+새 신청(remote.submit)이 성공해 DonePage 가 뜰 때 한 번,
+- gtag('event', 'conversion', { send_to: 'AW-17966875294/4VmgCOmfxr4dEJ6Fo_dC' })
+- again1907.kr 안의 iframe 이면 window.parent.postMessage(
+    { type: 'again1907-registration-complete' }, 'https://again1907.kr')
+를 보낸다. 수정·조회·취소·운영자 추가·실패한 요청에서는 보내지 않는다.
+
+gtag 기본 스니펫(AW-17966875294, linker: again1907.kr · yjchae.github.io)은
+web/index.html 에 두고, 스탭 링크(?staff=1)와 운영자 웹(/admin/)에서는 건너뛴다.
+dart:js_interop 은 조건부 export(lib/ads_conversion.dart)로 웹에서만 쓰므로
+macOS · Windows 운영자 앱과 flutter test 에는 영향이 없다. 광고비와는 무관하다.
+
+---
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 66f647a..fa23381 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -35,7 +35,8 @@ psql -v ON_ERROR_STOP=1 -q -d <빈 DB> -f supabase/test.sql   # DB 스키마 검
+ - 매뉴얼(`docs/manual/`) 스크린샷은 `flutter test --update-goldens tool/manual/shots_test.dart` 로 다시 찍는다(CI 는 `test/` 만 돈다). 화면을 크게 바꾸면 같이 갱신한다.
+ - `lib/config.dart` 에는 publishable 키만 둔다. 저장소가 공개라서 service_role 키, 실명·실제 전화번호가 든 데이터는 커밋하지 않는다.
+ 
+-**웹 빌드에 같이 들어가는 파일** — `gathering.dart`, `models.dart`, `remote.dart`, `theme.dart`, `widgets/quote_table.dart`, `widgets/duty_tasks.dart`, `widgets/custom_field_input.dart`, `main_public.dart` 는 `dart:io` 를 import 하면 안 된다. `main_public.dart` 는 이 파일들만 가져온다.
++**웹 빌드에 같이 들어가는 파일** — `gathering.dart`, `models.dart`, `remote.dart`, `theme.dart`, `widgets/quote_table.dart`, `widgets/duty_tasks.dart`, `widgets/custom_field_input.dart`, `ads_conversion.dart`, `main_public.dart` 는 `dart:io` 를 import 하면 안 된다. `main_public.dart` 는 이 파일들만 가져온다.
++`ads_conversion.dart` 는 Google Ads 전환(Again 1907 참가 신청 완료) 알림이다. 조건부 export 로 웹에서만 `dart:js_interop` 을 쓰고(`ads_conversion_web.dart`), 실제 태그·postMessage 는 `web/index.html` 에 있다. `DonePage` 가 뜰 때 한 번 부른다.
+ 
+ **회비 계산은 `gathering.dart` 의 `quote()` 하나뿐이다.** 신청 웹·조회·관리자 화면·참석자 가져오기가 모두 이 함수를 부른다. 따로 계산하면 금액이 어긋난다.
+ 당일 무료 날(`FeeRule.freeDays`, 회비 JSON 안 — 서버 변경 없음)은 그 날 **하루만 당일로** 오면 0원이고, 그 날을 끼고 1박이라도 묵으면 보통 금액이다(`PLAN_GATHERING.md` §18).
+diff --git a/lib/ads_conversion.dart b/lib/ads_conversion.dart
+new file mode 100644
+index 0000000..568e736
+--- /dev/null
++++ b/lib/ads_conversion.dart
+@@ -0,0 +1,9 @@
++/// Google Ads 전환 "Again1907 참가 신청 완료"(AW-17966875294) 알림.
++///
++/// 웹 빌드에서는 web/index.html 이 만들어 둔 `again1907RegistrationComplete()` 를 부르고,
++/// 운영자 앱(macOS · Windows)과 `flutter test`(VM)에서는 아무것도 하지 않는다.
++/// dart:js_interop 은 웹에서만 있으므로 조건부 export 로 나눈다.
++library;
++
++export 'ads_conversion_stub.dart'
++    if (dart.library.js_interop) 'ads_conversion_web.dart';
+diff --git a/lib/ads_conversion_stub.dart b/lib/ads_conversion_stub.dart
+new file mode 100644
+index 0000000..ba08293
+--- /dev/null
++++ b/lib/ads_conversion_stub.dart
+@@ -0,0 +1,4 @@
++/// 웹이 아닌 곳(운영자 앱 · 테스트)용. 광고 태그가 없으니 할 일이 없다.
++library;
++
++void reportRegistrationComplete() {}
+diff --git a/lib/ads_conversion_web.dart b/lib/ads_conversion_web.dart
+new file mode 100644
+index 0000000..20ed044
+--- /dev/null
++++ b/lib/ads_conversion_web.dart
+@@ -0,0 +1,17 @@
++/// 웹 빌드용. web/index.html 의 `again1907RegistrationComplete()` 가
++/// Google Ads 전환을 보내고, again1907.kr 안의 iframe 이면 부모 창에 postMessage 한다.
++/// 스탭 링크(?staff=1)·운영자 웹(/admin/)에서는 그 함수가 없으니 아무것도 하지 않는다.
++library;
++
++import 'dart:js_interop';
++
++@JS('again1907RegistrationComplete')
++external JSFunction? get _registrationCompleteHook;
++
++void reportRegistrationComplete() {
++  try {
++    _registrationCompleteHook?.callAsFunction();
++  } catch (_) {
++    // 광고 태그가 막혀 있어도(광고 차단기 등) 신청 완료 화면은 그대로 보여야 한다.
++  }
++}
+diff --git a/lib/main_public.dart b/lib/main_public.dart
+index 5e18270..db0ca7d 100644
+--- a/lib/main_public.dart
++++ b/lib/main_public.dart
+@@ -8,10 +8,12 @@ library;
+ import 'dart:math' as math;
+ import 'dart:ui' show ImageFilter;
+ 
++import 'package:flutter/foundation.dart' show kIsWeb;
+ import 'package:flutter/material.dart';
+ import 'package:flutter/services.dart';
+ import 'package:url_launcher/url_launcher.dart';
+ 
++import 'ads_conversion.dart';
+ import 'gathering.dart';
+ import 'models.dart';
+ import 'remote.dart';
+@@ -1467,7 +1469,7 @@ Widget _ministerNotice(String text) => _Section(
+   ],
+ );
+ 
+-class DonePage extends StatelessWidget {
++class DonePage extends StatefulWidget {
+   const DonePage({
+     super.key,
+     required this.gathering,
+@@ -1478,8 +1480,24 @@ class DonePage extends StatelessWidget {
+   final Quote quote;
+   final String depositor;
+ 
++  @override
++  State<DonePage> createState() => _DonePageState();
++}
++
++class _DonePageState extends State<DonePage> {
++  @override
++  void initState() {
++    super.initState();
++    // 이 화면은 새 신청(ApplyPage._submit 의 remote.submit)이 성공했을 때만 뜬다.
++    // 수정·조회·취소·운영자 추가는 여기로 오지 않는다. 화면이 뜰 때 한 번만 광고 전환을 알린다.
++    if (kIsWeb) reportRegistrationComplete();
++  }
++
+   @override
+   Widget build(BuildContext context) {
++    final gathering = widget.gathering;
++    final quote = widget.quote;
++    final depositor = widget.depositor;
+     // 무료 날 당일만이라 0원인 신청도 입금이 없으니 무료 집회처럼 보인다.
+     final free = gathering.freeFor(quote);
+     return Scaffold(
+diff --git a/web/index.html b/web/index.html
+index 9427284..1e57c57 100644
+--- a/web/index.html
++++ b/web/index.html
+@@ -31,6 +31,40 @@
+ 
+   <title>집회 신청</title>
+   <link rel="manifest" href="manifest.json">
++
++  <!--
++    Google tag (gtag.js) — Again 1907 Google Ads 전환 측정 (태그 AW-17966875294).
++    광고비를 쓰는 코드가 아니다. 새 신청이 접수됐다는 사실만 Google Ads 에 알린다.
++    신청자 화면에서만 켠다: 스탭 링크(?staff=1)와 운영자 웹(/admin/)은 건너뛴다.
++    again1907RegistrationComplete() 는 DonePage 가 뜰 때 lib/ads_conversion_web.dart 가 부른다.
++  -->
++  <script>
++    (function () {
++      var params = new URLSearchParams(window.location.search);
++      if (params.get('staff') === '1' || window.location.pathname.indexOf('/admin/') !== -1) return;
++
++      window.dataLayer = window.dataLayer || [];
++      function gtag(){dataLayer.push(arguments);}
++      window.gtag = gtag;
++      gtag('js', new Date());
++      gtag('config', 'AW-17966875294', {
++        linker: { domains: ['again1907.kr', 'yjchae.github.io'] }
++      });
++      var tag = document.createElement('script');
++      tag.async = true;
++      tag.src = 'https://www.googletagmanager.com/gtag/js?id=AW-17966875294';
++      document.head.appendChild(tag);
++
++      window.again1907RegistrationComplete = function () {
++        // [새 창에서 열기]로 직접 연 경우를 위해 여기서도 전환을 보낸다.
++        gtag('event', 'conversion', { send_to: 'AW-17966875294/4VmgCOmfxr4dEJ6Fo_dC' });
++        // again1907.kr 안의 iframe 이면 부모 창에도 알린다. 받는 주소를 꼭 집어 보낸다('*' 금지).
++        if (window.parent && window.parent !== window) {
++          window.parent.postMessage({ type: 'again1907-registration-complete' }, 'https://again1907.kr');
++        }
++      };
++    })();
++  </script>
+ </head>
+ <body>
+   <!--
