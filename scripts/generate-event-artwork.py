@@ -165,20 +165,21 @@ def poster():
     art.write('again1907-6th-poster',png=True)
 
 def share():
+    theme_lines = ('초자연적인 성령의 역사가', '함께 하시는 부흥집회!')
     art = Artwork(1200,630,'제6차 Again 1907 평양대부흥회',
-        '2027.01.25(월)–01.30(토), 오산리기도원. 주님이 역사하시는 초자연적 부흥집회. 호세아 6:1.',
+        f'2027.01.25(월)–01.30(토), 오산리기도원. {" ".join(theme_lines)} 호세아 6:1.',
         photograph(1200,630,'share'))
     art.rect(56,48,82,39,RED)
     art.text('제6차',97,75,23,'bold',anchor='middle')
     art.text('Again 1907',48,235,107,'display')
     art.text('평양대부흥회',56,332,70,'bold')
-    art.text('주님이 역사하시는',59,398,25)
-    art.text('초자연적 부흥집회',59,435,25)
+    art.text(theme_lines[0],59,398,25)
+    art.text(theme_lines[1],59,435,25)
     art.rule(58,474,52,RED,4)
     art.text('2027.01.25–01.30',56,532,37,'bold')
     art.text('오산리기도원',58,581,30,'bold')
     art.text('호세아 6:1',1144,581,19,anchor='end')
-    art.write('again1907-6th-share',png=True)
+    art.write('again1907-6th-share-v2',png=True)
 
 def theme():
     art = Artwork(1200,630,'주님이 역사하시는 초자연적 부흥집회',

@@ -51,8 +51,8 @@ export default function HomePage() {
         <section className="gathering-theme" aria-labelledby="gathering-theme-title">
           <div className="theme-copy">
             <h2 id="gathering-theme-title">
-              <span>주님이 역사하시는</span>{' '}
-              <span>초자연적 부흥집회</span>
+              <span>초자연적인 성령의 역사가</span>{' '}
+              <span>함께 하시는 부흥집회!</span>
             </h2>
             <p className="theme-scripture-reference">주제말씀 · 호세아 6:1</p>
             <blockquote className="theme-scripture">
