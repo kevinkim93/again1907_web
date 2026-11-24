@@ -1,5 +1,6 @@
 import './globals.css';
 import './gathering-fonts.css';
+import GoogleAdsTag from '@/components/GoogleAdsTag';
 import LegacySiteShell from '@/components/LegacySiteShell';
 import { siteUrl, siteName, shareDescription, searchDescription, shareImage } from '@/lib/site-metadata';
 
@@ -33,5 +34,5 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  return <html lang="ko"><body><LegacySiteShell>{children}</LegacySiteShell></body></html>;
+  return <html lang="ko"><body><GoogleAdsTag /><LegacySiteShell>{children}</LegacySiteShell></body></html>;
 }
